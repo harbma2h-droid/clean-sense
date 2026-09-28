@@ -50,6 +50,18 @@ const { lang, size = 'md' } = Astro.props;
     font-weight: 700;
     font-size: 0.95rem;
   }
+  @media (max-width: 379px) {
+    .logo {
+      gap: 6px;
+    }
+    .logo--md .logo__emblem {
+      height: 38px;
+    }
+    .logo--md .logo__en,
+    .logo--md .logo__ar {
+      font-size: 0.8125rem;
+    }
+  }
   .logo--lg .logo__emblem {
     height: 60px;
   }

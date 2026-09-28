@@ -12,7 +12,7 @@ interface Props {
 }
 const { name, size = 24, class: cls = '', label } = Astro.props;
 const require = createRequire(import.meta.url);
-const BRANDS = ['whatsapp', 'instagram', 'tiktok', 'snapchat', 'x'];
+const BRANDS = ['whatsapp', 'instagram', 'tiktok', 'snapchat'];
 
 const cache = ((globalThis as any).__iconCache ??= new Map<string, string>());
 let inner: string = cache.get(name);

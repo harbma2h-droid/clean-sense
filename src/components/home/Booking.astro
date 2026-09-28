@@ -240,6 +240,7 @@ const today = new Date().toISOString().slice(0, 10);
 
   .bk__body {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
   }
   .bk__main {
     padding: 22px 18px;
@@ -270,7 +271,7 @@ const today = new Date().toISOString().slice(0, 10);
   }
   .bk__services {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
   }
   .bk__row {
@@ -280,11 +281,11 @@ const today = new Date().toISOString().slice(0, 10);
   }
   .bk__row--4 {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .bk__size {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
   }
   .bk__size[hidden],
@@ -337,7 +338,7 @@ const today = new Date().toISOString().slice(0, 10);
   .chip small {
     margin-inline-start: auto;
     color: var(--muted);
-    font-weight: 500;
+    font-weight: 400;
     font-size: 0.8125rem;
   }
   .chip:hover {
@@ -521,10 +522,10 @@ const today = new Date().toISOString().slice(0, 10);
 
   @media (min-width: 640px) {
     .bk__services {
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
     .bk__row--4 {
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
     .bk__grid2 {
       grid-template-columns: 1fr 1fr;
@@ -538,7 +539,7 @@ const today = new Date().toISOString().slice(0, 10);
   }
   @media (min-width: 960px) {
     .bk__body {
-      grid-template-columns: 1fr 340px;
+      grid-template-columns: minmax(0, 1fr) 340px;
     }
     .bk__summary {
       border-radius: 0;
