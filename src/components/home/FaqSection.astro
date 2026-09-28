@@ -1,0 +1,47 @@
+---
+import Faq from '../Faq.astro';
+import Icon from '../Icon.astro';
+import { ui, waLink } from '../../i18n/ui';
+import type { Lang } from '../../data/services';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = ui[lang];
+---
+
+<section class="section section--white" id="faq">
+  <div class="container faq-wrap">
+    <div class="reveal">
+      <p class="eyebrow">{t.faq.eyebrow}</p>
+      <h2 class="h2">{t.faq.title}</h2>
+      <a class="btn btn--gold faq-wrap__cta" href={waLink(t.wa.general)} target="_blank" rel="noopener" data-wa="faq">
+        <Icon name="whatsapp" size={20} />
+        {t.cta.whatsapp}
+      </a>
+    </div>
+    <div class="reveal"><Faq items={t.faq.items} /></div>
+  </div>
+</section>
+
+<style>
+  .faq-wrap {
+    display: grid;
+    gap: 32px;
+  }
+  .faq-wrap__cta {
+    margin-top: 24px;
+    display: none;
+  }
+  @media (min-width: 1024px) {
+    .faq-wrap {
+      grid-template-columns: 0.8fr 1.2fr;
+      gap: 64px;
+      align-items: start;
+    }
+    .faq-wrap__cta {
+      display: inline-flex;
+    }
+  }
+</style>

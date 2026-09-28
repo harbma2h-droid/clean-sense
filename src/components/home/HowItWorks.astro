@@ -1,0 +1,115 @@
+---
+import Icon from '../Icon.astro';
+import { ui, waLink } from '../../i18n/ui';
+import type { Lang } from '../../data/services';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = ui[lang];
+---
+
+<section class="section section--navy how" id="how">
+  <div class="container">
+    <div class="section-head section-head--center reveal">
+      <p class="eyebrow">{t.how.eyebrow}</p>
+      <h2 class="h2">{t.how.title}</h2>
+    </div>
+    <ol class="steps">
+      {t.how.steps.map((s, i) => (
+        <li class="step reveal">
+          <div class="step__top">
+            <span class="icon-badge icon-badge--dark"><Icon name={s.icon} size={24} /></span>
+            <span class="step__num" dir="ltr">0{i + 1}</span>
+          </div>
+          <h3>{s.title}</h3>
+          <p>{s.text}</p>
+        </li>
+      ))}
+    </ol>
+    <div class="how__cta reveal">
+      <a class="btn btn--gold btn--lg" href={waLink(t.wa.general)} target="_blank" rel="noopener" data-wa="how">
+        <Icon name="whatsapp" size={22} />
+        {t.cta.whatsapp}
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .how {
+    background:
+      radial-gradient(800px 400px at 100% 0%, rgba(209, 173, 69, 0.12), transparent 60%),
+      var(--navy);
+  }
+  .steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 14px;
+  }
+  .step {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 16px;
+    padding: 18px;
+    border-radius: var(--radius);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+  }
+  .step__top {
+    grid-row: span 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .step__num {
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1;
+    color: rgba(234, 213, 125, 0.25);
+  }
+  .step h3 {
+    font-size: 1.125rem;
+  }
+  .step p {
+    margin-top: 6px;
+    font-size: 0.9375rem;
+  }
+  .how__cta {
+    display: flex;
+    justify-content: center;
+    margin-top: 40px;
+  }
+  .how__cta .btn {
+    width: 100%;
+    max-width: 360px;
+  }
+  @media (min-width: 640px) {
+    .steps {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    .step {
+      display: block;
+      padding: 24px;
+    }
+    .step__top {
+      flex-direction: row;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+    .step__num {
+      font-size: 2rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .steps {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+</style>

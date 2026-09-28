@@ -1,0 +1,131 @@
+---
+import Icon from '../Icon.astro';
+import { ui, waLink, servicePath } from '../../i18n/ui';
+import { serviceBySlug, type Lang } from '../../data/services';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = ui[lang];
+const tiles = [
+  { icon: 'building-2', slug: 'residential-building-cleaning' },
+  { icon: 'wrench', slug: 'building-operation-maintenance' },
+  { icon: 'droplets', slug: 'water-tank-cleaning' },
+  { icon: 'hard-hat', slug: 'post-construction-cleaning' },
+];
+---
+
+<section class="section section--navy biz" id="business">
+  <div class="container biz__grid">
+    <div class="reveal">
+      <p class="eyebrow">{t.business.eyebrow}</p>
+      <h2 class="h2">{t.business.title}</h2>
+      <p class="lead">{t.business.sub}</p>
+      <ul class="check-list biz__points">
+        {t.business.points.map((p) => <li><Icon name="circle-check" size={20} /><span>{p}</span></li>)}
+      </ul>
+      <div class="biz__ctas">
+        <a class="btn btn--gold btn--lg" href={waLink(t.wa.business)} target="_blank" rel="noopener" data-wa="business">
+          <Icon name="whatsapp" size={22} />
+          {t.business.cta}
+        </a>
+        <a class="btn btn--ghost-light btn--lg" href={servicePath(lang, 'building-operation-maintenance')}>
+          {t.business.cta2}
+        </a>
+      </div>
+    </div>
+
+    <ul class="biz__tiles reveal">
+      {tiles.map((tile) => {
+        const s = serviceBySlug(tile.slug)!;
+        return (
+          <li>
+            <a class="biz__tile" href={servicePath(lang, s.slug)}>
+              <span class="icon-badge icon-badge--dark"><Icon name={tile.icon} size={24} /></span>
+              <span class="biz__tile-name">{s[lang].name}</span>
+              <span class="biz__tile-text">{s[lang].short}</span>
+            </a>
+          </li>
+        );
+      })}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .biz {
+    background:
+      linear-gradient(180deg, rgba(7, 21, 48, 0.2), rgba(7, 21, 48, 0.2)),
+      radial-gradient(700px 400px at 0% 100%, rgba(209, 173, 69, 0.14), transparent 60%),
+      var(--navy-800);
+  }
+  .biz__grid {
+    display: grid;
+    gap: 40px;
+    align-items: center;
+  }
+  .biz__points {
+    margin-top: 24px;
+    color: #e3e8f1;
+  }
+  .biz__ctas {
+    display: grid;
+    gap: 12px;
+    margin-top: 32px;
+  }
+  .biz__tiles {
+    display: grid;
+    gap: 12px;
+  }
+  .biz__tile {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 16px;
+    height: 100%;
+    padding: 22px;
+    border-radius: var(--radius);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: border-color 0.2s, background-color 0.2s;
+  }
+  .biz__tile:hover {
+    border-color: var(--gold);
+    background: rgba(255, 255, 255, 0.07);
+  }
+  .biz__tile .icon-badge {
+    grid-row: span 2;
+  }
+  .biz__tile-name {
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.0625rem;
+    line-height: 1.35;
+  }
+  .biz__tile-text {
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+  @media (min-width: 560px) {
+    .biz__ctas {
+      display: flex;
+      flex-wrap: wrap;
+    }
+    .biz__tiles {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .biz__tile {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .biz__tile .icon-badge {
+      grid-row: auto;
+    }
+  }
+  @media (min-width: 1024px) {
+    .biz__grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 72px;
+    }
+  }
+</style>

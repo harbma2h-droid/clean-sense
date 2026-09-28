@@ -1,0 +1,125 @@
+---
+import Icon from '../Icon.astro';
+import { SITE } from '../../data/site';
+import { ui } from '../../i18n/ui';
+import type { Lang } from '../../data/services';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = ui[lang];
+// NOTE: placeholder testimonials — replace with real Google / WhatsApp reviews
+// (with the client's permission) in src/i18n/ui.ts → reviews.items.
+---
+
+<section class="section" id="reviews">
+  <div class="container">
+    <div class="section-head section-head--center reveal">
+      <p class="eyebrow">{t.reviews.eyebrow}</p>
+      <h2 class="h2">{t.reviews.title}</h2>
+    </div>
+    <ul class="rev-grid">
+      {t.reviews.items.map((r) => (
+        <li class="rev card reveal">
+          <div class="rev__stars" aria-hidden="true">
+            {[1, 2, 3, 4, 5].map(() => <Icon name="star" size={16} />)}
+          </div>
+          <blockquote>“{r.text}”</blockquote>
+          <div class="rev__who">
+            <span class="rev__avatar" aria-hidden="true"><Icon name="user-check" size={18} /></span>
+            <span>
+              <strong>{r.who}</strong>
+              <small>{r.city} · {r.service}</small>
+            </span>
+          </div>
+        </li>
+      ))}
+    </ul>
+    <div class="rev__more reveal">
+      <p>{t.reviews.more}</p>
+      <div class="rev__social">
+        <a class="btn btn--outline" href={SITE.instagram} target="_blank" rel="noopener"><Icon name="instagram" size={20} />Instagram</a>
+        <a class="btn btn--outline" href={SITE.tiktok} target="_blank" rel="noopener"><Icon name="tiktok" size={20} />TikTok</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .rev-grid {
+    display: grid;
+    gap: 16px;
+  }
+  .rev {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px;
+  }
+  .rev__stars {
+    display: flex;
+    gap: 2px;
+    color: var(--gold);
+  }
+  .rev__stars :global(.icon) {
+    fill: currentColor;
+  }
+  .rev blockquote {
+    margin: 0;
+    flex: 1;
+    color: var(--ink);
+    font-size: 1rem;
+    line-height: 1.8;
+  }
+  .rev__who {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+  }
+  .rev__who strong {
+    display: block;
+    color: var(--ink);
+    font-size: 0.9375rem;
+  }
+  .rev__who small {
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+  .rev__avatar {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--navy);
+    color: var(--gold-hl);
+  }
+  .rev__more {
+    margin-top: 40px;
+    text-align: center;
+  }
+  .rev__more p {
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 1.0625rem;
+  }
+  .rev__social {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+  @media (min-width: 900px) {
+    .rev-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    .rev {
+      padding: 28px;
+    }
+  }
+</style>

@@ -1,0 +1,552 @@
+---
+import Icon from '../Icon.astro';
+import { SERVICES, type Lang } from '../../data/services';
+import { SITE, PRICING } from '../../data/site';
+import { ui, waLink } from '../../i18n/ui';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = ui[lang];
+const b = t.booking;
+
+// Services that have a calculator estimate (keys in PRICING.base.*).
+const PRICED: Record<string, keyof typeof PRICING.base.apartment> = {
+  'deep-cleaning': 'deep',
+  'post-construction-cleaning': 'post-construction',
+};
+
+const data = {
+  lang,
+  pricing: PRICING,
+  priced: PRICED,
+  services: Object.fromEntries(SERVICES.map((s) => [s.slug, s[lang].name])),
+  properties: b.propertyTypes,
+  cities: Object.fromEntries(SITE.cities.map((c) => [c.id, c[lang]])),
+  times: b.times,
+  addons: b.addonNames,
+  furnished: b.furnishedOpts,
+  labels: b.labels,
+  intro: b.msgIntro,
+  sar: b.sar,
+  whatsapp: SITE.whatsapp,
+  texts: { estimateNote: b.estimateNote, noEstimate: b.noEstimate, noEstimateNote: b.noEstimateNote, pickService: b.pickService },
+};
+const today = new Date().toISOString().slice(0, 10);
+---
+
+<section class="section booking" id="booking">
+  <div class="container">
+    <div class="section-head section-head--center reveal">
+      <p class="eyebrow">{b.eyebrow}</p>
+      <h2 class="h2">{b.title}</h2>
+      <p class="lead">{b.sub}</p>
+    </div>
+
+    <form class="bk card" data-booking novalidate onsubmit="return false">
+      <script type="application/json" data-booking-config set:html={JSON.stringify(data)} />
+
+      <ol class="bk__steps" aria-hidden="true">
+        {b.steps.map((s, i) => (
+          <li data-step-dot={i}><span dir="ltr">{i + 1}</span>{s}</li>
+        ))}
+      </ol>
+
+      <div class="bk__body">
+        <div class="bk__main">
+          <!-- Step 1: service -->
+          <fieldset class="bk__step" data-step="0">
+            <legend class="bk__legend">{b.service}</legend>
+            <div class="bk__services">
+              {SERVICES.map((s) => (
+                <label class="chip chip--svc">
+                  <input type="radio" name="service" value={s.slug} />
+                  <Icon name={s.icon} size={20} />
+                  <span>{s[lang].name}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <!-- Step 2: property -->
+          <fieldset class="bk__step" data-step="1">
+            <legend class="bk__legend">{b.property}</legend>
+            <div class="bk__row bk__row--4">
+              {Object.entries(b.propertyTypes).map(([k, v], i) => (
+                <label class="chip">
+                  <input type="radio" name="property" value={k} checked={i === 0} />
+                  <span>{v}</span>
+                </label>
+              ))}
+            </div>
+
+            <div class="bk__size" data-residential>
+              <div class="bk__field">
+                <span class="bk__label" id="rooms-l">{b.rooms}</span>
+                <div class="stepper" role="group" aria-labelledby="rooms-l">
+                  <button type="button" data-dec="rooms" aria-label="-">−</button>
+                  <input type="number" name="rooms" value="3" min="1" max="10" inputmode="numeric" aria-labelledby="rooms-l" />
+                  <button type="button" data-inc="rooms" aria-label="+">+</button>
+                </div>
+              </div>
+              <div class="bk__field">
+                <span class="bk__label" id="baths-l">{b.baths}</span>
+                <div class="stepper" role="group" aria-labelledby="baths-l">
+                  <button type="button" data-dec="baths" aria-label="-">−</button>
+                  <input type="number" name="baths" value="2" min="1" max="6" inputmode="numeric" aria-labelledby="baths-l" />
+                  <button type="button" data-inc="baths" aria-label="+">+</button>
+                </div>
+              </div>
+              <div class="bk__field bk__field--wide">
+                <span class="bk__label">{b.furnished}</span>
+                <div class="bk__row">
+                  <label class="chip"><input type="radio" name="furnished" value="no" checked /><span>{b.furnishedOpts.no}</span></label>
+                  <label class="chip"><input type="radio" name="furnished" value="yes" /><span>{b.furnishedOpts.yes}</span></label>
+                </div>
+              </div>
+            </div>
+
+            <div class="bk__field" data-addons hidden>
+              <span class="bk__label">{b.addons}</span>
+              <div class="bk__row bk__row--4">
+                {Object.entries(b.addonNames).map(([k, v]) => (
+                  <label class="chip chip--check">
+                    <input type="checkbox" name="addon" value={k} />
+                    <span>{v}</span>
+                    <small dir="ltr">+{PRICING.addons[k as keyof typeof PRICING.addons]}</small>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </fieldset>
+
+          <!-- Step 3: schedule & contact -->
+          <fieldset class="bk__step" data-step="2">
+            <legend class="bk__legend">{b.city}</legend>
+            <div class="bk__row">
+              {SITE.cities.map((c, i) => (
+                <label class="chip"><input type="radio" name="city" value={c.id} checked={i === 0} /><span>{c[lang]}</span></label>
+              ))}
+            </div>
+            <div class="bk__grid2">
+              <label class="bk__field">
+                <span class="bk__label">{b.date}</span>
+                <input class="input" type="date" name="date" min={today} />
+              </label>
+              <div class="bk__field">
+                <span class="bk__label">{b.time}</span>
+                <div class="bk__row">
+                  {Object.entries(b.times).map(([k, v]) => (
+                    <label class="chip chip--sm"><input type="radio" name="time" value={k} /><span>{v}</span></label>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <label class="bk__field">
+              <span class="bk__label">{b.name}</span>
+              <input class="input" type="text" name="name" autocomplete="name" placeholder={b.namePh} maxlength="60" />
+            </label>
+            <label class="bk__field">
+              <span class="bk__label">{b.notes}</span>
+              <textarea class="input" name="notes" rows="3" placeholder={b.notesPh} maxlength="500"></textarea>
+            </label>
+          </fieldset>
+
+          <div class="bk__nav">
+            <button type="button" class="btn btn--outline" data-prev hidden>
+              <Icon name="arrow-left" size={18} class="flip-rtl" />
+              {b.back}
+            </button>
+            <button type="button" class="btn btn--navy" data-next>
+              {b.next}
+              <Icon name="arrow-right" size={18} class="flip-rtl" />
+            </button>
+          </div>
+        </div>
+
+        <aside class="bk__summary" aria-live="polite">
+          <p class="bk__sum-title">{b.summary}</p>
+          <p class="bk__sum-service" data-sum-service>{b.pickService}</p>
+          <div class="bk__price">
+            <span class="bk__price-label" data-price-label>{b.estimate}</span>
+            <p class="bk__price-value" data-price-wrap hidden>
+              <span dir="ltr" data-price>0</span> <span>{b.sar}</span>
+            </p>
+            <p class="bk__price-alt" data-price-alt>{b.noEstimate}</p>
+            <p class="bk__price-note" data-price-note>{b.noEstimateNote}</p>
+          </div>
+          <a class="btn btn--gold btn--lg btn--block" href={waLink(t.wa.general)} target="_blank" rel="noopener" data-wa="booking" data-send>
+            <Icon name="whatsapp" size={22} />
+            {b.send}
+          </a>
+          <p class="bk__priv"><Icon name="shield-check" size={16} />{b.noCommit}</p>
+        </aside>
+      </div>
+    </form>
+  </div>
+</section>
+
+<style>
+  .booking {
+    background: linear-gradient(180deg, var(--bg), #f3efe4);
+  }
+  .bk {
+    max-width: 1080px;
+    margin-inline: auto;
+    padding: 0;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .bk__steps {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg);
+  }
+  .bk__steps li {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 8px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--muted);
+    border-bottom: 3px solid transparent;
+  }
+  .bk__steps li span {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--line);
+    color: var(--muted);
+    font-size: 0.75rem;
+  }
+  .bk__steps li.is-active {
+    color: var(--ink);
+    border-bottom-color: var(--gold);
+  }
+  .bk__steps li.is-active span,
+  .bk__steps li.is-done span {
+    background: var(--navy);
+    color: var(--gold-hl);
+  }
+
+  .bk__body {
+    display: grid;
+  }
+  .bk__main {
+    padding: 22px 18px;
+  }
+  .bk__step {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    min-width: 0;
+    display: grid;
+    gap: 18px;
+  }
+  :global(.js) .bk__step:not(.is-active) {
+    display: none;
+  }
+  :global(html:not(.js)) .bk__step + .bk__step {
+    margin-top: 28px;
+  }
+  :global(html:not(.js)) .bk__nav {
+    display: none;
+  }
+  .bk__legend {
+    padding: 0;
+    margin-bottom: 4px;
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: var(--ink);
+  }
+  .bk__services {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .bk__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .bk__row--4 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .bk__size {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .bk__size[hidden],
+  [data-addons][hidden] {
+    display: none;
+  }
+  .bk__field {
+    display: grid;
+    gap: 8px;
+  }
+  .bk__field--wide {
+    grid-column: 1 / -1;
+  }
+  .bk__label {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--ink);
+  }
+  .bk__grid2 {
+    display: grid;
+    gap: 18px;
+  }
+
+  .chip {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1.5px solid var(--line-strong);
+    background: var(--surface);
+    font-weight: 600;
+    font-size: 0.9375rem;
+    color: var(--ink);
+    line-height: 1.35;
+    cursor: pointer;
+    transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .chip input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .chip :global(.icon) {
+    color: var(--gold-deep);
+  }
+  .chip small {
+    margin-inline-start: auto;
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 0.8125rem;
+  }
+  .chip:hover {
+    border-color: var(--gold);
+  }
+  .chip:has(input:checked) {
+    border-color: var(--navy);
+    background: var(--navy);
+    color: #fff;
+    box-shadow: 0 6px 16px -8px rgba(11, 31, 65, 0.6);
+  }
+  .chip:has(input:checked) :global(.icon),
+  .chip:has(input:checked) small {
+    color: var(--gold-hl);
+  }
+  .chip:has(input:focus-visible) {
+    outline: 3px solid var(--gold);
+    outline-offset: 2px;
+  }
+  .chip--svc {
+    font-size: 0.875rem;
+    padding: 10px 12px;
+  }
+  .chip--sm {
+    min-height: 44px;
+    padding: 8px 14px;
+  }
+
+  .stepper {
+    display: grid;
+    grid-template-columns: 48px 1fr 48px;
+    align-items: center;
+    border: 1.5px solid var(--line-strong);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--surface);
+    direction: ltr;
+  }
+  .stepper button {
+    height: 48px;
+    border: 0;
+    background: var(--bg);
+    font-size: 1.375rem;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .stepper button:hover {
+    background: var(--gold-soft);
+  }
+  .stepper input {
+    width: 100%;
+    border: 0;
+    text-align: center;
+    font-weight: 700;
+    font-size: 1.125rem;
+    background: transparent;
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  .stepper input::-webkit-inner-spin-button,
+  .stepper input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .input {
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1.5px solid var(--line-strong);
+    background: var(--surface);
+    font-size: 1rem; /* ≥16px avoids iOS zoom */
+    transition: border-color 0.15s;
+  }
+  .input:focus {
+    outline: none;
+    border-color: var(--navy);
+    box-shadow: 0 0 0 3px rgba(209, 173, 69, 0.35);
+  }
+  textarea.input {
+    resize: vertical;
+    min-height: 96px;
+  }
+
+  .bk__nav {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+  }
+  .bk__nav [data-next] {
+    margin-inline-start: auto;
+  }
+  .bk__nav [hidden] {
+    display: none;
+  }
+
+  .bk__summary {
+    padding: 22px 18px 24px;
+    background: var(--navy);
+    color: var(--on-dark-muted);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    align-content: start;
+  }
+  .bk__sum-title {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--gold-hl);
+  }
+  :global(html[lang='en']) .bk__sum-title {
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .bk__sum-service {
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.125rem;
+    line-height: 1.4;
+  }
+  .bk__price {
+    padding: 16px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .bk__price-label {
+    font-size: 0.8125rem;
+  }
+  .bk__price-value {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    color: #fff;
+    font-weight: 700;
+    font-size: 2.25rem;
+    line-height: 1.2;
+  }
+  .bk__price-value [data-price] {
+    background: var(--gold-grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .bk__price-value span:last-child {
+    font-size: 1rem;
+    color: var(--gold-hl);
+  }
+  .bk__price-value[hidden],
+  .bk__price-alt[hidden] {
+    display: none;
+  }
+  .bk__price-alt {
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.125rem;
+    margin-top: 2px;
+  }
+  .bk__price-note {
+    margin-top: 6px;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+  }
+  .bk__summary .btn {
+    white-space: normal;
+    text-align: center;
+  }
+  .bk__priv {
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+    font-size: 0.75rem;
+    line-height: 1.6;
+  }
+  .bk__priv :global(.icon) {
+    color: var(--gold);
+    margin-top: 2px;
+  }
+
+  @media (min-width: 640px) {
+    .bk__services {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .bk__row--4 {
+      grid-template-columns: repeat(4, 1fr);
+    }
+    .bk__grid2 {
+      grid-template-columns: 1fr 1fr;
+    }
+    .bk__main {
+      padding: 32px;
+    }
+    .bk__summary {
+      padding: 32px;
+    }
+  }
+  @media (min-width: 960px) {
+    .bk__body {
+      grid-template-columns: 1fr 340px;
+    }
+    .bk__summary {
+      border-radius: 0;
+    }
+  }
+</style>
+
+<script>
+  import { initBooking } from '../../scripts/booking';
+  initBooking();
+</script>

@@ -1,0 +1,61 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+import { ui, waLink } from '../i18n/ui';
+
+const t = ui.ar;
+const e = ui.en;
+---
+
+<Base lang="ar" title={`${t.notFound.title} | كلين سنس`} description={t.notFound.text} paths={{ ar: '/', en: '/en/' }} noindex>
+  <section class="nf">
+    <div class="container nf__inner">
+      <p class="nf__code" dir="ltr">404</p>
+      <h1>{t.notFound.title}</h1>
+      <p>{t.notFound.text}</p>
+      <p lang="en" dir="ltr" class="nf__en">{e.notFound.title} — {e.notFound.text}</p>
+      <div class="nf__ctas">
+        <a class="btn btn--gold btn--lg" href="/">{t.notFound.home}</a>
+        <a class="btn btn--outline btn--lg" href={waLink(t.wa.general)} target="_blank" rel="noopener" data-wa="404">
+          <Icon name="whatsapp" size={20} />{t.cta.whatsappShort}
+        </a>
+        <a class="btn btn--outline btn--lg" href="/en/" lang="en">English</a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .nf {
+    padding-block: 96px;
+    text-align: center;
+  }
+  .nf__inner {
+    max-width: 640px;
+    display: grid;
+    gap: 12px;
+  }
+  .nf__code {
+    font-size: 5rem;
+    font-weight: 700;
+    line-height: 1;
+    background: var(--gold-grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .nf h1 {
+    font-size: 2rem;
+  }
+  .nf__en {
+    color: var(--muted);
+    font-size: 0.9375rem;
+  }
+  .nf__ctas {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 16px;
+  }
+</style>

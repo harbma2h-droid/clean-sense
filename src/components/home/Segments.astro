@@ -1,0 +1,69 @@
+---
+import Icon from '../Icon.astro';
+import { ui } from '../../i18n/ui';
+import type { Lang } from '../../data/services';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = ui[lang];
+---
+
+<section class="section" id="segments">
+  <div class="container">
+    <div class="section-head section-head--center reveal">
+      <p class="eyebrow">{t.segments.eyebrow}</p>
+      <h2 class="h2">{t.segments.title}</h2>
+    </div>
+    <ul class="seg-grid">
+      {t.segments.items.map((s) => (
+        <li class="seg reveal">
+          <span class="icon-badge"><Icon name={s.icon} size={24} /></span>
+          <div>
+            <h3>{s.title}</h3>
+            <p>{s.text}</p>
+          </div>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .seg-grid {
+    display: grid;
+    gap: 12px;
+  }
+  .seg {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 20px;
+    border-radius: var(--radius);
+    background: var(--surface);
+    border: 1px solid var(--line);
+  }
+  .seg h3 {
+    font-size: 1.0625rem;
+  }
+  .seg p {
+    margin-top: 4px;
+    font-size: 0.9375rem;
+    color: var(--muted);
+  }
+  @media (min-width: 640px) {
+    .seg-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+  }
+  @media (min-width: 1024px) {
+    .seg-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .seg {
+      padding: 28px;
+    }
+  }
+</style>

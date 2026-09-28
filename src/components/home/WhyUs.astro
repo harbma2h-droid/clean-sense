@@ -1,0 +1,139 @@
+---
+import Icon from '../Icon.astro';
+import { ui } from '../../i18n/ui';
+import type { Lang } from '../../data/services';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = ui[lang];
+---
+
+<section class="section section--white" id="why">
+  <div class="container why">
+    <div class="why__intro reveal">
+      <p class="eyebrow">{t.why.eyebrow}</p>
+      <h2 class="h2">{t.why.title}</h2>
+      <p class="lead">{t.why.sub}</p>
+
+      <div class="guarantee">
+        <div class="guarantee__seal" aria-hidden="true"><Icon name="award" size={30} /></div>
+        <div>
+          <h3>{t.why.guarantee.title}</h3>
+          <p>{t.why.guarantee.text}</p>
+        </div>
+      </div>
+    </div>
+
+    <ul class="why__grid">
+      {t.why.items.map((it) => (
+        <li class="why__item reveal">
+          <span class="icon-badge"><Icon name={it.icon} size={24} /></span>
+          <h3>{it.title}</h3>
+          <p>{it.text}</p>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .why {
+    display: grid;
+    gap: 40px;
+  }
+  .guarantee {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    margin-top: 28px;
+    padding: 22px;
+    border-radius: var(--radius);
+    background: var(--navy);
+    color: var(--on-dark-muted);
+    position: relative;
+    overflow: hidden;
+  }
+  .guarantee::after {
+    content: '';
+    position: absolute;
+    inset-inline-end: -40px;
+    top: -40px;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(209, 173, 69, 0.25), transparent 70%);
+  }
+  .guarantee__seal {
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--gold-grad);
+    color: var(--navy);
+    box-shadow: var(--shadow-gold);
+  }
+  .guarantee h3 {
+    color: #fff;
+    font-size: 1.125rem;
+  }
+  .guarantee p {
+    margin-top: 4px;
+    font-size: 0.9375rem;
+  }
+  .why__grid {
+    display: grid;
+    gap: 12px;
+  }
+  .why__item {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 16px;
+    padding: 18px;
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+    background: var(--bg);
+  }
+  .why__item .icon-badge {
+    grid-row: span 2;
+  }
+  .why__item h3 {
+    margin-top: 0;
+    font-size: 1.0625rem;
+  }
+  .why__item p {
+    margin-top: 4px;
+    font-size: 0.9375rem;
+    color: var(--muted);
+  }
+  @media (min-width: 640px) {
+    .why__item {
+      display: block;
+      padding: 22px;
+    }
+    .why__item h3 {
+      margin-top: 14px;
+    }
+    .why__grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+  }
+  @media (min-width: 1024px) {
+    .why {
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 64px;
+      align-items: start;
+    }
+    .why__intro {
+      position: sticky;
+      top: calc(var(--header-h) + 32px);
+    }
+    .why__item {
+      padding: 28px;
+    }
+  }
+</style>

@@ -1,0 +1,146 @@
+---
+import Icon from './Icon.astro';
+import Logo from './Logo.astro';
+import { SITE } from '../data/site';
+import { SERVICES } from '../data/services';
+import { ui, homePath, servicePath, waLink } from '../i18n/ui';
+import type { Lang } from '../data/services';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = ui[lang];
+const home = homePath(lang);
+const year = new Date().getFullYear();
+const cities = SITE.cities.map((c) => c[lang]).join(' • ');
+---
+
+<footer class="footer">
+  <div class="container footer__grid">
+    <div class="footer__brand">
+      <Logo lang={lang} size="lg" />
+      <p>{t.footer.about}</p>
+      <div class="footer__social">
+        <a href={SITE.instagram} target="_blank" rel="noopener" aria-label="Instagram"><Icon name="instagram" size={20} /></a>
+        <a href={SITE.tiktok} target="_blank" rel="noopener" aria-label="TikTok"><Icon name="tiktok" size={20} /></a>
+        <a href={waLink(t.wa.general)} target="_blank" rel="noopener" aria-label="WhatsApp" data-wa="footer-social"><Icon name="whatsapp" size={20} /></a>
+      </div>
+    </div>
+
+    <div>
+      <h2 class="footer__title">{t.footer.services}</h2>
+      <ul class="footer__links footer__links--cols">
+        {SERVICES.map((s) => <li><a href={servicePath(lang, s.slug)}>{s[lang].name}</a></li>)}
+      </ul>
+    </div>
+
+    <div>
+      <h2 class="footer__title">{t.footer.company}</h2>
+      <ul class="footer__links">
+        <li><a href={`${home}#how`}>{t.nav.how}</a></li>
+        <li><a href={`${home}#business`}>{t.nav.business}</a></li>
+        <li><a href={`${home}#booking`}>{t.nav.booking}</a></li>
+        <li><a href={`${home}#faq`}>{t.nav.faq}</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h2 class="footer__title">{t.footer.contact}</h2>
+      <ul class="footer__links footer__contact">
+        <li><a href={`tel:${SITE.phone}`} data-track="call"><Icon name="phone" size={18} /><span dir="ltr">{SITE.phoneDisplay}</span></a></li>
+        <li><a href={waLink(t.wa.general)} target="_blank" rel="noopener" data-wa="footer"><Icon name="whatsapp" size={18} /><span dir="ltr">{SITE.phoneDisplay}</span></a></li>
+        <li><a href={`mailto:${SITE.email}`}><Icon name="mail" size={18} /><span>{SITE.email}</span></a></li>
+        <li><span class="footer__area"><Icon name="map-pin" size={18} /><span>{cities} — {SITE.region[lang]}</span></span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="container footer__bottom">
+    <p>© {year} {SITE.name[lang]} — {t.footer.rights}</p>
+    <p class="footer__slogan">Clean You Can Feel</p>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    background: var(--navy-900);
+    color: var(--on-dark-muted);
+    padding-block: 64px 28px;
+    font-size: 0.9375rem;
+  }
+  .footer__grid {
+    display: grid;
+    gap: 40px;
+  }
+  .footer__brand p {
+    margin-top: 16px;
+    max-width: 360px;
+  }
+  .footer__social {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .footer__social a {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #fff;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .footer__social a:hover {
+    border-color: var(--gold);
+    color: var(--gold-hl);
+  }
+  .footer__title {
+    color: #fff;
+    font-size: 1rem;
+    margin-bottom: 16px;
+  }
+  .footer__links {
+    display: grid;
+    gap: 10px;
+  }
+  .footer__links--cols {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 20px;
+  }
+  .footer__links a:hover {
+    color: var(--gold-hl);
+  }
+  .footer__contact a,
+  .footer__area {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .footer__contact :global(.icon) {
+    color: var(--gold);
+  }
+  .footer__bottom {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 0.875rem;
+  }
+  .footer__slogan {
+    color: var(--gold);
+    letter-spacing: 0.14em;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+  }
+  @media (min-width: 900px) {
+    .footer__grid {
+      grid-template-columns: 1.3fr 1.6fr 0.8fr 1.2fr;
+    }
+  }
+</style>

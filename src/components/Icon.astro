@@ -1,0 +1,38 @@
+---
+// Inline SVG icons resolved at build time — no icon font, no runtime JS.
+// Lucide (stroke) icons by name; brand icons from simple-icons (fill).
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+
+interface Props {
+  name: string;
+  size?: number;
+  class?: string;
+  label?: string;
+}
+const { name, size = 24, class: cls = '', label } = Astro.props;
+const require = createRequire(import.meta.url);
+const BRANDS = ['whatsapp', 'instagram', 'tiktok', 'snapchat', 'x'];
+
+const cache = ((globalThis as any).__iconCache ??= new Map<string, string>());
+let inner: string = cache.get(name);
+const brand = BRANDS.includes(name);
+if (!inner) {
+  const pkg = brand ? 'simple-icons/icons' : 'lucide-static/icons';
+  const file = require.resolve(`${pkg}/${name}.svg`);
+  const raw = readFileSync(file, 'utf8');
+  inner = raw
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/^[\s\S]*?<svg[^>]*>/, '')
+    .replace(/<\/svg>\s*$/, '')
+    .replace(/<title>.*?<\/title>/, '')
+    .trim();
+  cache.set(name, inner);
+}
+const a11y: Record<string, string> = label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': 'true' };
+---
+{brand ? (
+  <svg class:list={['icon', cls]} width={size} height={size} viewBox="0 0 24 24" fill="currentColor" focusable="false" {...a11y} set:html={inner} />
+) : (
+  <svg class:list={['icon', cls]} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false" {...a11y} set:html={inner} />
+)}

@@ -1,0 +1,96 @@
+---
+import Icon from './Icon.astro';
+import { servicePath } from '../i18n/ui';
+import type { Lang, Service } from '../data/services';
+
+interface Props {
+  service: Service;
+  lang: Lang;
+  badge?: string;
+}
+const { service, lang, badge } = Astro.props;
+const c = service[lang];
+---
+
+<a class="svc card" href={servicePath(lang, service.slug)}>
+  <span class="icon-badge"><Icon name={service.icon} size={24} /></span>
+  <span class="svc__body">
+    <span class="svc__name">
+      {c.name}
+      {badge && <span class="svc__badge">{badge}</span>}
+    </span>
+    <span class="svc__short">{c.short}</span>
+  </span>
+  <Icon name="chevron-right" size={20} class="svc__arrow flip-rtl" />
+</a>
+
+<style>
+  .svc {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 14px;
+    align-items: center;
+    padding: 16px;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.25s var(--ease),
+      transform 0.25s var(--ease);
+  }
+  .svc:hover {
+    border-color: var(--gold);
+    box-shadow: var(--shadow);
+    transform: translateY(-2px);
+  }
+  .svc__body {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+  .svc__name {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 1.0625rem;
+    line-height: 1.35;
+  }
+  .svc__badge {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--navy);
+    color: var(--gold-hl);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .svc__short {
+    font-size: 0.9375rem;
+    color: var(--muted);
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .svc :global(.svc__arrow) {
+    color: var(--gold-deep);
+  }
+
+  @media (min-width: 768px) {
+    .svc {
+      grid-template-columns: 1fr;
+      align-content: start;
+      gap: 18px;
+      padding: 24px;
+      height: 100%;
+    }
+    .svc :global(.svc__arrow) {
+      display: none;
+    }
+    .svc__short {
+      -webkit-line-clamp: 3;
+    }
+  }
+</style>

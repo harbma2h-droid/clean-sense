@@ -1,0 +1,60 @@
+---
+import { homePath } from '../i18n/ui';
+import type { Lang } from '../data/services';
+
+interface Props {
+  lang: Lang;
+  size?: 'md' | 'lg';
+}
+const { lang, size = 'md' } = Astro.props;
+---
+
+<a class:list={['logo', `logo--${size}`]} href={homePath(lang)} aria-label={lang === 'ar' ? 'كلين سنس — الرئيسية' : 'Clean Sense — Home'}>
+  <picture>
+    <source srcset="/brand/emblem.webp" type="image/webp" />
+    <img src="/brand/emblem.png" alt="" width="176" height="160" class="logo__emblem" />
+  </picture>
+  <span class="logo__text">
+    <span class="logo__en">CLEAN SENSE</span>
+    <span class="logo__ar">كلين سنس</span>
+  </span>
+</a>
+
+<style>
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .logo__emblem {
+    width: auto;
+    height: 44px;
+  }
+  .logo__text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.05;
+    background: var(--gold-grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .logo__en {
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.08em;
+    direction: ltr;
+  }
+  .logo__ar {
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+  .logo--lg .logo__emblem {
+    height: 60px;
+  }
+  .logo--lg .logo__en,
+  .logo--lg .logo__ar {
+    font-size: 1.1rem;
+  }
+</style>

@@ -1,0 +1,140 @@
+---
+import Icon from '../Icon.astro';
+import { SITE } from '../../data/site';
+import { ui, waLink } from '../../i18n/ui';
+import type { Lang } from '../../data/services';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = ui[lang];
+const items = [
+  { icon: 'whatsapp', label: t.contact.whatsapp, value: SITE.phoneDisplay, href: waLink(t.wa.general), ltr: true, wa: true, primary: true },
+  { icon: 'phone', label: t.contact.phone, value: SITE.phoneDisplay, href: `tel:${SITE.phone}`, ltr: true },
+  { icon: 'mail', label: t.contact.email, value: SITE.email, href: `mailto:${SITE.email}`, ltr: true },
+];
+---
+
+<section class="section" id="contact">
+  <div class="container">
+    <div class="section-head section-head--center reveal">
+      <p class="eyebrow">{t.areas.eyebrow}</p>
+      <h2 class="h2">{t.areas.title}</h2>
+      <p class="lead">{t.areas.sub}</p>
+    </div>
+
+    <ul class="cities reveal">
+      {SITE.cities.map((c) => (
+        <li><Icon name="map-pin" size={18} />{c[lang]}</li>
+      ))}
+    </ul>
+
+    <ul class="contact-grid reveal">
+      {items.map((it) => (
+        <li>
+          <a
+            class:list={['contact-card', { 'contact-card--primary': it.primary }]}
+            href={it.href}
+            target={it.wa ? '_blank' : undefined}
+            rel={it.wa ? 'noopener' : undefined}
+            data-wa={it.wa ? 'contact' : undefined}
+            data-track={it.icon === 'phone' ? 'call' : undefined}
+          >
+            <span class="contact-card__icon"><Icon name={it.icon} size={24} /></span>
+            <span>
+              <small>{it.label}</small>
+              <strong dir={it.ltr ? 'ltr' : undefined}>{it.value}</strong>
+            </span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .cities {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 40px;
+  }
+  .cities li {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .cities :global(.icon) {
+    color: var(--gold-deep);
+  }
+  .contact-grid {
+    display: grid;
+    gap: 12px;
+    max-width: 960px;
+    margin-inline: auto;
+  }
+  .contact-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    border-radius: var(--radius);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    transition: border-color 0.2s, transform 0.2s var(--ease);
+  }
+  .contact-card:hover {
+    border-color: var(--gold);
+    transform: translateY(-2px);
+  }
+  .contact-card__icon {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: var(--gold-soft);
+    color: var(--gold-deep);
+  }
+  .contact-card--primary {
+    background: var(--navy);
+    border-color: var(--navy);
+  }
+  .contact-card--primary .contact-card__icon {
+    background: var(--gold-grad);
+    color: var(--navy);
+  }
+  .contact-card small {
+    display: block;
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+  .contact-card strong {
+    display: block;
+    color: var(--ink);
+    font-size: 1.0625rem;
+  }
+  .contact-card--primary small {
+    color: var(--on-dark-muted);
+  }
+  .contact-card--primary strong {
+    color: #fff;
+  }
+  [dir='rtl'] .contact-card strong[dir='ltr'] {
+    text-align: right;
+  }
+  @media (min-width: 768px) {
+    .contact-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+  }
+</style>

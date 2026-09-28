@@ -1,0 +1,80 @@
+---
+import '@fontsource/ibm-plex-sans-arabic/400.css';
+import '@fontsource/ibm-plex-sans-arabic/500.css';
+import '@fontsource/ibm-plex-sans-arabic/600.css';
+import '@fontsource/ibm-plex-sans-arabic/700.css';
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import MobileBar from '../components/MobileBar.astro';
+import { SITE } from '../data/site';
+import { ui } from '../i18n/ui';
+import type { Lang } from '../data/services';
+
+interface Props {
+  lang: Lang;
+  title: string;
+  description: string;
+  /** Path of this page in Arabic and English, e.g. { ar: '/', en: '/en/' } */
+  paths: { ar: string; en: string };
+  schema?: object[];
+  noindex?: boolean;
+}
+
+const { lang, title, description, paths, schema = [], noindex = false } = Astro.props;
+const t = ui[lang];
+const dir = lang === 'ar' ? 'rtl' : 'ltr';
+const canonical = new URL(paths[lang], SITE.url).href;
+const ogImage = new URL(lang === 'ar' ? '/og-ar.jpg' : '/og-en.jpg', SITE.url).href;
+---
+
+<!doctype html>
+<html lang={lang} dir={dir}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {noindex ? <meta name="robots" content="noindex" /> : <link rel="canonical" href={canonical} />}
+    {!noindex && <link rel="alternate" hreflang="ar-SA" href={new URL(paths.ar, SITE.url).href} />}
+    {!noindex && <link rel="alternate" hreflang="en" href={new URL(paths.en, SITE.url).href} />}
+    {!noindex && <link rel="alternate" hreflang="x-default" href={new URL(paths.ar, SITE.url).href} />}
+
+    <meta name="theme-color" content="#0B1F41" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Clean Sense | كلين سنس" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content={lang === 'ar' ? 'ar_SA' : 'en_US'} />
+    <meta property="og:locale:alternate" content={lang === 'ar' ? 'en_US' : 'ar_SA'} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    {schema.map((s) => <script type="application/ld+json" set:html={JSON.stringify(s)} />)}
+
+    <script is:inline>document.documentElement.classList.add('js');</script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">{t.a11y.skip}</a>
+    <Header lang={lang} altHref={paths[lang === 'ar' ? 'en' : 'ar']} />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer lang={lang} />
+    <MobileBar lang={lang} />
+
+    <script>
+      import '../scripts/site.ts';
+    </script>
+  </body>
+</html>

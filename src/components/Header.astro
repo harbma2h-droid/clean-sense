@@ -1,0 +1,209 @@
+---
+import Icon from './Icon.astro';
+import Logo from './Logo.astro';
+import { ui, homePath, waLink } from '../i18n/ui';
+import type { Lang } from '../data/services';
+
+interface Props {
+  lang: Lang;
+  altHref: string;
+}
+const { lang, altHref } = Astro.props;
+const t = ui[lang];
+const home = homePath(lang);
+const links = [
+  { href: `${home}#services`, label: t.nav.services },
+  { href: `${home}#how`, label: t.nav.how },
+  { href: `${home}#business`, label: t.nav.business },
+  { href: `${home}#faq`, label: t.nav.faq },
+  { href: `${home}#contact`, label: t.nav.contact },
+];
+---
+
+<header class="site-header" data-header>
+  <div class="container site-header__inner">
+    <Logo lang={lang} />
+
+    <nav class="site-nav" aria-label={t.nav.menu}>
+      <ul>
+        {links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+      </ul>
+    </nav>
+
+    <div class="site-header__actions">
+      <a class="lang-switch" href={altHref} hreflang={lang === 'ar' ? 'en' : 'ar'} lang={lang === 'ar' ? 'en' : 'ar'} data-lang-switch>
+        <Icon name="globe" size={18} />
+        <span>{t.nav.switchLang}</span>
+      </a>
+      <a class="btn btn--gold btn--sm header-cta" href={`${home}#booking`}>
+        <Icon name="calculator" size={18} />
+        {t.nav.booking}
+      </a>
+      <button class="menu-btn" type="button" aria-expanded="false" aria-controls="mobile-menu" data-menu-btn>
+        <span class="sr-only" data-open-label>{t.nav.menu}</span>
+        <span class="sr-only" data-close-label hidden>{t.nav.close}</span>
+        <Icon name="menu" size={24} class="menu-btn__open" />
+        <Icon name="x" size={24} class="menu-btn__close" />
+      </button>
+    </div>
+  </div>
+
+  <div class="mobile-menu" id="mobile-menu" hidden data-menu>
+    <nav class="container" aria-label={t.nav.menu}>
+      <ul>
+        {links.map((l) => (
+          <li>
+            <a href={l.href} data-menu-link>
+              {l.label}
+              <Icon name="chevron-right" size={18} class="flip-rtl" />
+            </a>
+          </li>
+        ))}
+      </ul>
+      <div class="mobile-menu__ctas">
+        <a class="btn btn--gold btn--block" href={waLink(t.wa.general)} target="_blank" rel="noopener" data-wa="menu">
+          <Icon name="whatsapp" size={20} />
+          {t.cta.whatsapp}
+        </a>
+        <a class="btn btn--ghost-light btn--block" href={`${home}#booking`} data-menu-link>
+          <Icon name="calculator" size={20} />
+          {t.cta.quote}
+        </a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(11, 31, 65, 0.97);
+    backdrop-filter: saturate(140%) blur(10px);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    transition: box-shadow 0.25s;
+  }
+  .site-header.is-scrolled {
+    box-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.45);
+  }
+  .site-header__inner {
+    height: var(--header-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .site-nav {
+    display: none;
+  }
+  .site-nav ul {
+    display: flex;
+    gap: 4px;
+  }
+  .site-nav a {
+    display: block;
+    padding: 8px 12px;
+    border-radius: 999px;
+    color: rgba(255, 255, 255, 0.82);
+    font-weight: 500;
+    font-size: 0.9375rem;
+    transition: color 0.2s, background-color 0.2s;
+  }
+  .site-nav a:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.07);
+  }
+
+  .site-header__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .lang-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 42px;
+    padding: 0 12px;
+    border-radius: 999px;
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.875rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: border-color 0.2s;
+  }
+  .lang-switch:hover {
+    border-color: var(--gold-hl);
+  }
+  .lang-switch .icon {
+    color: var(--gold-hl);
+  }
+
+  .header-cta {
+    display: none;
+  }
+
+  .menu-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: transparent;
+    color: #fff;
+    cursor: pointer;
+  }
+  .menu-btn :global(.menu-btn__close) {
+    display: none;
+  }
+  .menu-btn[aria-expanded='true'] :global(.menu-btn__open) {
+    display: none;
+  }
+  .menu-btn[aria-expanded='true'] :global(.menu-btn__close) {
+    display: block;
+  }
+
+  .mobile-menu {
+    background: var(--navy);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    max-height: calc(100dvh - var(--header-h));
+    overflow-y: auto;
+  }
+  .mobile-menu nav {
+    padding-block: 12px 24px;
+  }
+  .mobile-menu li a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 4px;
+    color: #fff;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .mobile-menu li a :global(.icon) {
+    color: var(--gold);
+  }
+  .mobile-menu__ctas {
+    display: grid;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  @media (min-width: 1024px) {
+    .site-nav,
+    .header-cta {
+      display: flex;
+    }
+    .menu-btn,
+    .mobile-menu {
+      display: none !important;
+    }
+  }
+</style>

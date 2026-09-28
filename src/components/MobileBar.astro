@@ -1,0 +1,102 @@
+---
+import Icon from './Icon.astro';
+import { SITE } from '../data/site';
+import { ui, homePath, waLink } from '../i18n/ui';
+import type { Lang } from '../data/services';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = ui[lang];
+---
+
+<!-- Sticky conversion bar on phones; floating WhatsApp button on desktop. -->
+<div class="mobile-bar" role="region" aria-label={t.cta.whatsapp}>
+  <a class="mobile-bar__call" href={`tel:${SITE.phone}`} data-track="call">
+    <Icon name="phone" size={20} />
+    <span>{t.cta.call}</span>
+  </a>
+  <a class="btn btn--gold mobile-bar__wa" href={waLink(t.wa.general)} target="_blank" rel="noopener" data-wa="mobile-bar">
+    <Icon name="whatsapp" size={22} />
+    {t.cta.whatsapp}
+  </a>
+  <a class="mobile-bar__quote" href={`${homePath(lang)}#booking`}>
+    <Icon name="calculator" size={20} />
+    <span>{t.cta.quote}</span>
+  </a>
+</div>
+
+<a class="wa-float" href={waLink(t.wa.general)} target="_blank" rel="noopener" aria-label={t.a11y.whatsappFloat} data-wa="float">
+  <Icon name="whatsapp" size={30} />
+</a>
+
+<style>
+  .mobile-bar {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 60;
+    display: grid;
+    grid-template-columns: 64px 1fr 64px;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -10px 30px -18px rgba(11, 31, 65, 0.35);
+  }
+  .mobile-bar__wa {
+    --btn-h: 52px;
+    padding: 0 12px;
+    font-size: 1rem;
+  }
+  .mobile-bar__call,
+  .mobile-bar__quote {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: 52px;
+    border-radius: 14px;
+    color: var(--ink);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  .mobile-bar__call :global(.icon),
+  .mobile-bar__quote :global(.icon) {
+    color: var(--gold-deep);
+  }
+
+  .wa-float {
+    display: none;
+  }
+
+  @media (min-width: 900px) {
+    .mobile-bar {
+      display: none;
+    }
+    .wa-float {
+      position: fixed;
+      inset-inline-end: 24px;
+      bottom: 24px;
+      z-index: 60;
+      display: grid;
+      place-items: center;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: var(--wa);
+      color: #fff;
+      box-shadow: 0 14px 30px -10px rgba(37, 211, 102, 0.7);
+      transition: transform 0.2s var(--ease);
+    }
+    .wa-float:hover {
+      transform: scale(1.06);
+    }
+  }
+</style>

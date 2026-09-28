@@ -1,0 +1,64 @@
+---
+import Icon from './Icon.astro';
+
+interface Props {
+  items: { q: string; a: string }[];
+}
+const { items } = Astro.props;
+---
+
+<div class="faq">
+  {items.map((f, i) => (
+    <details class="faq__item" open={i === 0}>
+      <summary>
+        <span>{f.q}</span>
+        <Icon name="chevron-down" size={20} class="faq__chev" />
+      </summary>
+      <p>{f.a}</p>
+    </details>
+  ))}
+</div>
+
+<style>
+  .faq {
+    display: grid;
+    gap: 10px;
+  }
+  .faq__item {
+    border-radius: var(--radius);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    transition: border-color 0.2s;
+  }
+  .faq__item[open] {
+    border-color: var(--gold);
+    box-shadow: var(--shadow-sm);
+  }
+  .faq__item summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 20px;
+    cursor: pointer;
+    list-style: none;
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  .faq__item summary::-webkit-details-marker {
+    display: none;
+  }
+  .faq__item :global(.faq__chev) {
+    color: var(--gold-deep);
+    transition: transform 0.25s var(--ease);
+  }
+  .faq__item[open] :global(.faq__chev) {
+    transform: rotate(180deg);
+  }
+  .faq__item p {
+    padding: 0 20px 20px;
+    color: var(--muted);
+  }
+</style>

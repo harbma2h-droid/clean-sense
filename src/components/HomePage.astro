@@ -1,0 +1,43 @@
+---
+import Base from '../layouts/Base.astro';
+import Hero from './home/Hero.astro';
+import Services from './home/Services.astro';
+import Segments from './home/Segments.astro';
+import HowItWorks from './home/HowItWorks.astro';
+import Booking from './home/Booking.astro';
+import WhyUs from './home/WhyUs.astro';
+import Business from './home/Business.astro';
+import Reviews from './home/Reviews.astro';
+import FaqSection from './home/FaqSection.astro';
+import Contact from './home/Contact.astro';
+import FinalCta from './home/FinalCta.astro';
+import { ui } from '../i18n/ui';
+import { businessSchema, websiteSchema, faqSchema } from '../lib/schema';
+import type { Lang } from '../data/services';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = ui[lang];
+---
+
+<Base
+  lang={lang}
+  title={t.meta.title}
+  description={t.meta.description}
+  paths={{ ar: '/', en: '/en/' }}
+  schema={[businessSchema(lang), websiteSchema(lang), faqSchema(t.faq.items)]}
+>
+  <Hero lang={lang} />
+  <Services lang={lang} />
+  <HowItWorks lang={lang} />
+  <Booking lang={lang} />
+  <WhyUs lang={lang} />
+  <Segments lang={lang} />
+  <Business lang={lang} />
+  <Reviews lang={lang} />
+  <FaqSection lang={lang} />
+  <Contact lang={lang} />
+  <FinalCta lang={lang} />
+</Base>
