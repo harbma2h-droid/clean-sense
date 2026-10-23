@@ -66,8 +66,15 @@ export class SheetsBackend {
       const m = s.properties.title.match(/\|\s*([a-z_]+)\s*$/);
       if (m && SCHEMA[m[1]]) this.tabs[m[1]] = { title: s.properties.title, headers: [], rowNums: [] };
     }
+    // New tables from later versions are added as new tabs; existing tabs are never touched.
     const missing = Object.keys(SCHEMA).filter((t) => !this.tabs[t]);
-    if (missing.length) throw new Error(`Spreadsheet is missing tabs: ${missing.join(', ')}`);
+    if (missing.length) {
+      await this.call(':batchUpdate', {
+        method: 'POST',
+        body: JSON.stringify({ requests: missing.map((t) => ({ addSheet: { properties: { title: `${SCHEMA[t].ar} | ${t}`, gridProperties: { frozenRowCount: 2 } } } })) }),
+      });
+      for (const t of missing) this.tabs[t] = { title: `${SCHEMA[t].ar} | ${t}`, headers: [], rowNums: [] };
+    }
 
     const tables = Object.keys(this.tabs);
     const ranges = tables.map((t) => `ranges=${encodeURIComponent(`'${this.tabs[t].title}'!A1:ZZ`)}`).join('&');

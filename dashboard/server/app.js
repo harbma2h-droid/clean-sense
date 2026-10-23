@@ -5,16 +5,15 @@ import cookieParser from 'cookie-parser';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { TABLES, ENUMS, ROLES, PERMISSIONS } from '../shared/model.js';
+import { ROLES, PERMISSIONS } from '../shared/model.js';
+import { ROUTES, allowed } from '../shared/routes.js';
+import { ServiceError, createRecord } from '../shared/services.js';
 import { createAuth } from './auth.js';
 
-// Same prefixes as the previous system, so numbering continues where it stopped.
-const DOC_PREFIX = { quote: 'QO', invoice: 'INV', receipt: 'REC', contract: 'CS' };
 const PUBLIC_ORIGINS = ['https://cleansense.co', 'https://www.cleansense.co'];
 
 const newId = (p) => `${p}-${Date.now().toString(36)}${randomBytes(2).toString('hex')}`.toUpperCase();
 const nowIso = () => new Date().toISOString();
-const asNumber = (v) => (v === '' || v === null || v === undefined ? '' : Number.isFinite(Number(v)) ? Number(v) : String(v));
 
 export function createApp({ store, secret, secureCookies = true, webDist, extraOrigins = [], openAccess = false }) {
   const app = express();
@@ -35,49 +34,6 @@ export function createApp({ store, secret, secureCookies = true, webDist, extraO
 
   const audit = (req, action, entity, entityId, details = '') =>
     store.insert('audit_log', { at: nowIso(), user: req.user?.username || 'public', action, entity, entity_id: entityId, details: typeof details === 'string' ? details : JSON.stringify(details) });
-
-  /** Strip unknown fields, coerce money fields, validate selects against enums. */
-  function sanitize(table, body, { partial = false } = {}) {
-    const def = TABLES[table];
-    const out = {};
-    const errors = [];
-    for (const f of def.fields) {
-      if (f.readonly) continue;
-      let v = body[f.key];
-      if (v === undefined) {
-        if (!partial && f.default !== undefined) out[f.key] = f.default;
-        continue;
-      }
-      if (f.type === 'money' || f.type === 'number') v = asNumber(v);
-      else if (f.type === 'multiselect') v = (Array.isArray(v) ? v : String(v).split(',')).map((s) => String(s).trim()).filter(Boolean).join(',');
-      else v = String(v).slice(0, 5000).trim();
-      if (f.type === 'select' && v && !ENUMS[f.enum][v]) errors.push(`${f.key}:invalid`);
-      out[f.key] = v;
-    }
-    if (!partial) for (const f of def.fields) if (f.required && (out[f.key] === undefined || out[f.key] === '')) errors.push(`${f.key}:required`);
-    return { data: out, errors };
-  }
-
-  function nextDocNumber(type) {
-    const prefix = DOC_PREFIX[type] || 'DOC';
-    const re = new RegExp(`^${prefix}-(\\d+)$`);
-    const max = store.list('documents', { includeDeleted: true }).reduce((m, d) => {
-      const x = String(d.doc_number || '').match(re);
-      return x ? Math.max(m, Number(x[1])) : m;
-    }, 0);
-    return `${prefix}-${String(max + 1).padStart(4, '0')}`;
-  }
-
-  function nextLeadRef() {
-    const d = new Date();
-    const ym = `${String(d.getFullYear()).slice(2)}${String(d.getMonth() + 1).padStart(2, '0')}`;
-    const re = new RegExp(`^CS-${ym}-(\\d+)$`);
-    const max = store.list('leads', { includeDeleted: true }).reduce((m, l) => {
-      const x = String(l.id).match(re);
-      return x ? Math.max(m, Number(x[1])) : m;
-    }, 0);
-    return `CS-${ym}-${String(max + 1).padStart(4, '0')}`;
-  }
 
   const api = express.Router();
 
@@ -109,100 +65,22 @@ export function createApp({ store, secret, secureCookies = true, webDist, extraO
     res.json({ company, roles: ROLES, permissions: PERMISSIONS, open_access: openAccess });
   });
 
-  /* ---------- Home summary ---------- */
-  api.get('/summary', auth.require('dashboard'), (req, res) => {
-    const perms = auth.permsOf(req.user);
-    const today = new Date().toISOString().slice(0, 10);
-    const month = today.slice(0, 7);
-    const sum = (rows, k) => rows.reduce((s, r) => s + (Number(r[k]) || 0), 0);
-    const out = {};
-    if (perms.includes('bookings')) {
-      const b = store.list('bookings');
-      out.bookings_today = b.filter((x) => x.date === today && x.status !== 'cancelled').length;
-      out.bookings_upcoming = b.filter((x) => x.date > today && x.status !== 'cancelled').length;
-      out.bookings_pending = b.filter((x) => x.status === 'pending').length;
-      out.today = b.filter((x) => x.date === today).sort((a, c) => String(a.time).localeCompare(String(c.time)));
-    }
-    if (perms.includes('leads')) out.leads_new = store.list('leads').filter((l) => l.status === 'new').length;
-    if (perms.includes('finance')) {
-      out.revenue_month = sum(store.list('revenue').filter((r) => String(r.date).startsWith(month)), 'amount');
-      out.expenses_month = sum(store.list('expenses').filter((r) => String(r.date).startsWith(month)), 'amount');
-    }
-    if (perms.includes('projects')) out.projects_active = store.list('projects').filter((p) => p.status === 'active').length;
-    if (perms.includes('tasks')) {
-      const mine = store.list('tasks').filter((t) => t.status !== 'done');
-      out.tasks_open = perms.includes('projects') ? mine.length : mine.filter((t) => t.assigned_worker === req.user.name).length;
-    }
-    res.json(out);
-  });
-
-  /* ---------- Generic CRUD for business tables ---------- */
-  for (const [table, def] of Object.entries(TABLES)) {
-    const base = `/data/${table}`;
-    api.get(base, auth.require(def.perm), (req, res) => res.json(store.list(table)));
-
-    api.post(base, auth.require(def.perm), async (req, res) => {
-      const { data, errors } = sanitize(table, req.body || {});
-      if (errors.length) return res.status(400).json({ error: 'validation', fields: errors });
-      data.id = table === 'leads' ? nextLeadRef() : newId(table.slice(0, 2));
-      if (table === 'documents') data.doc_number = nextDocNumber(data.type);
-      Object.assign(data, { created_at: nowIso(), updated_at: nowIso(), created_by: req.user.username });
-      const row = await store.insert(table, data);
-      await audit(req, 'create', table, row.id);
-      res.status(201).json(row);
-    });
-
-    api.patch(`${base}/:id`, auth.require(def.perm), async (req, res) => {
-      const existing = store.get(table, req.params.id);
-      if (!existing || existing.deleted_at) return res.status(404).json({ error: 'not_found' });
-      const { data, errors } = sanitize(table, req.body || {}, { partial: true });
-      if (errors.length) return res.status(400).json({ error: 'validation', fields: errors });
-      const before = Object.fromEntries(Object.keys(data).map((k) => [k, existing[k]]));
-      const row = await store.patch(table, req.params.id, { ...data, updated_at: nowIso() });
-      await audit(req, 'update', table, row.id, { before, after: data });
-      res.json(row);
-    });
-
-    // Soft delete: the row stays in the sheet with a deleted_at date.
-    api.delete(`${base}/:id`, auth.require(def.perm), async (req, res) => {
-      const existing = store.get(table, req.params.id);
-      if (!existing || existing.deleted_at) return res.status(404).json({ error: 'not_found' });
-      await store.patch(table, req.params.id, { deleted_at: nowIso() });
-      await audit(req, 'delete', table, req.params.id);
-      res.status(204).end();
+  /* ---------- Business routes (shared with the demo, see shared/routes.js) ---------- */
+  const ctxOf = (req) => ({ store, user: req.user, perms: auth.permsOf(req.user), audit: (...a) => audit(req, ...a) });
+  for (const [method, path, perm, handler] of ROUTES) {
+    api[method.toLowerCase()](path, auth.require(), async (req, res, next) => {
+      const ctx = ctxOf(req);
+      if (!allowed(ctx.perms, perm)) return res.status(403).json({ error: 'forbidden' });
+      try {
+        const out = await handler(ctx, req.params, req.body || {}, req.query || {});
+        if (out === undefined) return res.status(204).end();
+        res.status(method === 'POST' ? 201 : 200).json(out);
+      } catch (e) {
+        if (e instanceof ServiceError) return res.status(e.status).json({ error: e.code, ...e.extra });
+        next(e);
+      }
     });
   }
-
-  /* ---------- Convert a website lead into a booking ---------- */
-  api.post('/data/leads/:id/convert', auth.require('bookings'), async (req, res) => {
-    const lead = store.get('leads', req.params.id);
-    if (!lead || lead.deleted_at) return res.status(404).json({ error: 'not_found' });
-    if (lead.booking_id) return res.status(409).json({ error: 'already_converted', booking_id: lead.booking_id });
-    const booking = await store.insert('bookings', {
-      id: newId('bo'), status: 'pending', customer_name: lead.customer_name, phone: lead.phone, city: lead.city,
-      services: lead.service_code, date: lead.preferred_date, time: lead.preferred_time, lead_id: lead.id,
-      notes: [lead.details, lead.notes].filter(Boolean).join('\n'), created_at: nowIso(), updated_at: nowIso(), created_by: req.user.username,
-    });
-    await store.patch('leads', lead.id, { status: 'booked', booking_id: booking.id });
-    await audit(req, 'convert', 'leads', lead.id, { booking: booking.id });
-    res.status(201).json(booking);
-  });
-
-  /* ---------- Accepted quote -> invoice (same details, linked both ways) ---------- */
-  api.post('/data/documents/:id/to-invoice', auth.require('documents'), async (req, res) => {
-    const quote = store.get('documents', req.params.id);
-    if (!quote || quote.deleted_at || quote.type !== 'quote') return res.status(404).json({ error: 'not_found' });
-    if (quote.converted_to) return res.status(409).json({ error: 'already_converted', doc_number: quote.converted_to });
-    const keep = ['customer_name', 'customer_phone', 'services', 'custom_service', 'scope', 'price', 'duration', 'payment_method', 'terms', 'notes', 'city', 'property_type', 'language'];
-    const invoice = await store.insert('documents', {
-      ...Object.fromEntries(keep.map((k) => [k, quote[k] ?? ''])),
-      id: newId('do'), type: 'invoice', doc_number: nextDocNumber('invoice'), date: nowIso().slice(0, 10), converted_from: quote.doc_number,
-      created_at: nowIso(), updated_at: nowIso(), created_by: req.user.username,
-    });
-    await store.patch('documents', quote.id, { quote_status: 'accepted', converted_to: invoice.doc_number, updated_at: nowIso() });
-    await audit(req, 'convert', 'documents', quote.id, { invoice: invoice.doc_number });
-    res.status(201).json(invoice);
-  });
 
   /* ---------- Users (owner / users permission) ---------- */
   const userOut = (u) => ({ ...auth.publicUser(u), active: u.active !== 'no', last_login_at: u.last_login_at });
@@ -269,14 +147,19 @@ export function createApp({ store, secret, secureCookies = true, webDist, extraO
     }
     const phone = String(b.phone || '').replace(/[^\d+]/g, '');
     if (!String(b.customer_name || '').trim() || !/^(\+?966|0)?5\d{8}$/.test(phone)) return res.status(400).json({ error: 'validation' });
-    const { data, errors } = sanitize('leads', { ...b, status: 'new', phone });
-    if (errors.length) return res.status(400).json({ error: 'validation', fields: errors });
-    Object.assign(data, {
-      id: nextLeadRef(), created_at: nowIso(), idempotency_key: key,
+    const allowedKeys = ['customer_name', 'phone', 'service_code', 'details', 'city', 'district', 'preferred_date', 'preferred_time', 'estimate_min', 'estimate_max', 'language', 'notes'];
+    const ctx = { store, user: { username: 'website' }, perms: ['leads'], audit: (action, entity, id) => audit({ user: null }, action, entity, id, 'website') };
+    let lead;
+    try {
+      lead = await createRecord(ctx, 'leads', { ...Object.fromEntries(allowedKeys.filter((k) => b[k] !== undefined).map((k) => [k, b[k]])), status: 'new', phone });
+    } catch (e) {
+      if (e instanceof ServiceError) return res.status(e.status).json({ error: e.code, ...e.extra });
+      throw e;
+    }
+    lead = await store.patch('leads', lead.id, {
+      idempotency_key: key, created_by: 'website',
       utm_source: String(b.utm_source || '').slice(0, 80), utm_medium: String(b.utm_medium || '').slice(0, 80), utm_campaign: String(b.utm_campaign || '').slice(0, 80),
     });
-    const lead = await store.insert('leads', data);
-    await audit({ user: null }, 'create', 'leads', lead.id, 'website');
     res.status(201).json({ id: lead.id });
   });
   pub.get('/pricing', (req, res) => {

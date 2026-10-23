@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Plus, Search, Printer, MessageCircle, Phone, CalendarPlus, FileCheck2 } from 'lucide-react';
+import { Plus, Search, MessageCircle, Phone, CalendarPlus, FileText, Receipt, UserRound } from 'lucide-react';
 import { TABLES, enumLabel } from '@shared/model.js';
 import { api, ApiError, type Row } from '../api';
 import { pick, useT } from '../i18n';
-import { Badge, Input, Modal, Value, money, useLang, waLink, type FieldDef } from '../ui';
+import { Badge, Input, Modal, Value, errText, money, refreshLookup, useLang, waLink, type FieldDef } from '../ui';
 
-type TableDef = { perm: string; label: { ar: string; en: string }; title: string; sub: string[]; sort: string; printable?: boolean; fields: FieldDef[] };
+type TableDef = { perm: string; label: { ar: string; en: string }; title: string; sub: string[]; sort: string; fields: FieldDef[] };
 
 export function TablePage({ table, month, embedded }: { table: string; month?: string; embedded?: boolean }) {
   const def = (TABLES as any)[table] as TableDef;
@@ -101,7 +101,7 @@ export function TablePage({ table, month, embedded }: { table: string; month?: s
 
       {editing && (
         <Editor table={table} def={def} row={editing} onClose={() => setEditing(null)}
-          onSaved={(msg) => { setEditing(null); setToast(msg); load(); }} />
+          onSaved={(msg) => { setEditing(null); setToast(msg); refreshLookup(table); load(); }} />
       )}
       {toast && <div className="toast" role="status">{toast}</div>}
     </div>
@@ -122,7 +122,7 @@ function Editor({ table, def, row, onClose, onSaved }: { table: string; def: Tab
     setErr('');
     try { await fn(); onSaved(msg); } catch (x) {
       const fields = x instanceof ApiError && x.body?.fields;
-      setErr(fields ? fields.map((s: string) => { const f = def.fields.find((ff) => ff.key === s.split(':')[0]); return f ? pick(f.label, lang) : s; }).join('، ') + ' — ' + t('required') : t('error'));
+      setErr(fields ? fields.map((s: string) => { const f = def.fields.find((ff) => ff.key === s.split(':')[0]); return f ? pick(f.label, lang) : s; }).join('، ') + ' — ' + t('required') : errText(t, x));
     } finally { setBusy(false); }
   };
 
@@ -136,7 +136,11 @@ function Editor({ table, def, row, onClose, onSaved }: { table: string; def: Tab
 
   const remove = () => confirm(t('confirm_delete')) && run(() => api(`/data/${table}/${row.id}`, { method: 'DELETE' }));
 
-  const quoteToInvoice = () => run(() => api(`/data/documents/${row.id}/to-invoice`, { method: 'POST' }));
+  // Actions that open a sales document after creating it.
+  const toDoc = (path: string) => async () => {
+    setBusy(true);
+    try { const doc = await api<Row>(path, { method: 'POST' }); location.hash = `#/doc/${doc.id}`; } catch (x) { setErr(errText(t, x)); setBusy(false); }
+  };
 
   const phone = data.phone || data.customer_phone;
   const title = isNew ? `${t('add')} — ${pick(def.label, lang)}` : String(row.doc_number || row[def.title] || row.id);
@@ -148,8 +152,11 @@ function Editor({ table, def, row, onClose, onSaved }: { table: string; def: Tab
           {phone && <a className="btn wa" href={waLink(phone, table === 'leads' ? `${lang === 'ar' ? 'هلا' : 'Hi'} ${row.customer_name || ''}، ${lang === 'ar' ? 'معك كلين سنس بخصوص طلبك رقم' : 'Clean Sense here about your request'} ${row.id}` : '')} target="_blank" rel="noreferrer"><MessageCircle size={18} />{t('whatsapp')}</a>}
           {phone && <a className="btn" href={`tel:${phone}`}><Phone size={18} />{t('call')}</a>}
           {table === 'leads' && !row.booking_id && <button type="button" className="btn" disabled={busy} onClick={() => run(() => api(`/data/leads/${row.id}/convert`, { method: 'POST' }), t('converted'))}><CalendarPlus size={18} />{t('convert_booking')}</button>}
-          {def.printable && <a className="btn" href={`#/doc/${row.id}`}><Printer size={18} />{t('print')}</a>}
-          {table === 'documents' && row.type === 'quote' && !row.converted_to && <button type="button" className="btn" disabled={busy} onClick={quoteToInvoice}><FileCheck2 size={18} />{lang === 'ar' ? 'تحويل لفاتورة' : 'Convert to invoice'}</button>}
+          {table === 'leads' && (row.quote_id ? <a className="btn" href={`#/doc/${row.quote_id}`}><FileText size={18} />{t('quotes')}</a>
+            : <button type="button" className="btn" disabled={busy} onClick={toDoc(`/data/leads/${row.id}/quote`)}><FileText size={18} />{t('create_quote')}</button>)}
+          {table === 'bookings' && (row.invoice_id ? <a className="btn" href={`#/doc/${row.invoice_id}`}><Receipt size={18} />{t('invoice')}</a>
+            : <button type="button" className="btn" disabled={busy} onClick={toDoc(`/data/bookings/${row.id}/invoice`)}><Receipt size={18} />{t('create_invoice')}</button>)}
+          {table === 'customers' && <a className="btn" href={`#/customer/${row.id}`}><UserRound size={18} />{t('statement')}</a>}
         </div>
       )}
       <form onSubmit={save}>

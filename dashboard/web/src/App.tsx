@@ -1,29 +1,47 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
 import emblem from './assets/emblem.webp';
-import { Home as HomeIcon, Inbox, CalendarClock, FolderKanban, FileText, Wallet, HardHat, ListChecks, Users as UsersIcon, LogOut, Menu, Languages } from 'lucide-react';
+import { Home as HomeIcon, Inbox, CalendarClock, FolderKanban, FileText, Receipt, Wallet, TrendingDown, BarChart3, Contact, FileSignature, HardHat, ListChecks, Users as UsersIcon, LogOut, Menu, Languages } from 'lucide-react';
 import { PERMISSIONS } from '@shared/model.js';
 import { api, isDemo, type User } from './api';
-import { LangContext, applyDir, pick, useT, type Lang } from './i18n';
+import { LangContext, applyDir, pick, useT, type Key, type Lang } from './i18n';
 import { Login, ChangePassword } from './pages/Login';
 import { Home } from './pages/Home';
 import { TablePage } from './pages/TablePage';
-import { Finance } from './pages/Finance';
+import { Documents } from './pages/Documents';
+import { Doc } from './pages/Doc';
+import { Payments } from './pages/Payments';
+import { Reports } from './pages/Reports';
+import { Customer } from './pages/Customer';
 import { Users } from './pages/Users';
 import { DocPrint } from './pages/DocPrint';
 
 export type Meta = { company: Record<string, string>; roles: Record<string, { ar: string; en: string; perms: string[] }>; open_access?: boolean };
 
-const NAV = [
-  { route: '', perm: 'dashboard', Icon: HomeIcon },
-  { route: 't/leads', perm: 'leads', Icon: Inbox },
-  { route: 't/bookings', perm: 'bookings', Icon: CalendarClock },
-  { route: 't/documents', perm: 'documents', Icon: FileText },
-  { route: 'finance', perm: 'finance', Icon: Wallet },
-  { route: 't/projects', perm: 'projects', Icon: FolderKanban },
-  { route: 't/workers', perm: 'workers', Icon: HardHat },
-  { route: 't/tasks', perm: 'tasks', Icon: ListChecks },
-  { route: 'users', perm: 'users', Icon: UsersIcon },
+type NavItem = { route: string; perm: string; Icon: any; label: Key | null };
+const NAV: { group: Key | null; items: NavItem[] }[] = [
+  { group: null, items: [{ route: '', perm: 'dashboard', Icon: HomeIcon, label: null }] },
+  { group: 'nav_sales', items: [
+    { route: 't/leads', perm: 'leads', Icon: Inbox, label: null },
+    { route: 'sales/quotes', perm: 'sales', Icon: FileText, label: 'quotes' },
+    { route: 'sales/invoices', perm: 'sales', Icon: Receipt, label: 'invoices' },
+    { route: 'sales/contracts', perm: 'sales', Icon: FileSignature, label: 'contracts' },
+    { route: 't/customers', perm: 'customers', Icon: Contact, label: 'customers' },
+  ] },
+  { group: 'nav_ops', items: [
+    { route: 't/bookings', perm: 'bookings', Icon: CalendarClock, label: null },
+    { route: 't/projects', perm: 'projects', Icon: FolderKanban, label: null },
+    { route: 't/tasks', perm: 'tasks', Icon: ListChecks, label: null },
+    { route: 't/workers', perm: 'workers', Icon: HardHat, label: null },
+  ] },
+  { group: 'nav_finance', items: [
+    { route: 'payments', perm: 'finance', Icon: Wallet, label: 'payments' },
+    { route: 't/expenses', perm: 'finance', Icon: TrendingDown, label: 'expenses' },
+    { route: 'reports', perm: 'reports', Icon: BarChart3, label: 'reports' },
+  ] },
+  { group: 'nav_admin', items: [{ route: 'users', perm: 'users', Icon: UsersIcon, label: null }] },
 ];
+// Bottom bar on phones: the four most used screens for this user.
+const MOBILE_PRIORITY = ['', 'sales/quotes', 't/bookings', 'sales/invoices', 'payments', 't/leads', 't/tasks'];
 
 function useRoute() {
   const read = () => location.hash.replace(/^#\/?/, '');
@@ -76,11 +94,12 @@ function Shell({ user, meta, onLogout }: { user: User; meta: Meta | null; onLogo
   const { lang, setLang } = useLangCtx();
   const route = useRoute();
   const [moreOpen, setMoreOpen] = useState(false);
-  const items = NAV.filter((n) => user.permissions.includes(n.perm));
-  const label = (perm: string) => (perm === 'finance' ? t('finance') : pick((PERMISSIONS as any)[perm], lang));
+  const groups = NAV.map((g) => ({ ...g, items: g.items.filter((n) => user.permissions.includes(n.perm)) })).filter((g) => g.items.length);
+  const items = groups.flatMap((g) => g.items);
+  const label = (n: NavItem) => (n.label ? t(n.label) : pick((PERMISSIONS as any)[n.perm], lang));
   const isActive = (r: string) => (r === '' ? route === '' : route === r || route.startsWith(r + '/'));
-  const primary = items.slice(0, 4);
-  const rest = items.slice(4);
+  const primary = MOBILE_PRIORITY.map((r) => items.find((n) => n.route === r)).filter(Boolean).slice(0, 4) as NavItem[];
+  const rest = items.filter((n) => !primary.includes(n));
 
   useEffect(() => setMoreOpen(false), [route]);
 
@@ -90,11 +109,19 @@ function Shell({ user, meta, onLogout }: { user: User; meta: Meta | null; onLogo
   };
 
   let page;
-  const [kind, arg] = [route.split('/')[0], route.split('/').slice(1).join('/')];
-  if (kind === 't' && items.some((n) => n.route === `t/${arg}`)) page = <TablePage key={arg} table={arg} />;
-  else if (kind === 'finance' && user.permissions.includes('finance')) page = <Finance />;
-  else if (kind === 'users' && user.permissions.includes('users')) page = <Users me={user} meta={meta} />;
-  else if (kind === 'doc' && user.permissions.includes('documents')) page = <DocPrint id={arg} meta={meta} />;
+  const [path, qs] = route.split('?');
+  const parts = path.split('/');
+  const has = (p: string) => user.permissions.includes(p);
+  const query = Object.fromEntries(new URLSearchParams(qs || ''));
+  if (parts[0] === 't' && items.some((n) => n.route === `t/${parts[1]}`)) page = <TablePage key={parts[1]} table={parts[1]} />;
+  else if (parts[0] === 'sales' && has('sales') && ['quotes', 'invoices', 'contracts'].includes(parts[1])) page = <Documents kind={parts[1].slice(0, -1) as any} />;
+  else if (parts[0] === 'doc' && parts[1] === 'new' && has('sales')) page = <Doc key={route} kind={parts[2] as any} customerId={query.c} user={user} />;
+  else if (parts[0] === 'doc' && (has('sales') || has('finance'))) page = <Doc key={parts[1]} id={parts[1]} user={user} />;
+  else if (parts[0] === 'print' && (has('sales') || has('finance'))) page = <DocPrint id={parts[1]} meta={meta} />;
+  else if (parts[0] === 'customer' && (has('customers') || has('finance'))) page = <Customer id={parts[1]} />;
+  else if (parts[0] === 'payments' && has('finance')) page = <Payments />;
+  else if (parts[0] === 'reports' && has('reports')) page = <Reports />;
+  else if (parts[0] === 'users' && has('users')) page = <Users me={user} meta={meta} />;
   else page = <Home user={user} />;
 
   return (
@@ -102,8 +129,11 @@ function Shell({ user, meta, onLogout }: { user: User; meta: Meta | null; onLogo
       {isDemo && <div className="demo-bar">{t('demo_banner')}</div>}
       <aside className="side">
         <div className="brand"><img src={emblem} alt="" /><span>{t('app_name')}</span></div>
-        <nav>{items.map((n) => (
-          <a key={n.route} href={`#/${n.route}`} className={isActive(n.route) ? 'on' : ''}><n.Icon size={20} />{label(n.perm)}</a>
+        <nav>{groups.map((g, i) => (
+          <div key={i} className="nav-group">
+            {g.group && <span className="nav-title">{t(g.group)}</span>}
+            {g.items.map((n) => <a key={n.route} href={`#/${n.route}`} className={isActive(n.route) ? 'on' : ''}><n.Icon size={19} />{label(n)}</a>)}
+          </div>
         ))}</nav>
         <div className="side-foot">
           <button className="ghost" onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}><Languages size={18} />{lang === 'ar' ? 'English' : 'العربية'}</button>
@@ -118,7 +148,7 @@ function Shell({ user, meta, onLogout }: { user: User; meta: Meta | null; onLogo
       <main className="main">{page}</main>
       <nav className="bottom">
         {primary.map((n) => (
-          <a key={n.route} href={`#/${n.route}`} className={isActive(n.route) ? 'on' : ''}><n.Icon size={22} /><span>{label(n.perm)}</span></a>
+          <a key={n.route} href={`#/${n.route}`} className={isActive(n.route) ? 'on' : ''}><n.Icon size={22} /><span>{label(n)}</span></a>
         ))}
         {(rest.length > 0 || !meta?.open_access) && (
           <button className={moreOpen ? 'on' : ''} onClick={() => setMoreOpen(!moreOpen)}><Menu size={22} /><span>{t('more')}</span></button>
@@ -127,7 +157,7 @@ function Shell({ user, meta, onLogout }: { user: User; meta: Meta | null; onLogo
       {moreOpen && (
         <div className="overlay" onClick={() => setMoreOpen(false)}>
           <div className="sheet" onClick={(e) => e.stopPropagation()}>
-            {rest.map((n) => <a key={n.route} href={`#/${n.route}`}><n.Icon size={20} />{label(n.perm)}</a>)}
+            {rest.map((n) => <a key={n.route} href={`#/${n.route}`}><n.Icon size={20} />{label(n)}</a>)}
             {!meta?.open_access && <button onClick={logout}><LogOut size={20} />{t('logout')}</button>}
           </div>
         </div>

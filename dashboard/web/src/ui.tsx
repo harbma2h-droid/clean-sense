@@ -1,12 +1,36 @@
-import { useContext, type ReactNode } from 'react';
+import { useContext, useEffect, useState, type ReactNode } from 'react';
 import { ENUMS, MONEY_FMT, enumLabel } from '@shared/model.js';
 import { LangContext, pick, useT } from './i18n';
-import type { Row } from './api';
+import { api, ApiError, type Row } from './api';
+import type { Key } from './i18n';
 
 export type FieldDef = {
   key: string; label: { ar: string; en: string }; type: string; enum?: string; required?: boolean; readonly?: boolean;
-  list?: boolean; badge?: boolean; default?: string; showIf?: [string, string]; total?: boolean;
+  list?: boolean; badge?: boolean; default?: string; showIf?: [string, string]; total?: boolean; ref?: string;
 };
+
+/* Lookups for link fields (customers, projects), cached for the session. */
+const lookupCache: Record<string, Promise<Row[]>> = {};
+export function useLookup(name: string | undefined) {
+  const [rows, setRows] = useState<Row[]>([]);
+  useEffect(() => {
+    if (!name || !['customers', 'projects'].includes(name)) return;
+    (lookupCache[name] ||= api<Row[]>(`/lookup/${name}`).catch(() => [])).then(setRows);
+  }, [name]);
+  return rows;
+}
+export const refreshLookup = (name: string) => { delete lookupCache[name]; };
+const refLabel = (r: Row) => [r.code, r.name].filter(Boolean).join(' · ');
+
+/** Human message for an API error. */
+export function errText(t: (k: Key) => string, e: unknown) {
+  if (e instanceof ApiError) {
+    const k = `err_${e.code}` as Key;
+    try { const v = t(k); if (v) return v; } catch { /* no translation */ }
+    if (e.code === 'exceeds_balance') return `${t('exceeds_balance')} (${e.body?.balance})`;
+  }
+  return t('error');
+}
 
 export const useLang = () => useContext(LangContext).lang;
 
@@ -37,8 +61,17 @@ export function Value({ f, row }: { f: FieldDef; row: Row }) {
   if (f.type === 'money') return <span className="num">{money(v, lang)}</span>;
   if (f.type === 'tel') return <a href={`tel:${v}`} className="num" dir="ltr">{v}</a>;
   if (f.type === 'url') return <a href={v} target="_blank" rel="noreferrer">↗</a>;
+  if (f.type === 'ref') return <RefValue f={f} id={v} />;
   if (f.key === 'created_at') return <span className="num">{String(v).slice(0, 16).replace('T', ' ')}</span>;
   return <>{String(v)}</>;
+}
+
+function RefValue({ f, id }: { f: FieldDef; id: string }) {
+  const rows = useLookup(f.ref);
+  const r = rows.find((x) => x.id === id);
+  if (f.ref === 'customers' && r) return <a href={`#/customer/${id}`}>{refLabel(r)}</a>;
+  if (f.ref === 'documents') return <a href={`#/doc/${id}`}>↗</a>;
+  return <>{r ? refLabel(r) : '—'}</>;
 }
 
 /** Editable input for one field. */
@@ -47,8 +80,18 @@ export function Input({ f, value, onChange }: { f: FieldDef; value: any; onChang
   const t = useT();
   const id = `f-${f.key}`;
   const label = <label htmlFor={id}>{pick(f.label, lang)}{f.required && <b className="req"> *</b>}</label>;
-  if (f.readonly) return value ? <div className="field">{label}<div className="ro">{String(value)}</div></div> : null;
+  const refRows = useLookup(f.type === 'ref' && !f.readonly ? f.ref : undefined);
+  if (f.readonly) return value ? <div className="field">{label}<div className="ro">{f.type === 'ref' ? <RefValue f={f} id={value} /> : String(value)}</div></div> : null;
   let control: ReactNode;
+  if (f.type === 'ref') {
+    control = (
+      <select id={id} value={value ?? ''} onChange={(e) => onChange(e.target.value)}>
+        <option value="">—</option>
+        {refRows.map((r) => <option key={r.id} value={r.id}>{refLabel(r)}</option>)}
+      </select>
+    );
+    return <div className="field">{label}{control}</div>;
+  }
   if (f.type === 'select' && f.enum) {
     control = (
       <select id={id} value={value ?? ''} onChange={(e) => onChange(e.target.value)} required={f.required}>
@@ -69,10 +112,10 @@ export function Input({ f, value, onChange }: { f: FieldDef; value: any; onChang
   } else if (f.type === 'textarea') {
     control = <textarea id={id} rows={4} value={value ?? ''} onChange={(e) => onChange(e.target.value)} required={f.required} />;
   } else {
-    const type = { money: 'number', number: 'number', date: 'date', time: 'time', tel: 'tel', url: 'url' }[f.type] || 'text';
+    const type = ({ money: 'number', number: 'number', date: 'date', time: 'time', tel: 'tel', url: 'url', email: 'email' } as Record<string, string>)[f.type] || 'text';
     control = (
       <input id={id} type={type} value={value ?? ''} required={f.required} step={f.type === 'money' ? '0.01' : undefined}
-        inputMode={f.type === 'money' ? 'decimal' : undefined} dir={['tel', 'money', 'url'].includes(f.type) ? 'ltr' : undefined}
+        inputMode={f.type === 'money' ? 'decimal' : undefined} dir={['tel', 'money', 'url', 'email'].includes(f.type) ? 'ltr' : undefined}
         placeholder={f.required ? t('required') : undefined} onChange={(e) => onChange(e.target.value)} />
     );
   }

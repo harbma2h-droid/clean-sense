@@ -56,6 +56,41 @@
      "Created at"
     ],
     [
+     "code",
+     "رقم العميل",
+     "Customer no."
+    ],
+    [
+     "type",
+     "نوع العميل",
+     "Customer type"
+    ],
+    [
+     "email",
+     "البريد",
+     "Email"
+    ],
+    [
+     "phone2",
+     "جوال إضافي",
+     "Alt. phone"
+    ],
+    [
+     "address",
+     "العنوان",
+     "Address"
+    ],
+    [
+     "created_by",
+     "أنشأه",
+     "Created by"
+    ],
+    [
+     "updated_at",
+     "آخر تعديل",
+     "Updated at"
+    ],
+    [
      "deleted_at",
      "تاريخ الحذف",
      "Deleted at"
@@ -172,6 +207,26 @@
      "Idempotency key"
     ],
     [
+     "customer_id",
+     "العميل",
+     "Customer"
+    ],
+    [
+     "quote_id",
+     "عرض السعر",
+     "Quote"
+    ],
+    [
+     "lost_reason",
+     "سبب عدم الإتمام",
+     "Lost reason"
+    ],
+    [
+     "updated_at",
+     "آخر تعديل",
+     "Updated at"
+    ],
+    [
      "deleted_at",
      "تاريخ الحذف",
      "Deleted at"
@@ -263,6 +318,26 @@
      "Created by"
     ],
     [
+     "customer_id",
+     "العميل",
+     "Customer"
+    ],
+    [
+     "project_id",
+     "المشروع",
+     "Project"
+    ],
+    [
+     "invoice_id",
+     "الفاتورة",
+     "Invoice"
+    ],
+    [
+     "quote_id",
+     "عرض السعر",
+     "Quote"
+    ],
+    [
      "deleted_at",
      "تاريخ الحذف",
      "Deleted at"
@@ -352,6 +427,26 @@
      "updated_at",
      "آخر تعديل",
      "Updated at"
+    ],
+    [
+     "code",
+     "رقم المشروع",
+     "Project no."
+    ],
+    [
+     "customer_id",
+     "العميل",
+     "Customer"
+    ],
+    [
+     "budget_cost",
+     "التكلفة التقديرية",
+     "Estimated cost"
+    ],
+    [
+     "notes",
+     "ملاحظات",
+     "Notes"
     ],
     [
      "deleted_at",
@@ -505,6 +600,111 @@
      "Updated at"
     ],
     [
+     "customer_id",
+     "العميل",
+     "Customer"
+    ],
+    [
+     "booking_id",
+     "الحجز",
+     "Booking"
+    ],
+    [
+     "status",
+     "الحالة",
+     "Status"
+    ],
+    [
+     "items",
+     "البنود",
+     "Line items"
+    ],
+    [
+     "subtotal",
+     "المجموع قبل الخصم",
+     "Subtotal"
+    ],
+    [
+     "discount",
+     "الخصم",
+     "Discount"
+    ],
+    [
+     "total",
+     "الإجمالي",
+     "Total"
+    ],
+    [
+     "valid_until",
+     "صالح حتى",
+     "Valid until"
+    ],
+    [
+     "due_date",
+     "تاريخ الاستحقاق",
+     "Due date"
+    ],
+    [
+     "submitted_by",
+     "أرسله للاعتماد",
+     "Submitted by"
+    ],
+    [
+     "approved_by",
+     "اعتمده",
+     "Approved by"
+    ],
+    [
+     "approved_at",
+     "تاريخ الاعتماد",
+     "Approved at"
+    ],
+    [
+     "sent_at",
+     "تاريخ الإرسال",
+     "Sent at"
+    ],
+    [
+     "decided_at",
+     "تاريخ رد العميل",
+     "Customer decision at"
+    ],
+    [
+     "reject_reason",
+     "سبب الرفض",
+     "Rejection reason"
+    ],
+    [
+     "issued_at",
+     "تاريخ الإصدار",
+     "Issued at"
+    ],
+    [
+     "issued_by",
+     "أصدرها",
+     "Issued by"
+    ],
+    [
+     "voided_at",
+     "تاريخ الإلغاء",
+     "Voided at"
+    ],
+    [
+     "void_reason",
+     "سبب الإلغاء",
+     "Void reason"
+    ],
+    [
+     "legacy",
+     "من النظام القديم",
+     "Legacy record"
+    ],
+    [
+     "balance_review",
+     "مراجعة الرصيد",
+     "Balance review"
+    ],
+    [
      "deleted_at",
      "تاريخ الحذف",
      "Deleted at"
@@ -576,8 +776,114 @@
      "Updated at"
     ],
     [
+     "payment_id",
+     "الدفعة في النظام الجديد",
+     "Payment (new system)"
+    ],
+    [
      "deleted_at",
      "تاريخ الحذف",
+     "Deleted at"
+    ]
+   ]
+  },
+  "payments": {
+   "ar": "الدفعات والتحصيل",
+   "en": "Payments",
+   "cols": [
+    [
+     "id",
+     "المعرّف",
+     "ID"
+    ],
+    [
+     "receipt_no",
+     "رقم سند القبض",
+     "Receipt no."
+    ],
+    [
+     "date",
+     "التاريخ",
+     "Date"
+    ],
+    [
+     "customer_id",
+     "العميل",
+     "Customer"
+    ],
+    [
+     "customer_name",
+     "اسم العميل",
+     "Customer name"
+    ],
+    [
+     "invoice_id",
+     "الفاتورة",
+     "Invoice"
+    ],
+    [
+     "invoice_number",
+     "رقم الفاتورة",
+     "Invoice no."
+    ],
+    [
+     "amount",
+     "المبلغ",
+     "Amount"
+    ],
+    [
+     "method",
+     "طريقة الدفع",
+     "Method"
+    ],
+    [
+     "reference",
+     "المرجع",
+     "Reference"
+    ],
+    [
+     "notes",
+     "ملاحظات",
+     "Notes"
+    ],
+    [
+     "status",
+     "الحالة",
+     "Status"
+    ],
+    [
+     "void_reason",
+     "سبب الإلغاء",
+     "Void reason"
+    ],
+    [
+     "voided_at",
+     "تاريخ الإلغاء",
+     "Voided at"
+    ],
+    [
+     "legacy_source",
+     "المصدر في النظام القديم",
+     "Legacy source"
+    ],
+    [
+     "created_by",
+     "أنشأه",
+     "Created by"
+    ],
+    [
+     "created_at",
+     "وقت الإنشاء",
+     "Created at"
+    ],
+    [
+     "updated_at",
+     "آخر تعديل",
+     "Updated at"
+    ],
+    [
+     "deleted_at",
+     "محذوف في",
      "Deleted at"
     ]
    ]
@@ -630,6 +936,31 @@
      "updated_at",
      "آخر تعديل",
      "Updated at"
+    ],
+    [
+     "project_id",
+     "المشروع",
+     "Project"
+    ],
+    [
+     "booking_id",
+     "الحجز",
+     "Booking"
+    ],
+    [
+     "supplier",
+     "المورد",
+     "Supplier"
+    ],
+    [
+     "reference",
+     "رقم الإيصال/المرجع",
+     "Receipt / reference"
+    ],
+    [
+     "legacy",
+     "من النظام القديم",
+     "Legacy record"
     ],
     [
      "deleted_at",

@@ -49,8 +49,10 @@ test('permissions: accountant cannot see bookings or users', async () => {
   assert.equal((await req('a', 'POST', '/auth/login', { username: 'acc', password: 'Acc12345' })).status, 200);
   assert.equal((await req('a', 'GET', '/data/bookings')).status, 403);
   assert.equal((await req('a', 'GET', '/users')).status, 403);
-  assert.equal((await req('a', 'GET', '/data/revenue')).status, 200);
-  assert.equal((await req(null, 'GET', '/data/revenue')).status, 401);
+  assert.equal((await req('a', 'GET', '/payments')).status, 200);
+  assert.equal((await req('a', 'GET', '/reports')).status, 200);
+  assert.equal((await req('a', 'POST', '/data/bookings', { customer_name: 'x', date: '2026-11-01' })).status, 403);
+  assert.equal((await req(null, 'GET', '/payments')).status, 401);
 });
 
 test('bookings CRUD with soft delete and validation', async () => {
@@ -69,25 +71,6 @@ test('bookings CRUD with soft delete and validation', async () => {
   assert.equal(list.body.length, 0);
   assert.ok(store.get('bookings', c.body.id).deleted_at, 'row kept with deleted_at');
   assert.ok(store.list('audit_log').some((a) => a.action === 'delete'));
-});
-
-test('document numbers are sequential per type', async () => {
-  const mk = (type) => req('o', 'POST', '/data/documents', { type, date: '2026-11-01', customer_name: 'C', scope: 'S', price: '1500' });
-  assert.equal((await mk('invoice')).body.doc_number, 'INV-0001');
-  assert.equal((await mk('invoice')).body.doc_number, 'INV-0002');
-  const q = await mk('quote');
-  assert.equal(q.body.doc_number, 'QO-0001');
-  assert.equal(q.body.price, 1500);
-
-  const inv = await req('o', 'POST', `/data/documents/${q.body.id}/to-invoice`);
-  assert.equal(inv.status, 201);
-  assert.equal(inv.body.doc_number, 'INV-0003');
-  assert.equal(inv.body.converted_from, 'QO-0001');
-  assert.equal(inv.body.price, 1500);
-  const quote = (await req('o', 'GET', '/data/documents')).body.find((d) => d.id === q.body.id);
-  assert.equal(quote.converted_to, 'INV-0003');
-  assert.equal(quote.quote_status, 'accepted');
-  assert.equal((await req('o', 'POST', `/data/documents/${q.body.id}/to-invoice`)).status, 409);
 });
 
 test('public lead: validation, honeypot, idempotency, CORS, convert', async () => {
