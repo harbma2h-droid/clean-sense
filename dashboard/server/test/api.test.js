@@ -95,6 +95,36 @@ test('public lead: validation, honeypot, idempotency, CORS, convert', async () =
   assert.equal((await req('o', 'POST', `/data/leads/${r1.body.id}/convert`)).status, 409);
 });
 
+test('website booking form: preflight from cleansense.co, lead saved, every service slug maps to a known code', async () => {
+  const pre = await fetch(base + '/public/leads', { method: 'OPTIONS', headers: { Origin: 'https://cleansense.co', 'Access-Control-Request-Method': 'POST', 'Access-Control-Request-Headers': 'content-type' } });
+  assert.equal(pre.status, 204);
+  assert.equal(pre.headers.get('access-control-allow-origin'), 'https://cleansense.co');
+
+  // Same shape as src/scripts/booking.ts sends.
+  const body = {
+    customer_name: 'سارة', phone: '0551234567', service_code: 'deep_cleaning',
+    details: '• الخدمة: التنظيف العميق\n• العقار: شقة\n• الغرف: 3 | الحمامات: 2', city: 'khobar',
+    preferred_date: '2026-11-02', preferred_time: 'صباحًا', language: 'ar', notes: '',
+    idempotency_key: 'web-1', website: '', utm_source: 'instagram', utm_medium: '', utm_campaign: '',
+    estimate_min: 625, estimate_max: 625,
+  };
+  const r = await req(null, 'POST', '/public/leads', body, { Origin: 'https://cleansense.co' });
+  assert.equal(r.status, 201);
+  const saved = store.get('leads', r.body.id);
+  assert.equal(saved.service_code, 'deep_cleaning');
+  assert.equal(saved.status, 'new');
+  assert.equal(Number(saved.estimate_min), 625);
+  assert.equal(saved.utm_source, 'instagram');
+
+  const { readFileSync } = await import('node:fs');
+  const { ENUMS } = await import('../../shared/model.js');
+  const site = readFileSync(new URL('../../../src/data/site.ts', import.meta.url), 'utf8');
+  const block = site.slice(site.indexOf('LEAD_SERVICE_CODES'));
+  const codes = [...block.slice(0, block.indexOf('};')).matchAll(/:\s*'([a-z_]+)'/g)].map((m) => m[1]);
+  assert.ok(codes.length >= 13, 'mapping found');
+  for (const c of codes) assert.ok(ENUMS.service[c], `unknown service code ${c}`);
+});
+
 test('users: create with temp password, cannot lock yourself out', async () => {
   const c = await req('o', 'POST', '/users', { name: 'عمار', username: 'ammar', role: 'ops_manager', language: 'en' });
   assert.equal(c.status, 201);

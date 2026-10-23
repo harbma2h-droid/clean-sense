@@ -29,7 +29,28 @@ export const SITE = {
     { id: 'ras_tanura', ar: 'رأس تنورة', en: 'Ras Tanura', primary: false },
     { id: 'qatif', ar: 'القطيف', en: 'Qatif', primary: false },
   ],
+  // New internal system: booking requests are also saved there as leads.
+  // Set PUBLIC_LEADS_API at build time (e.g. https://<system-host>/api/public/leads); empty = WhatsApp only.
+  leadsApi: (import.meta.env.PUBLIC_LEADS_API as string | undefined) ?? '',
 } as const;
+
+// Website service slug → service code in the internal system (dashboard/shared/model.js ENUMS.service).
+// The exact website service name is always sent in the lead details too.
+export const LEAD_SERVICE_CODES: Record<string, string> = {
+  'deep-cleaning': 'deep_cleaning',
+  'general-cleaning': 'villa_apartment',
+  'post-construction-cleaning': 'post_construction',
+  'sofa-upholstery-cleaning': 'upholstery',
+  'carpet-moquette-cleaning': 'carpet',
+  'kitchen-deep-cleaning': 'deep_cleaning',
+  'bathroom-deep-cleaning': 'deep_cleaning',
+  'glass-cleaning': 'other',
+  'ac-cleaning': 'ac_cleaning',
+  'water-tank-cleaning': 'other',
+  'exterior-cleaning': 'facade',
+  'residential-building-cleaning': 'commercial',
+  'building-operation-maintenance': 'facility_ops',
+};
 
 // Headline facts shown in the trust bar. Only verifiable facts: no client counts or
 // percentages until the owners approve real numbers.

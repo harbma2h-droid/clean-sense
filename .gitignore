@@ -9,3 +9,6 @@ dashboard/data/
 .env
 *.pem
 service-account*.json
+
+private/
+clean-sense-system-*.json

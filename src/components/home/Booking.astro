@@ -1,7 +1,7 @@
 ---
 import Icon from '../Icon.astro';
 import { SERVICES, type Lang } from '../../data/services';
-import { SITE, PRICING } from '../../data/site';
+import { SITE, PRICING, LEAD_SERVICE_CODES } from '../../data/site';
 import { ui, waLink } from '../../i18n/ui';
 
 interface Props {
@@ -31,6 +31,8 @@ const data = {
   intro: b.msgIntro,
   sar: b.sar,
   whatsapp: SITE.whatsapp,
+  leadsApi: SITE.leadsApi,
+  codes: LEAD_SERVICE_CODES,
   texts: { estimateNote: b.estimateNote, noEstimate: b.noEstimate, noEstimateNote: b.noEstimateNote, pickService: b.pickService },
 };
 const today = new Date().toISOString().slice(0, 10);
@@ -147,6 +149,12 @@ const today = new Date().toISOString().slice(0, 10);
               <span class="bk__label">{b.name}</span>
               <input class="input" type="text" name="name" autocomplete="name" placeholder={b.namePh} maxlength="60" />
             </label>
+            <label class="bk__field">
+              <span class="bk__label">{b.phone}</span>
+              <input class="input" type="tel" name="phone" autocomplete="tel" inputmode="tel" dir="ltr" placeholder={b.phonePh} maxlength="16" />
+            </label>
+            <!-- Honeypot: hidden from people, bots fill it and the system ignores the request. -->
+            <input class="bk__hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
             <label class="bk__field">
               <span class="bk__label">{b.notes}</span>
               <textarea class="input" name="notes" rows="3" placeholder={b.notesPh} maxlength="500"></textarea>
@@ -307,6 +315,14 @@ const today = new Date().toISOString().slice(0, 10);
   .bk__grid2 {
     display: grid;
     gap: 18px;
+  }
+  .bk__hp {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+    inset-inline-start: -9999px;
   }
 
   .chip {

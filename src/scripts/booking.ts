@@ -1,4 +1,5 @@
 // Booking wizard: step navigation, live estimate, and a pre-filled WhatsApp message.
+// When a leads API is configured, the request is also saved in the internal system.
 
 interface Config {
   lang: 'ar' | 'en';
@@ -20,6 +21,8 @@ interface Config {
   intro: string;
   sar: string;
   whatsapp: string;
+  leadsApi: string;
+  codes: Record<string, string>;
   texts: { estimateNote: string; noEstimate: string; noEstimateNote: string; pickService: string };
 }
 
@@ -44,6 +47,17 @@ export function estimate(
 
 const fmt = (n: number) => n.toLocaleString('en-US');
 
+/** Same rule as the system's POST /api/public/leads: a Saudi mobile number. */
+export const normPhone = (raw: string) => {
+  const p = raw.replace(/[^\d+]/g, '');
+  return /^(\+?966|0)?5\d{8}$/.test(p) ? p : '';
+};
+
+const newKey = () =>
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+
 export function initBooking() {
   const found = document.querySelector<HTMLFormElement>('[data-booking]');
   if (!found) return;
@@ -63,6 +77,9 @@ export function initBooking() {
   const priceAlt = form.querySelector<HTMLElement>('[data-price-alt]')!;
   const priceNote = form.querySelector<HTMLElement>('[data-price-note]')!;
   let current = 0;
+  let lead: Record<string, string | number> | null = null;
+  // One key per page visit: repeated taps on "send" create a single lead.
+  const idempotencyKey = newKey();
 
   const val = (name: string) => (form.elements.namedItem(name) as RadioNodeList | HTMLInputElement | null)?.value ?? '';
   const num = (name: string) => Math.max(1, parseInt(val(name), 10) || 1);
@@ -135,13 +152,49 @@ export function initBooking() {
     if (time) lines.push(`• ${L.time}: ${cfg.times[time]}`);
     const name = val('name').trim();
     if (name) lines.push(`• ${L.name}: ${name}`);
+    const phone = normPhone(val('phone'));
+    if (phone) lines.push(`• ${L.phone}: ${phone}`);
     const notes = val('notes').trim();
     if (notes) lines.push(`• ${L.notes}: ${notes}`);
     if (price !== null) lines.push(`• ${L.estimate}: ${fmt(price)} ${cfg.sar}`);
 
     send.href = `https://wa.me/${cfg.whatsapp}?text=${encodeURIComponent(lines.join('\n'))}`;
     send.dataset.service = service || 'none';
+
+    // The system needs a name and a valid mobile; otherwise the request goes by WhatsApp only.
+    lead = null;
+    if (cfg.leadsApi && name && phone) {
+      const utm = new URLSearchParams(location.search);
+      lead = {
+        customer_name: name,
+        phone,
+        service_code: cfg.codes[service] || 'other',
+        details: lines.slice(2).join('\n'),
+        city,
+        preferred_date: date,
+        preferred_time: time ? cfg.times[time] : '',
+        language: cfg.lang,
+        notes,
+        idempotency_key: idempotencyKey,
+        website: val('website'),
+        utm_source: utm.get('utm_source') || '',
+        utm_medium: utm.get('utm_medium') || '',
+        utm_campaign: utm.get('utm_campaign') || '',
+      };
+      if (price !== null) Object.assign(lead, { estimate_min: price, estimate_max: price });
+    }
   }
+
+  // Save the lead in the background; WhatsApp opens either way and never waits for it.
+  send.addEventListener('click', () => {
+    if (!lead) return;
+    fetch(cfg.leadsApi, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(lead),
+      keepalive: true,
+    }).catch(() => {});
+  });
 
   // Steppers
   form.addEventListener('click', (e) => {
