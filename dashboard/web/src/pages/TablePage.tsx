@@ -16,6 +16,7 @@ export function TablePage({ table, month, embedded }: { table: string; month?: s
   const [status, setStatus] = useState('');
   const [editing, setEditing] = useState<Row | null>(null);
   const [toast, setToast] = useState('');
+  const [view, setView] = useState<'list' | 'week'>(table === 'bookings' && innerWidth >= 700 ? 'week' : 'list');
 
   const load = () => api<Row[]>(`/data/${table}`).then(setRows).catch(() => setRows([]));
   useEffect(() => { load(); }, [table]);
@@ -75,7 +76,14 @@ export function TablePage({ table, month, embedded }: { table: string; month?: s
         ))}</div>
       )}
 
-      {!rows ? <p className="muted pad">{t('loading')}</p> : shown.length === 0 ? <p className="empty">{t('empty')}</p> : (
+      {table === 'bookings' && (
+        <div className="tabs" role="tablist">
+          <button role="tab" aria-selected={view === 'week'} className={view === 'week' ? 'on' : ''} onClick={() => setView('week')}>{t('view_week')}</button>
+          <button role="tab" aria-selected={view === 'list'} className={view === 'list' ? 'on' : ''} onClick={() => setView('list')}>{t('view_list')}</button>
+        </div>
+      )}
+      {table === 'bookings' && view === 'week' && rows ? <WeekView rows={shown} onOpen={setEditing} />
+        : !rows ? <p className="muted pad">{t('loading')}</p> : shown.length === 0 ? <p className="empty">{t('empty')}</p> : (
         <>
           <table className="grid">
             <thead><tr>{listFields.map((f) => <th key={f.key}>{pick(f.label, lang)}</th>)}</tr></thead>
@@ -170,5 +178,47 @@ function Editor({ table, def, row, onClose, onSaved }: { table: string; def: Tab
         </div>
       </form>
     </Modal>
+  );
+}
+
+const iso = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+
+/** Bookings for one week (Saturday → Friday), by day and time. */
+function WeekView({ rows, onOpen }: { rows: Row[]; onOpen: (r: Row) => void }) {
+  const t = useT();
+  const lang = useLang();
+  const [offset, setOffset] = useState(0);
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 1) % 7) + offset * 7);
+  const days = Array.from({ length: 7 }, (_, i) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + i));
+  const today = iso(now);
+  const fmt = (d: Date, o: Intl.DateTimeFormatOptions) => d.toLocaleDateString(lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-GB', o);
+  return (
+    <div className="week">
+      <div className="week-nav">
+        <button className="ghost small" onClick={() => setOffset(offset - 1)}>{t('prev_week')}</button>
+        <button className="ghost small" onClick={() => setOffset(0)}>{t('today')}</button>
+        <button className="ghost small" onClick={() => setOffset(offset + 1)}>{t('next_week')}</button>
+        <b className="num">{fmt(days[0], { day: 'numeric', month: 'short' })} – {fmt(days[6], { day: 'numeric', month: 'short', year: 'numeric' })}</b>
+      </div>
+      <div className="week-grid">{days.map((day) => {
+        const key = iso(day);
+        const list = rows.filter((r) => r.date === key).sort((a, b) => String(a.time).localeCompare(String(b.time)));
+        return (
+          <div key={key} className={`day ${key === today ? 'is-today' : ''} ${day.getDay() === 5 ? 'friday' : ''}`}>
+            <div className="day-head"><b>{fmt(day, { weekday: 'long' })}</b><span className="num">{fmt(day, { day: 'numeric', month: 'numeric' })}</span></div>
+            {list.length === 0 ? <span className="muted small">—</span> : list.map((b) => (
+              <button key={b.id} className={`bk s-${b.status}`} onClick={() => onOpen(b)}>
+                <span className="num">{b.time || '—'}</span>
+                <b>{b.customer_name}</b>
+                <small>{[enumLabel('city', b.city, lang), String(b.services || '').split(',').filter(Boolean).map((c) => enumLabel('service', c, lang)).join('، ')].filter(Boolean).join(' · ')}</small>
+                {b.assigned_workers && <small>👷 {b.assigned_workers}</small>}
+                <Badge code={b.status} enumName="booking_status" />
+              </button>
+            ))}
+          </div>
+        );
+      })}</div>
+    </div>
   );
 }

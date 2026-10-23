@@ -266,24 +266,45 @@ async function openByNumber(v: string) {
   if (d) location.hash = `#/doc/${d.id}`;
 }
 
+const ACTIONS: Record<string, { ar: string; en: string }> = {
+  create: { ar: 'أُنشئ', en: 'Created' }, update: { ar: 'تعديل', en: 'Edited' },
+  'quote.submit': { ar: 'أُرسل للاعتماد', en: 'Submitted for approval' }, 'quote.approve': { ar: 'اعتُمد', en: 'Approved' },
+  'quote.return': { ar: 'أُرجع للتعديل', en: 'Returned for changes' }, 'quote.send': { ar: 'أُرسل للعميل', en: 'Sent to customer' },
+  'quote.accept': { ar: 'قبله العميل', en: 'Accepted by customer' }, 'quote.reject': { ar: 'رفضه العميل', en: 'Rejected by customer' },
+  'quote.cancel': { ar: 'أُلغي', en: 'Cancelled' }, 'quote.to_invoice': { ar: 'أُنشئت فاتورة', en: 'Invoice created' }, 'quote.to_booking': { ar: 'أُنشئ حجز', en: 'Booking created' },
+  'invoice.issue': { ar: 'صدرت الفاتورة', en: 'Invoice issued' }, 'invoice.void': { ar: 'أُلغيت الفاتورة', en: 'Invoice voided' }, 'invoice.discard': { ar: 'حُذفت المسودة', en: 'Draft discarded' },
+  'invoice.balance_review': { ar: 'تأكيد الرصيد', en: 'Balance confirmed' }, 'document.phone': { ar: 'تغيير رقم الإرسال', en: 'Send-to number changed' },
+  'document.shared': { ar: 'أُرسل للعميل', en: 'Sent to customer' }, 'contract.activate': { ar: 'فُعّل العقد', en: 'Contract activated' }, 'contract.complete': { ar: 'انتهى العقد', en: 'Contract completed' },
+};
+
+/** Who did what and when, from the audit log (falls back to the dates on the document). */
 function Timeline({ doc }: { doc: Row }) {
   const t = useT();
   const lang = useLang();
+  const [log, setLog] = useState<Row[] | null>(null);
+  useEffect(() => { api<Row[]>(`/history/documents/${doc.id}`).then(setLog).catch(() => setLog([])); }, [doc.id, doc.updated_at, doc.status]);
   const at = (s: string) => String(s || '').slice(0, 16).replace('T', ' ');
-  const rows: [string, string, string][] = [
-    [lang === 'ar' ? 'أُنشئ' : 'Created', doc.created_by, doc.created_at],
-    [t('act_submit'), doc.submitted_by, doc.submitted_by ? ' ' : ''],
-    [t('act_approve'), doc.approved_by, doc.approved_at],
-    [t('act_send'), '', doc.sent_at],
-    [lang === 'ar' ? 'رد العميل' : 'Customer decision', doc.reject_reason || '', doc.decided_at],
-    [t('act_issue'), doc.issued_by, doc.issued_at],
-    [t('act_void'), doc.void_reason, doc.voided_at],
-  ].filter((r) => r[2]) as [string, string, string][];
+  const detail = (raw: string) => {
+    let d: Row = {};
+    try { d = JSON.parse(raw || '{}'); } catch { return raw; }
+    const parts = [];
+    if (d.via) parts.push(d.via === 'pdf' ? 'PDF' : d.via === 'whatsapp' ? (lang === 'ar' ? 'واتساب' : 'WhatsApp') : d.via);
+    if (d.phone) parts.push(d.phone);
+    if (d.reason) parts.push(d.reason);
+    if (d.number) parts.push(d.number);
+    return parts.join(' · ');
+  };
+  const rows: [string, string, string, string][] = log && log.length
+    ? log.map((a) => [ACTIONS[a.action]?.[lang] || a.action, a.user, a.at, detail(a.details)])
+    : ([
+      [ACTIONS.create[lang], doc.created_by, doc.created_at, ''], [ACTIONS['quote.approve'][lang], doc.approved_by, doc.approved_at, ''],
+      [ACTIONS['quote.send'][lang], '', doc.sent_at, ''], [ACTIONS['invoice.issue'][lang], doc.issued_by, doc.issued_at, ''], [ACTIONS['invoice.void'][lang], '', doc.voided_at, doc.void_reason || ''],
+    ] as [string, string, string, string][]).filter((r) => r[2]);
   if (!rows.length) return null;
   return (
     <section className="card">
       <h2>{t('history')}</h2>
-      <ol className="timeline">{rows.map(([label, who, when], i) => <li key={i}><b>{label}</b> <span className="muted">{who}</span> <span className="num muted">{at(when)}</span></li>)}</ol>
+      <ol className="timeline">{rows.map(([label, who, when, info], i) => <li key={i}><b>{label}</b> <span className="muted">{who}</span> <span className="num muted">{at(when)}</span>{info && <small className="muted num"> — {info}</small>}</li>)}</ol>
     </section>
   );
 }

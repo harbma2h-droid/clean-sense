@@ -3,7 +3,8 @@ import { Plus, Search } from 'lucide-react';
 import { enumLabel } from '@shared/model.js';
 import { api, type Row } from '../api';
 import { useT } from '../i18n';
-import { Badge, money, useLang } from '../ui';
+import { Badge, errText, money, useLang } from '../ui';
+import { PaymentDialog } from './Doc';
 
 export type DocKind = 'quote' | 'invoice' | 'contract';
 const TITLE = { quote: 'quotes', invoice: 'invoices', contract: 'contracts' } as const;
@@ -23,12 +24,25 @@ export function Documents({ kind }: { kind: DocKind }) {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
+  const [paying, setPaying] = useState<Row | null>(null);
+  const [msg, setMsg] = useState('');
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
     setRows(null);
     setStatus('');
     api<Row[]>('/sales/documents').then((all) => setRows(all.filter((d) => d.type === kind || (kind === 'invoice' && d.type === 'receipt')))).catch(() => setRows([]));
-  }, [kind]);
+  }, [kind, reload]);
+  // Quick review of legacy balances the old system never recorded as collected.
+  const confirmDue = async (d: Row) => {
+    try { await api(`/sales/documents/${d.id}/confirm-balance`, { method: 'POST', body: { review: 'confirmed_due' } }); setReload((n) => n + 1); setMsg(t('saved')); } catch (x) { setMsg(errText(t, x)); }
+  };
+  const reviewButtons = (d: Row) => d.state === 'unverified' && (
+    <span className="row-actions" onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}>
+      <button className="ghost small" onClick={() => setPaying(d)}>{t('review_paid')}</button>
+      <button className="ghost small" onClick={() => confirmDue(d)}>{t('review_due')}</button>
+    </span>
+  );
 
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
@@ -71,6 +85,8 @@ export function Documents({ kind }: { kind: DocKind }) {
           {kind === 'invoice' && <span>{t('balance')}: <b className="num">{money(balance, lang)}</b></span>}
         </div>
       )}
+      {kind === 'invoice' && (counts.unverified || 0) > 0 && <p className="note warn">{t('review_note').replace('{n}', String(counts.unverified))}</p>}
+      {msg && <p className="note">{msg}</p>}
       {!rows ? <p className="muted pad">{t('loading')}</p> : shown.length === 0 ? <p className="empty">{t('empty')}</p> : (
         <>
           <table className="grid">
@@ -87,7 +103,7 @@ export function Documents({ kind }: { kind: DocKind }) {
                   <td className="clip">{d.customer_name}</td>
                   <td><Badge code={s} enumName={e} /></td>
                   <td className="num end">{money(d.total_value, lang)}</td>
-                  {kind === 'invoice' && <td className="num end">{d.balance > 0 && d.state !== 'void' ? money(d.balance, lang) : '—'}</td>}
+                  {kind === 'invoice' && <td className="num end">{d.balance > 0 && d.state !== 'void' ? money(d.balance, lang) : '—'}{reviewButtons(d)}</td>}
                 </tr>
               );
             })}</tbody>
@@ -102,11 +118,13 @@ export function Documents({ kind }: { kind: DocKind }) {
                   <b className="num amount">{money(d.total_value, lang)}</b>
                   {kind === 'invoice' && d.balance > 0 && d.state !== 'void' && <small className="num">{t('balance')}: {money(d.balance, lang)}</small>}
                 </div>
+                {reviewButtons(d)}
               </a></li>
             );
           })}</ul>
         </>
       )}
+      {paying && <PaymentDialog invoice={paying} onClose={() => setPaying(null)} onDone={() => { setPaying(null); setReload((n) => n + 1); setMsg(t('saved')); }} />}
     </div>
   );
 }
