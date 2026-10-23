@@ -51,6 +51,18 @@ Secrets (passwords, keys) are typed by the owner directly into Hostinger. They n
 3. Check the booking form end to end, with a test request that is then deleted.
 4. Optionally point `dashboard.cleansense.co` to the new system and retire the old app.
 
+## Hostinger quirks found on 2026-10-23 (read before every deploy)
+
+- **Entry file must be `server/start.cjs`.** Hostinger's runner `require()`s the entry, and `server/index.js` is an ES module with top-level await, which `require()` cannot load.
+- **Upload the zip from `node scripts/package-system.mjs`.** Its `build` script does nothing: Hostinger runs `npm run build`, and the UI build tools are dev-only. The UI ships prebuilt.
+- **Always upload the zip again** ("تحميل ملفات جديدة"). "Use previous files" and the env page's automatic redeploy fail with `package.json file not found`.
+- **Environment variables:**
+  - Edit them on the **متغيرات بيئة** page. The settings page shows them as empty fields.
+  - Importing a `.env` there adds missing keys but **does not overwrite existing ones**. To change a value, edit that row, or delete it and import again.
+- **Logs:** the runtime log page shows stderr only, so milestones are printed as `NOTICE …` on stderr.
+- **DNS:** add `A system → 46.202.156.107` at Namecheap. **Never** switch the nameservers as hPanel suggests: that would move email (Google Workspace) and the main site.
+- **DB password:** letters and digits only (it goes inside `DATABASE_URL`), with at least one capital letter (Hostinger rule). Change it in hPanel and in `DATABASE_URL` from the same clipboard value.
+
 ## Cost
 
 - **Nothing extra:** web app 2 of 5 and MySQL are included in the Business plan; Google Sheets API is free at this volume.

@@ -27,6 +27,10 @@ import bcrypt from 'bcryptjs';
 const here = dirname(fileURLToPath(import.meta.url));
 const env = process.env;
 const openAccess = env.OPEN_ACCESS === '1';
+// Hostinger's runtime log page only shows stderr, so milestones go there too.
+const notice = (...args) => console.error('NOTICE', ...args);
+
+if (env.STORE === 'mysql' && !env.DATABASE_URL) throw new Error('STORE=mysql needs DATABASE_URL (mysql://user:password@127.0.0.1:3306/database)');
 
 function serviceAccount() {
   const raw = env.GOOGLE_SERVICE_ACCOUNT_JSON || '';
@@ -58,7 +62,7 @@ if (env.IMPORT_FROM && store.kind === 'mysql') {
     try {
       const totals = await importIntoMysql(store.backend, source);
       await store.init();
-      console.log('IMPORT OK: all rows and amount totals match', JSON.stringify(totals));
+      notice('IMPORT OK: all rows and amount totals match', JSON.stringify(totals));
     } catch (e) {
       // Stop instead of running on half-copied data; the transaction left the database empty.
       console.error('IMPORT FAILED, nothing was kept:', e.message);
@@ -82,7 +86,7 @@ if (!owners.some((u) => u.username && u.password_hash) && !(openAccess && owners
     id: ids.has('US-OWNER') ? `US-OWNER-${Date.now().toString(36).toUpperCase()}` : 'US-OWNER', name: 'معاذ', username, job_title: 'المالك', role: 'owner', permissions: '',
     language: 'ar', active: 'yes', password_hash: password ? bcrypt.hashSync(password, 10) : '', must_change_password: 'yes',
   });
-  console.log(`Owner account created: ${username} (must change password at first login)`);
+  notice(`Owner account created: ${username} (must change password at first login)`);
 }
 
 // Pick up manual edits made directly in the spreadsheet or in phpMyAdmin.
@@ -97,7 +101,7 @@ if (store.kind !== 'file') {
 
 if (env.BACKUP_DIR) {
   const backup = () => store.run(() => writeBackup(store, env.BACKUP_DIR))
-    .then((f) => console.log('backup written', f))
+    .then((f) => notice('backup written', f))
     .catch((e) => console.error('backup failed', e.message));
   setTimeout(backup, 2 * 60 * 1000).unref();
   setInterval(backup, 24 * 60 * 60 * 1000).unref();
@@ -123,4 +127,4 @@ const app = createApp({
 });
 if (openAccess) console.warn('OPEN_ACCESS=1: sign-in is disabled, every visitor acts as the owner. Turn it off before real use.');
 const port = Number(env.PORT) || 3000;
-app.listen(port, () => console.log(`Clean Sense system on :${port} (store: ${store.kind})`));
+app.listen(port, () => notice(`Clean Sense system on :${port} (store: ${store.kind})`));
