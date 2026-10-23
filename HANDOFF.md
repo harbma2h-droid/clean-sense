@@ -43,8 +43,11 @@ STORE=sheets SPREADSHEET_ID=... GOOGLE_SERVICE_ACCOUNT_JSON=... SESSION_SECRET=.
 - Website booking form saves leads via `POST /api/public/leads` when `PUBLIC_LEADS_API` is set.
 - Architecture and the recommended move to MySQL: `docs/ARCHITECTURE.md`.
 
+- MySQL approved as the main store. Backend, Sheets view copy, daily backups and the migration
+  tool are built and tested on a local MariaDB. Nothing is deployed yet.
+
 ## Next steps
-1. Owner decision: MySQL on Hostinger as the main store with a Google Sheets mirror (`docs/ARCHITECTURE.md`).
+1. Follow "Switching to MySQL" in `docs/ARCHITECTURE.md`. Every ⚠️ step needs the owner's approval.
 2. Set env vars on the host at deploy time.
 5. Credit notes for partial corrections of issued invoices.
 6. Go-live (after approval): follow `system/README.md` (upgrade legacy data, opening balances,

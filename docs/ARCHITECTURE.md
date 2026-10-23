@@ -24,7 +24,9 @@ Infrastructure details live in `private/` on the owner's machine (git-ignored).
   2. Every change goes through `services.js`: validation, permissions, audit log, ledger.
 - **Reading data:** reports, Power BI and Google Sheets read data. They never write money records directly.
 
-## Decision 1 — main database: MySQL on Hostinger (recommended, needs owner approval)
+## Decision 1 — main database: MySQL on Hostinger (approved by the owner on 2026-10-23)
+
+**Status:** the code is implemented and tested locally on MariaDB 11.4 (same test suite as the file store). Nothing is deployed and no real data has been moved.
 
 **Why move off Google Sheets as the main store**
 - **Lost edits:** the API keeps the Sheet in memory and reloads only every 5 minutes. A hand edit in the Sheet and an app edit at the same time can overwrite each other.
@@ -46,6 +48,30 @@ Infrastructure details live in `private/` on the owner's machine (git-ignored).
 - A one-way **mirror**: the API writes a fresh copy of each table to the Sheet on a schedule and on demand, for viewing, filtering, sharing and Power BI.
 - Edits happen in the dashboard, which keeps permissions, audit and accounting correct.
 - If bulk editing of simple lists (services, prices) in Sheets is needed later, add a controlled "import from Sheet" action. Never a free two-way sync.
+
+### What exists in code
+
+| Piece | File | Notes |
+|---|---|---|
+| MySQL backend | `dashboard/server/mysql.js` | Creates and extends tables from `schema.json` and never drops a column.<br>Amounts are `DECIMAL(14,2)`.<br>Hidden `_row` key.<br>`utf8mb4` text. |
+| Safer writes | `dashboard/server/store.js` | The cache changes only after the database write succeeds. |
+| Sheets view copy | `dashboard/server/mirror.js` | `MIRROR_SPREADSHEET_ID`, refreshed every `MIRROR_MINUTES` (15 by default).<br>Owners can also refresh it now with `POST /api/admin/mirror`.<br>Password hashes and deleted rows are never copied.<br>It refuses to target the main data Sheet. |
+| Daily backups | `dashboard/server/backup.js` | `BACKUP_DIR`: gzip JSON of every table, newest 30 kept.<br>This is on top of Hostinger's own daily database backup. |
+| Migration and restore | `system/migrate/to-mysql.mjs` | Source: `--from-sheets` (read-only) or `--from-backup <file>`. Use `--dry-run` to only check.<br>Saves a copy of the source first.<br>Imports into empty tables in one transaction.<br>Then checks the row count and amount totals of every table. |
+
+Tests: `cd dashboard && npm test`. With `TEST_MYSQL_URL=mysql://…/cleansense_test` the same suite runs on MySQL. That database is wiped first, so never point it at real data.
+
+### Switching to MySQL (needs owner approval at each ⚠️ step)
+
+1. In hPanel → Databases, the owner creates a new database and user. The password is never shared in chat.
+2. ⚠️ Run the migration dry run. Text found in amount columns is fixed in the Sheet first.
+3. ⚠️ Run `to-mysql.mjs --from-sheets`. The report must say *All rows and amount totals match*.
+4. ⚠️ Set these on the Hostinger web app, then restart:
+   - `STORE=mysql`
+   - `DATABASE_URL`
+   - `BACKUP_DIR`
+   - `MIRROR_SPREADSHEET_ID` (a **new** Sheet shared with the service account)
+5. The old Sheet stays untouched as the pre-migration record.
 
 ## Decision 2 — Google Cloud
 

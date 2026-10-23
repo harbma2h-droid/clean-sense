@@ -16,7 +16,7 @@ const PUBLIC_ORIGINS = ['https://cleansense.co', 'https://www.cleansense.co'];
 const newId = (p) => `${p}-${Date.now().toString(36)}${randomBytes(2).toString('hex')}`.toUpperCase();
 const nowIso = () => new Date().toISOString();
 
-export function createApp({ store, secret, secureCookies = true, webDist, extraOrigins = [], openAccess = false }) {
+export function createApp({ store, secret, secureCookies = true, webDist, extraOrigins = [], openAccess = false, mirror = null }) {
   const app = express();
   const auth = createAuth({ store, secret, secureCookies, openAccess });
   applyLists(settingsMap({ store })); // owner-edited lists (services, cities, ...)
@@ -115,6 +115,16 @@ export function createApp({ store, secret, secureCookies = true, webDist, extraO
     const next = await store.patch('users', u.id, patch);
     await audit(req, reset_password ? 'password.reset' : 'update', 'users', u.id);
     res.json({ user: userOut(next), temporary_password: temp });
+  });
+
+  /* ---------- Google Sheets view copy (owners) ---------- */
+  const ownerOnly = (req, res, next) => (req.user?.role === 'owner' ? next() : res.status(403).json({ error: 'forbidden' }));
+  api.get('/admin/mirror', auth.require(), ownerOnly, (req, res) => res.json({ enabled: !!mirror, ...(mirror?.last || {}) }));
+  api.post('/admin/mirror', auth.require(), ownerOnly, async (req, res) => {
+    if (!mirror) return res.status(400).json({ error: 'mirror_not_configured' });
+    const r = await mirror.push(store);
+    audit(req, 'mirror.push', 'system', '', { ok: r.ok, rows: r.rows });
+    res.status(r.ok ? 200 : 502).json(r);
   });
 
   /* ---------- Public endpoints for cleansense.co ---------- */

@@ -6,6 +6,7 @@ dist/
 dist-preview/
 dist-demo/
 dashboard/data/
+backups/
 .env
 *.pem
 service-account*.json

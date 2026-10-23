@@ -9,6 +9,10 @@
 - The security hotfix for the current dashboard is kept outside this public
   repository (private Drive folder) until it is deployed.
 
+- `migrate/to-mysql.mjs` — copies the Sheet (read-only) or a backup file into an empty MySQL
+  database and checks row counts and amount totals. MySQL is the approved main store
+  (see `docs/ARCHITECTURE.md`); the steps below apply to the data before it is copied.
+
 ## Go-live checklist for the new system (v2) — only after the owners approve
 
 The new system never edits original values. These steps only add columns, tabs and rows.

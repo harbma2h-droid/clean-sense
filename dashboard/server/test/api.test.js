@@ -23,7 +23,20 @@ async function req(who, method, path, body, headers = {}) {
 }
 
 before(async () => {
-  store = new Store({ kind: 'file', file: join(mkdtempSync(join(tmpdir(), 'cs-')), 'db.json') });
+  // TEST_MYSQL_URL=mysql://user:pass@127.0.0.1:3307/cleansense_test runs the same tests on MySQL
+  // (the database is emptied first, so never point it at real data).
+  const url = process.env.TEST_MYSQL_URL;
+  if (url) {
+    const mysql = (await import('mysql2/promise')).default;
+    const u = new URL(url);
+    const db = u.pathname.slice(1);
+    assert.match(db, /test/, 'TEST_MYSQL_URL must point at a database whose name contains "test"');
+    const c = await mysql.createConnection({ host: u.hostname, port: Number(u.port || 3306), user: decodeURIComponent(u.username), password: decodeURIComponent(u.password) });
+    await c.query(`DROP DATABASE IF EXISTS \`${db}\``);
+    await c.query(`CREATE DATABASE \`${db}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+    await c.end();
+  }
+  store = url ? new Store({ kind: 'mysql', url }) : new Store({ kind: 'file', file: join(mkdtempSync(join(tmpdir(), 'cs-')), 'db.json') });
   await store.init();
   await store.insert('users', { id: 'U1', name: 'Owner', username: 'owner', role: 'owner', active: 'yes', password_hash: bcrypt.hashSync('Start123', 4), must_change_password: 'yes' });
   await store.insert('users', { id: 'U2', name: 'Acc', username: 'acc', role: 'accountant', active: 'yes', password_hash: bcrypt.hashSync('Acc12345', 4), must_change_password: 'no' });
@@ -31,7 +44,10 @@ before(async () => {
   await new Promise((r) => { server = app.listen(0, r); });
   base = `http://127.0.0.1:${server.address().port}/api`;
 });
-after(() => server.close());
+after(async () => {
+  server.close();
+  await store.backend.close?.();
+});
 
 test('login, forced password change, then access', async () => {
   assert.equal((await req('o', 'POST', '/auth/login', { username: 'owner', password: 'wrong' })).status, 401);
@@ -123,6 +139,23 @@ test('website booking form: preflight from cleansense.co, lead saved, every serv
   const codes = [...block.slice(0, block.indexOf('};')).matchAll(/:\s*'([a-z_]+)'/g)].map((m) => m[1]);
   assert.ok(codes.length >= 13, 'mapping found');
   for (const c of codes) assert.ok(ENUMS.service[c], `unknown service code ${c}`);
+});
+
+test('restart: everything written so far reloads from storage unchanged', async () => {
+  await store.queue;
+  const fresh = new Store(process.env.TEST_MYSQL_URL ? { kind: 'mysql', url: process.env.TEST_MYSQL_URL } : { kind: 'file', file: store.backend.file });
+  await fresh.init();
+  const diffs = [];
+  for (const t of Object.keys(store.tables)) {
+    assert.equal(fresh.tables[t].length, store.tables[t].length, `${t}: row count`);
+    store.tables[t].forEach((row, i) => {
+      for (const [k, v] of Object.entries(row)) {
+        if (v !== fresh.tables[t][i][k]) diffs.push(`${t}.${k}: ${JSON.stringify(v)} → ${JSON.stringify(fresh.tables[t][i][k])}`);
+      }
+    });
+  }
+  await fresh.backend.close?.();
+  assert.deepEqual(diffs, []);
 });
 
 test('users: create with temp password, cannot lock yourself out', async () => {

@@ -19,9 +19,11 @@ const colName = (n) => {
 };
 
 export class SheetsBackend {
-  constructor({ spreadsheetId, credentials }) {
+  /** readOnly: never add tabs or header columns (used when copying data out). */
+  constructor({ spreadsheetId, credentials, readOnly = false }) {
     this.id = spreadsheetId;
     this.creds = credentials; // { client_email, private_key }
+    this.readOnly = readOnly;
     this.token = null;
     this.tokenExp = 0;
     this.tabs = {}; // table -> { title, headers: [], rowNums: [] }
@@ -68,7 +70,7 @@ export class SheetsBackend {
     }
     // New tables from later versions are added as new tabs; existing tabs are never touched.
     const missing = Object.keys(SCHEMA).filter((t) => !this.tabs[t]);
-    if (missing.length) {
+    if (missing.length && !this.readOnly) {
       await this.call(':batchUpdate', {
         method: 'POST',
         body: JSON.stringify({ requests: missing.map((t) => ({ addSheet: { properties: { title: `${SCHEMA[t].ar} | ${t}`, gridProperties: { frozenRowCount: 2 } } } })) }),
@@ -84,7 +86,7 @@ export class SheetsBackend {
       const values = data.valueRanges[i].values || [];
       const tab = this.tabs[t];
       tab.headers = (values[0] || []).map(String);
-      await this.ensureHeaders(t);
+      if (!this.readOnly) await this.ensureHeaders(t);
       out[t] = [];
       tab.rowNums = [];
       values.slice(2).forEach((row, k) => {
