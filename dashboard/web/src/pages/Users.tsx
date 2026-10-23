@@ -1,8 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Plus, KeyRound } from 'lucide-react';
-import { ROLES } from '@shared/model.js';
+import { Plus, KeyRound, ShieldCheck } from 'lucide-react';
+import { ROLES, PERMISSIONS } from '@shared/model.js';
 import { api, ApiError, type Row, type User } from '../api';
-import type { Meta } from '../App';
+import type { Meta } from '../meta';
 import { useT } from '../i18n';
 import { Modal, useLang } from '../ui';
 
@@ -15,6 +15,7 @@ export function Users({ me, meta }: { me: User; meta: Meta | null }) {
   const [adding, setAdding] = useState(false);
   const [temp, setTemp] = useState<{ name: string; username: string; password: string } | null>(null);
   const [err, setErr] = useState('');
+  const [permsFor, setPermsFor] = useState<Row | null>(null);
 
   const load = () => api<Row[]>('/users').then(setRows).catch(() => setRows([]));
   useEffect(() => { load(); }, []);
@@ -57,11 +58,13 @@ export function Users({ me, meta }: { me: User; meta: Meta | null }) {
                 {u.username && u.id !== me.id && (
                   <button className="ghost small" onClick={() => patch(u, { reset_password: true })}><KeyRound size={16} />{t('reset_password')}</button>
                 )}
+                {u.id !== me.id && <button className="ghost small" onClick={() => setPermsFor(u)}><ShieldCheck size={16} />{t('permissions')}</button>}
               </div>
             </li>
           ))}
         </ul>
       )}
+      {permsFor && <PermsDialog user={permsFor} onClose={() => setPermsFor(null)} onSave={async (permissions) => { await patch(permsFor, { permissions }); setPermsFor(null); }} />}
       {adding && <AddUser onClose={() => setAdding(false)} onDone={(r) => { setAdding(false); setTemp(r); load(); }} />}
       {temp && (
         <Modal title={temp.name} onClose={() => setTemp(null)}>
@@ -107,6 +110,28 @@ function AddUser({ onClose, onDone }: { onClose: () => void; onDone: (r: { name:
         {err && <p className="err">{err}</p>}
         <div className="modal-foot"><span className="grow" /><button type="button" className="ghost" onClick={onClose}>{t('cancel')}</button><button className="primary">{t('save')}</button></div>
       </form>
+    </Modal>
+  );
+}
+
+function PermsDialog({ user, onClose, onSave }: { user: Row; onClose: () => void; onSave: (perms: string[]) => Promise<void> }) {
+  const t = useT();
+  const lang = useLang();
+  const rolePerms: string[] = (ROLES as any)[user.role]?.perms || [];
+  const [set, setSet] = useState<Set<string>>(new Set(user.permissions || rolePerms));
+  const custom = [...set].sort().join() !== [...rolePerms].sort().join();
+  return (
+    <Modal title={`${t('permissions')} — ${user.name}`} onClose={onClose}>
+      <p className="small muted">{t('custom_permissions')}</p>
+      <ul className="choose">{Object.entries(PERMISSIONS as Record<string, { ar: string; en: string }>).map(([k, l]) => (
+        <li key={k}><label><input type="checkbox" checked={set.has(k)} onChange={() => { const n = new Set(set); n.has(k) ? n.delete(k) : n.add(k); setSet(n); }} /><span>{l[lang]}{rolePerms.includes(k) && <small className="muted"> · {(ROLES as any)[user.role][lang]}</small>}</span></label></li>
+      ))}</ul>
+      <div className="modal-foot">
+        <button className="ghost" onClick={() => onSave([])}>{t('use_role_perms')}</button>
+        <span className="grow" />
+        <button className="ghost" onClick={onClose}>{t('cancel')}</button>
+        <button className="primary" onClick={() => onSave(custom ? [...set] : [])}>{t('save')}</button>
+      </div>
     </Modal>
   );
 }

@@ -7,7 +7,8 @@ import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { ROLES, PERMISSIONS } from '../shared/model.js';
 import { ROUTES, allowed } from '../shared/routes.js';
-import { ServiceError, createRecord } from '../shared/services.js';
+import { ServiceError, createRecord, companyInfo, settingsMap } from '../shared/services.js';
+import { applyLists } from '../shared/model.js';
 import { createAuth } from './auth.js';
 
 const PUBLIC_ORIGINS = ['https://cleansense.co', 'https://www.cleansense.co'];
@@ -18,6 +19,7 @@ const nowIso = () => new Date().toISOString();
 export function createApp({ store, secret, secureCookies = true, webDist, extraOrigins = [], openAccess = false }) {
   const app = express();
   const auth = createAuth({ store, secret, secureCookies, openAccess });
+  applyLists(settingsMap({ store })); // owner-edited lists (services, cities, ...)
   const allowedOrigins = [...PUBLIC_ORIGINS, ...extraOrigins];
 
   app.disable('x-powered-by');
@@ -61,8 +63,7 @@ export function createApp({ store, secret, secureCookies = true, webDist, extraO
 
   /* ---------- Lookups ---------- */
   api.get('/meta', auth.require(), (req, res) => {
-    const company = Object.fromEntries(store.list('settings').map((s) => [s.key, s.value]));
-    res.json({ company, roles: ROLES, permissions: PERMISSIONS, open_access: openAccess });
+    res.json({ company: companyInfo({ store }), roles: ROLES, permissions: PERMISSIONS, open_access: openAccess });
   });
 
   /* ---------- Business routes (shared with the demo, see shared/routes.js) ---------- */

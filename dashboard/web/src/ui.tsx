@@ -1,5 +1,11 @@
 import { useContext, useEffect, useState, type ReactNode } from 'react';
-import { ENUMS, MONEY_FMT, enumLabel } from '@shared/model.js';
+import { ENUMS, HIDDEN, MONEY_FMT, enumLabel } from '@shared/model.js';
+
+/** Options of a list, without items the owners hid (the current value always stays). */
+export const options = (name: string, keep?: string | string[]) => {
+  const k = new Set(Array.isArray(keep) ? keep : keep ? [keep] : []);
+  return Object.entries((ENUMS as any)[name] as Record<string, { ar: string; en: string }>).filter(([c]) => !(HIDDEN as any)[name]?.has(c) || k.has(c));
+};
 import { LangContext, pick, useT } from './i18n';
 import { api, ApiError, type Row } from './api';
 import type { Key } from './i18n';
@@ -96,14 +102,14 @@ export function Input({ f, value, onChange }: { f: FieldDef; value: any; onChang
     control = (
       <select id={id} value={value ?? ''} onChange={(e) => onChange(e.target.value)} required={f.required}>
         <option value="">—</option>
-        {Object.entries((ENUMS as any)[f.enum] as Record<string, { ar: string; en: string }>).map(([c, l]) => <option key={c} value={c}>{l[lang]}</option>)}
+        {options(f.enum, value).map(([c, l]) => <option key={c} value={c}>{l[lang]}</option>)}
       </select>
     );
   } else if (f.type === 'multiselect' && f.enum) {
     const set = new Set(String(value || '').split(',').filter(Boolean));
     control = (
       <div className="chips" id={id}>
-        {Object.entries((ENUMS as any)[f.enum] as Record<string, { ar: string; en: string }>).map(([c, l]) => (
+        {options(f.enum, [...set]).map(([c, l]) => (
           <button type="button" key={c} className={set.has(c) ? 'chip on' : 'chip'}
             onClick={() => { set.has(c) ? set.delete(c) : set.add(c); onChange([...set].join(',')); }}>{l[lang]}</button>
         ))}

@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Plus, Trash2, Printer, MessageCircle, Check, Send, Undo2, X, FileCheck2, BadgeCheck, Ban, Wallet, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, Printer, Check, Send, Undo2, X, FileCheck2, BadgeCheck, Ban, Wallet, ArrowRight, ArrowLeft, CalendarPlus } from 'lucide-react';
+import { SendDialog } from '../components/SendDialog';
+import { useCompany } from '../meta';
 import { ENUMS, enumLabel } from '@shared/model.js';
 import { computeTotals } from '@shared/finance.js';
 import { api, type Row, type User } from '../api';
 import { useT, type Key } from '../i18n';
-import { Badge, Input, Modal, errText, money, refreshLookup, useLang, useLookup, waLink, type FieldDef } from '../ui';
+import { Badge, Input, Modal, errText, money, options, refreshLookup, useLang, useLookup, type FieldDef } from '../ui';
 import { docStatus, type DocKind } from './Documents';
 
 type Item = { description: string; service: string; qty: number | string; unit_price: number | string };
@@ -32,6 +34,8 @@ export function Doc({ id, kind, user, customerId }: { id?: string; kind?: DocKin
   const [toast, setToast] = useState('');
   const [ask, setAsk] = useState<null | { title: string; run: (reason: string) => Promise<unknown> }>(null);
   const [paying, setPaying] = useState(false);
+  const [sending, setSending] = useState(false);
+  const company = useCompany();
 
   const load = async (docId = id) => {
     const d = await api<Row>(`/sales/documents/${docId}`);
@@ -105,10 +109,6 @@ export function Doc({ id, kind, user, customerId }: { id?: string; kind?: DocKin
   const canSales = perms.includes('sales');
   const canFinance = perms.includes('finance');
   const canApprove = perms.includes('approve_quotes');
-  const company = lang === 'ar' ? 'كلين سنس' : 'Clean Sense';
-  const waText = type === 'quote'
-    ? (doc.language === 'en' ? `Hello ${doc.customer_name}, here is ${company}'s quotation ${doc.doc_number} for ${money(doc.total_value, 'en')}. We're happy to answer any questions.` : `هلا ${doc.customer_name}، هذا عرض سعر ${company} رقم ${doc.doc_number} بقيمة ${money(doc.total_value, 'ar')}. حياك لأي استفسار.`)
-    : (doc.language === 'en' ? `Hello ${doc.customer_name}, invoice ${doc.doc_number} from ${company}: ${money(doc.total_value, 'en')}${doc.balance > 0 ? `, balance due ${money(doc.balance, 'en')}` : ''}. Thank you.` : `هلا ${doc.customer_name}، فاتورة ${company} رقم ${doc.doc_number} بقيمة ${money(doc.total_value, 'ar')}${doc.balance > 0 ? `، المتبقي ${money(doc.balance, 'ar')}` : ''}. شاكرين لك.`);
   const Back = lang === 'ar' ? ArrowRight : ArrowLeft;
   const listRoute = type === 'quote' ? 'sales/quotes' : type === 'contract' ? 'sales/contracts' : 'sales/invoices';
 
@@ -123,8 +123,8 @@ export function Doc({ id, kind, user, customerId }: { id?: string; kind?: DocKin
         </div>
         {!isNew && (
           <div className="quick">
-            <a className="btn" href={`#/print/${doc.id}`}><Printer size={18} />{t('print')}</a>
-            {doc.customer_phone && doc.doc_number && <a className="btn wa" href={waLink(doc.customer_phone, waText)} target="_blank" rel="noreferrer"><MessageCircle size={18} />{t('act_send_wa')}</a>}
+            <a className="btn" href={`#/print/${doc.id}`}><Printer size={18} />{t('preview')} / PDF</a>
+            {doc.doc_number && <button className="primary wa-btn" onClick={() => setSending(true)}><Send size={18} />{t('send_to_customer')}</button>}
           </div>
         )}
       </div>
@@ -143,6 +143,7 @@ export function Doc({ id, kind, user, customerId }: { id?: string; kind?: DocKin
             {['approved', 'sent', 'pending'].includes(status) && <button className="primary ok" disabled={busy || dirty} onClick={() => act('accept')}><Check size={18} />{t('act_accept')}</button>}
             {['approved', 'sent', 'pending'].includes(status) && <button className="ghost" disabled={busy} onClick={() => withReason(t('act_reject'), 'reject')}><X size={18} />{t('act_reject')}</button>}
             {status === 'accepted' && !doc.converted_to && canSales && <button className="primary" disabled={busy} onClick={() => act('to-invoice')}><FileCheck2 size={18} />{t('act_to_invoice')}</button>}
+            {status === 'accepted' && canSales && !legacy && <button className="ghost" disabled={busy} onClick={() => run(() => api(`/sales/documents/${doc.id}/to-booking`, { method: 'POST' }).then((b: any) => { location.hash = '#/t/bookings'; return b; }))}><CalendarPlus size={18} />{t('act_to_booking')}</button>}
             {doc.converted_to && <button className="btn" onClick={() => openByNumber(doc.converted_to)}><FileCheck2 size={18} />{t('invoice')} {String(doc.converted_to).startsWith('INV') ? doc.converted_to : ''}</button>}
             {['draft', 'pending_approval', 'approved', 'sent', 'pending'].includes(status) && !legacy && <button className="danger" disabled={busy} onClick={() => act('cancel')}><Ban size={18} />{t('act_cancel')}</button>}
           </>}
@@ -179,7 +180,7 @@ export function Doc({ id, kind, user, customerId }: { id?: string; kind?: DocKin
                   <textarea rows={2} placeholder={t('description')} aria-label={t('description')} value={it.description} onChange={(e) => setItems(items.map((x, j) => (j === i ? { ...x, description: e.target.value } : x)))} />
                   <select aria-label={t('service')} value={it.service} onChange={(e) => setItems(items.map((x, j) => (j === i ? { ...x, service: e.target.value } : x)))}>
                     <option value="">{t('service')}…</option>
-                    {Object.entries(ENUMS.service as Record<string, { ar: string; en: string }>).map(([c, l]) => <option key={c} value={c}>{l[lang]}</option>)}
+                    {options('service', it.service).map(([c, l]) => <option key={c} value={c}>{l[lang]}</option>)}
                   </select>
                   <input aria-label={t('qty')} type="number" inputMode="decimal" min="0" step="any" dir="ltr" value={it.qty} onChange={(e) => setItems(items.map((x, j) => (j === i ? { ...x, qty: e.target.value } : x)))} />
                   <input aria-label={t('unit_price')} placeholder={t('unit_price')} type="number" inputMode="decimal" min="0" step="0.01" dir="ltr" value={it.unit_price} onChange={(e) => setItems(items.map((x, j) => (j === i ? { ...x, unit_price: e.target.value } : x)))} />
@@ -249,6 +250,7 @@ export function Doc({ id, kind, user, customerId }: { id?: string; kind?: DocKin
 
       {!isNew && <Timeline doc={doc} />}
 
+      {sending && <SendDialog doc={doc} company={company} onClose={() => setSending(false)} onDone={() => { setSending(false); load(doc.id); }} />}
       {paying && <PaymentDialog invoice={doc} onClose={() => setPaying(false)} onDone={() => { setPaying(false); load(doc.id); setToast(t('saved')); }} />}
       {ask && <ReasonDialog title={ask.title} onClose={() => setAsk(null)} onOk={async (r) => { await ask.run(r); setAsk(null); }} />}
       {toast && <div className="toast" role="status">{toast}</div>}
@@ -344,7 +346,7 @@ export function PaymentDialog({ invoice, onClose, onDone }: { invoice?: Row; onC
           <div className="field"><label htmlFor="pa">{t('amount')}</label><input id="pa" type="number" min="0.01" step="0.01" dir="ltr" inputMode="decimal" required value={d.amount} onChange={(e) => setD({ ...d, amount: e.target.value })} /></div>
           <div className="field"><label htmlFor="pd">{t('date')}</label><input id="pd" type="date" required max={today()} value={d.date} onChange={(e) => setD({ ...d, date: e.target.value })} /></div>
           <div className="field"><label htmlFor="pm">{t('method')}</label>
-            <select id="pm" value={d.method} onChange={(e) => setD({ ...d, method: e.target.value })}>{Object.entries(ENUMS.payment_method as Record<string, { ar: string; en: string }>).map(([c, l]) => <option key={c} value={c}>{l[lang]}</option>)}</select></div>
+            <select id="pm" value={d.method} onChange={(e) => setD({ ...d, method: e.target.value })}>{options('payment_method', d.method).map(([c, l]) => <option key={c} value={c}>{l[lang]}</option>)}</select></div>
           <div className="field"><label htmlFor="pr">{t('reference')}</label><input id="pr" value={d.reference} onChange={(e) => setD({ ...d, reference: e.target.value })} /></div>
           <div className="field wide"><label htmlFor="pn">{t('notes')}</label><textarea id="pn" rows={2} value={d.notes} onChange={(e) => setD({ ...d, notes: e.target.value })} /></div>
         </div>

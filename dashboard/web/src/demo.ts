@@ -12,6 +12,11 @@ const store = {
   get: (t: string, id: string) => (tables[t] ||= []).find((r) => String(r.id) === String(id)),
   insert: async (t: string, row: Row) => { (tables[t] ||= []).push({ ...row }); return { ...row }; },
   patch: async (t: string, id: string, data: Row) => { const r = store.get(t, id)!; Object.assign(r, data); return { ...r }; },
+  setting: (key: string) => (tables.settings ||= []).find((r) => r.key === key)?.value ?? '',
+  setSetting: async (key: string, value: string) => {
+    const r = (tables.settings ||= []).find((x) => x.key === key);
+    if (r) r.value = value; else tables.settings.push({ key, value });
+  },
 };
 
 const owner: Row = { id: 'us-demo', name: 'معاذ', username: 'moath', job_title: 'المالك', role: 'owner', language: 'ar', active: 'yes', must_change_password: 'no', permissions: '' };
@@ -23,7 +28,7 @@ const ctxFor = (user: Row): any => ({
   audit: async (action: string, entity: string, id: string) => { (tables.audit_log ||= []).push({ at: new Date().toISOString(), user: user.username, action, entity, entity_id: id }); },
 });
 
-const settings = {
+const settings: Record<string, string> = {
   'company.legal_name': 'مؤسسة كلين سنس', 'company.brand_ar': 'كلين سنس', 'company.brand_en': 'Clean Sense', 'company.unified_number': '7049749042',
   'contact.phone': '0537717716', 'contact.email': 'info@cleansense.co', 'contact.website': 'cleansense.co',
   'guarantee.golden_ar': 'لا نعتبر العمل منتهياً إلا بعد رضاك. أي ملاحظة ضمن نطاق العمل المتفق عليه نعالجها مباشرة دون أي تكلفة إضافية، خلال 24 ساعة من تاريخ التسليم.',
@@ -31,6 +36,8 @@ const settings = {
 };
 
 const d = (offset: number) => new Date(Date.now() + offset * 864e5).toISOString().slice(0, 10);
+
+tables.settings = Object.entries({ ...settings, 'company.partners': 'معاذ، الشريك الثاني', 'docs.invoice_due_days': '7', 'docs.quote_valid_days': '14', 'docs.show_bank': 'yes', 'bank.name': 'بنك تجريبي', 'bank.account_name': 'مؤسسة كلين سنس', 'bank.iban': 'SA00 0000 0000 0000 0000 0000', 'docs.default_terms_ar': 'السعر شامل المواد والعمالة حسب نطاق العمل المذكور أعلاه. أي بند خارج النطاق يُحتسب بشكل منفصل. الدفع: دفعة مقدمة والمتبقي عند التسليم حسب الاتفاق.' }).map(([key, value]) => ({ key, value }));
 
 /** Build the sample data through the real business rules, so every link and number is consistent. */
 async function seed() {
@@ -86,7 +93,13 @@ async function seed() {
   await S.createRecord(ctx, 'bookings', { customer_id: c1.id, status: 'pending', city: 'dammam', services: ['deep_cleaning'], date: d(2), time: '14:00' });
   await S.createRecord(ctx, 'workers', { name: 'عامل تجريبي 1', role: 'فني تنظيف', employment_type: 'full_time', status: 'active' });
   await S.createRecord(ctx, 'workers', { name: 'عامل تجريبي 2', role: 'فني مكيفات', employment_type: 'daily', status: 'active' });
+  // Opening balances as they are today, and partner movements
+  await S.treasuryRecord(ctx, { kind: 'capital_in', account: 'bank', amount: 3000, partner: 'معاذ', date: d(-15), notes: 'شراء معدات' });
+  await S.treasuryRecord(ctx, { kind: 'drawing', account: 'cash', amount: 300, partner: 'الشريك الثاني', date: d(-4) });
   await S.createRecord(ctx, 'tasks', { title: 'تجهيز مواد الدور الخامس', assigned_worker: 'عامل تجريبي 1', project: prj.name, due_date: d(1), status: 'open' });
+  // Last: today's real balances, so everything recorded before them is reconciled.
+  await S.treasurySetBalance(ctx, { account: 'bank', actual: 8000, date: d(0), notes: 'الرصيد الفعلي حسب كشف البنك' });
+  await S.treasurySetBalance(ctx, { account: 'cash', actual: 600, date: d(0), notes: 'جرد الصندوق' });
 }
 const ready = seed().catch((e) => console.error('demo seed failed', e?.code || e, e?.extra || ''));
 
@@ -98,7 +111,7 @@ export async function demoFetch(path: string, method: string, body: any): Promis
   if (p === '/auth/me' && method === 'GET') return pub(owner);
   if (p === '/auth/me' && method === 'PATCH') { owner.language = body.language; return pub(owner); }
   if (p.startsWith('/auth/')) return pub(owner);
-  if (p === '/meta') return { company: settings, roles: ROLES, open_access: true };
+  if (p === '/meta') return { company: S.companyInfo(ctxFor(owner)), roles: ROLES, open_access: true };
   if (p === '/users') {
     if (method === 'GET') return tables.users.map(pub);
     const u = { id: S.newId('us'), ...body, active: 'yes', must_change_password: 'yes', permissions: '' };
@@ -110,6 +123,7 @@ export async function demoFetch(path: string, method: string, body: any): Promis
     const u = tables.users.find((x) => x.id === um[1])!;
     if (body.active !== undefined) u.active = body.active ? 'yes' : 'no';
     if (body.role) u.role = body.role;
+    if (body.permissions !== undefined) u.permissions = (body.permissions || []).join(',');
     return { user: pub(u), temporary_password: body.reset_password ? `Demo${Math.floor(Math.random() * 9000 + 1000)}` : undefined };
   }
   const m = matchRoute(method, p);

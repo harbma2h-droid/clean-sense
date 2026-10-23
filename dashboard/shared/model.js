@@ -15,6 +15,7 @@ export const PERMISSIONS = {
   workers: { ar: 'العمال', en: 'Workers' },
   tasks: { ar: 'المهام', en: 'Tasks' },
   users: { ar: 'المستخدمون والصلاحيات', en: 'Users & access' },
+  settings: { ar: 'إعدادات النظام', en: 'System settings' },
 };
 
 export const ROLES = {
@@ -61,6 +62,8 @@ export const ENUMS = {
     ['facility_ops', 'تشغيل وصيانة المرافق', 'Facility O&M'],
     ['other', 'أخرى', 'Other'],
   ]),
+  treasury_kind: e([['capital_in', 'إيداع من الشريك', 'Partner contribution'], ['drawing', 'سحب للشريك', 'Partner drawing'], ['transfer', 'تحويل بين الحسابات', 'Transfer between accounts'], ['balance_set', 'مطابقة رصيد', 'Balance reconciliation']]),
+  treasury_account: e([['bank', 'البنك', 'Bank'], ['cash', 'الصندوق (كاش)', 'Cash box'], ['stc_pay', 'STC Pay', 'STC Pay']]),
   language: e([['ar', 'العربية', 'Arabic'], ['en', 'الإنجليزية', 'English']]),
   yes_no: e([['yes', 'نعم', 'Yes'], ['no', 'لا', 'No']]),
 };
@@ -199,6 +202,69 @@ export const TABLES = {
     ],
   },
 };
+
+/* ---------- Owner-editable settings ---------- */
+
+// Settings the owners can edit from the system. Everything else stays in the sheet.
+export const SETTINGS_SPEC = [
+  { group: 'company', key: 'company.legal_name', ar: 'الاسم القانوني', en: 'Legal name' },
+  { group: 'company', key: 'company.legal_name_en', ar: 'الاسم القانوني بالإنجليزي', en: 'Legal name (English)' },
+  { group: 'company', key: 'company.unified_number', ar: 'الرقم الوطني الموحد', en: 'Unified number' },
+  { group: 'company', key: 'company.partners', ar: 'أسماء الشركاء (مفصولة بفاصلة)', en: 'Partner names (comma separated)' },
+  { group: 'contact', key: 'contact.phone', ar: 'الجوال وواتساب', en: 'Phone & WhatsApp' },
+  { group: 'contact', key: 'contact.email', ar: 'البريد', en: 'Email' },
+  { group: 'contact', key: 'contact.website', ar: 'الموقع', en: 'Website' },
+  { group: 'documents', key: 'docs.default_terms_ar', ar: 'الشروط الافتراضية (عربي)', en: 'Default terms (Arabic)', type: 'textarea' },
+  { group: 'documents', key: 'docs.default_terms_en', ar: 'الشروط الافتراضية (إنجليزي)', en: 'Default terms (English)', type: 'textarea' },
+  { group: 'documents', key: 'docs.quote_valid_days', ar: 'صلاحية عرض السعر بالأيام (فارغ = بدون)', en: 'Quote validity in days (blank = none)', type: 'number' },
+  { group: 'documents', key: 'docs.invoice_due_days', ar: 'مدة استحقاق الفاتورة بالأيام', en: 'Invoice due in (days)', type: 'number' },
+  { group: 'documents', key: 'docs.show_bank', ar: 'إظهار بيانات الحساب البنكي في الفواتير', en: 'Show bank details on invoices', type: 'yes_no' },
+  { group: 'documents', key: 'bank.name', ar: 'اسم البنك', en: 'Bank name' },
+  { group: 'documents', key: 'bank.account_name', ar: 'اسم صاحب الحساب', en: 'Account holder' },
+  { group: 'documents', key: 'bank.iban', ar: 'رقم الآيبان', en: 'IBAN' },
+  { group: 'documents', key: 'docs.footer_note_ar', ar: 'ملاحظة أسفل المستند (عربي)', en: 'Document footer note (Arabic)', type: 'textarea' },
+  { group: 'documents', key: 'docs.footer_note_en', ar: 'ملاحظة أسفل المستند (إنجليزي)', en: 'Document footer note (English)', type: 'textarea' },
+  { group: 'messages', key: 'wa.quote_ar', ar: 'رسالة واتساب لعرض السعر (عربي)', en: 'WhatsApp — quotation (Arabic)', type: 'textarea' },
+  { group: 'messages', key: 'wa.quote_en', ar: 'رسالة واتساب لعرض السعر (إنجليزي)', en: 'WhatsApp — quotation (English)', type: 'textarea' },
+  { group: 'messages', key: 'wa.invoice_ar', ar: 'رسالة واتساب للفاتورة (عربي)', en: 'WhatsApp — invoice (Arabic)', type: 'textarea' },
+  { group: 'messages', key: 'wa.invoice_en', ar: 'رسالة واتساب للفاتورة (إنجليزي)', en: 'WhatsApp — invoice (English)', type: 'textarea' },
+  { group: 'messages', key: 'wa.receipt_ar', ar: 'رسالة واتساب لسند القبض (عربي)', en: 'WhatsApp — receipt (Arabic)', type: 'textarea' },
+  { group: 'messages', key: 'wa.receipt_en', ar: 'رسالة واتساب لسند القبض (إنجليزي)', en: 'WhatsApp — receipt (English)', type: 'textarea' },
+];
+export const SETTINGS_GROUPS = {
+  company: { ar: 'المنشأة', en: 'Business' }, contact: { ar: 'التواصل', en: 'Contact' },
+  documents: { ar: 'المستندات', en: 'Documents' }, messages: { ar: 'رسائل واتساب', en: 'WhatsApp messages' },
+};
+// {name} {number} {total} {balance} {company} are replaced when a message is prepared.
+export const DEFAULT_MESSAGES = {
+  'wa.quote_ar': 'هلا {name}، يسعدنا نرسل لك عرض سعر {company} رقم {number} بقيمة {total}. حياك لأي استفسار.',
+  'wa.quote_en': 'Hello {name}, please find {company} quotation {number} for {total}. Happy to answer any questions.',
+  'wa.invoice_ar': 'هلا {name}، هذي فاتورة {company} رقم {number} بقيمة {total}. المتبقي: {balance}. شاكرين ثقتك.',
+  'wa.invoice_en': 'Hello {name}, here is {company} invoice {number} for {total}. Balance due: {balance}. Thank you.',
+  'wa.receipt_ar': 'هلا {name}، استلمنا منك {total}، وهذا سند القبض رقم {number}. شاكرين لك.',
+  'wa.receipt_en': 'Hello {name}, we received {total}. This is receipt {number}. Thank you.',
+};
+
+// Lists the owners can extend or hide from the system. Codes never change once created,
+// so old records keep their meaning; hidden items stay valid but are no longer offered.
+export const EDITABLE_LISTS = ['service', 'expense_category', 'city', 'payment_method'];
+export const HIDDEN = {};
+const BASE = Object.fromEntries(EDITABLE_LISTS.map((k) => [k, { ...ENUMS[k] }]));
+
+/** Apply owner-made list changes (settings key list.<name> = JSON [{code, ar, en, hidden}]). */
+export function applyLists(settings) {
+  for (const name of EDITABLE_LISTS) {
+    ENUMS[name] = { ...BASE[name] };
+    HIDDEN[name] = new Set();
+    let custom = [];
+    try { custom = JSON.parse(settings[`list.${name}`] || '[]'); } catch { custom = []; }
+    for (const it of Array.isArray(custom) ? custom : []) {
+      if (!it || !/^[a-z0-9_]{2,40}$/.test(it.code || '')) continue;
+      if (it.ar || it.en) ENUMS[name][it.code] = { ar: it.ar || it.en, en: it.en || it.ar };
+      if (it.hidden && ENUMS[name][it.code]) HIDDEN[name].add(it.code);
+    }
+  }
+}
 
 export const MONEY_FMT = (n, lang) =>
   `${Number(n || 0).toLocaleString(lang === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US', { minimumFractionDigits: Number(n) % 1 ? 2 : 0, maximumFractionDigits: 2 })} ${lang === 'ar' ? 'ر.س' : 'SAR'}`;

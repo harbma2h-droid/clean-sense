@@ -67,6 +67,7 @@ export function Payments() {
             </small>
             {p.notes && <small className="pre">{p.notes}</small>}
             <div className="row-actions">
+              {p.receipt_no && p.status !== 'void' && <a className="ghost small" href={`#/print/receipt/${p.id}`}>{t('receipt')} / {t('send')}</a>}
               {p.invoice_id && <a className="ghost small" href={`#/doc/${p.invoice_id}`}>{t('invoice')} {p.invoice_number}</a>}
               {!p.invoice_id && p.status !== 'void' && <button className="ghost small" onClick={() => setAllocating(p)}><Link2 size={16} />{t('allocate')}</button>}
               {p.status !== 'void' && <button className="ghost small" onClick={() => setVoiding(p)}>{t('void_payment')}</button>}

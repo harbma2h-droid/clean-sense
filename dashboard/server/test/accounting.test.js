@@ -219,3 +219,72 @@ test('legacy upgrade links records, keeps every original value, and is idempoten
   const again = await upgradeLegacy(ctx);
   assert.deepEqual([again.customers_created, again.payments_created, again.documents_linked], [0, 0, 0], 'second run changes nothing');
 });
+
+test('treasury: reconcile to real balances, partner contributions and drawings, transfers', async () => {
+  const before = (await req('acc', 'GET', '/treasury')).body.balances.find((b) => b.code === 'bank').balance;
+  const set = await req('acc', 'POST', '/treasury/balance', { account: 'bank', actual: 8000, date: today, notes: 'رصيد البنك الفعلي' });
+  assert.equal(set.status, 201);
+  assert.equal(set.body.book_balance, before);
+  assert.equal(set.body.amount, Math.round((8000 - before) * 100) / 100);
+  await req('acc', 'POST', '/treasury/balance', { account: 'cash', actual: 600, date: today });
+  let tr = (await req('acc', 'GET', '/treasury')).body;
+  assert.equal(tr.balances.find((b) => b.code === 'bank').balance, 8000);
+  assert.equal(tr.balances.find((b) => b.code === 'cash').balance, 600);
+  assert.equal((await req('acc', 'POST', '/treasury', { kind: 'capital_in', account: 'bank', amount: 5000 })).status, 400, 'partner required');
+  await req('acc', 'POST', '/treasury', { kind: 'capital_in', account: 'bank', amount: 5000, partner: 'معاذ' });
+  await req('acc', 'POST', '/treasury', { kind: 'drawing', account: 'cash', amount: 200, partner: 'الشريك الثاني' });
+  await req('acc', 'POST', '/treasury', { kind: 'transfer', account: 'bank', to_account: 'cash', amount: 1000 });
+  assert.equal((await req('acc', 'POST', '/treasury', { kind: 'transfer', account: 'bank', to_account: 'bank', amount: 1 })).status, 400);
+  tr = (await req('acc', 'GET', '/treasury')).body;
+  assert.equal(tr.balances.find((b) => b.code === 'bank').balance, 12000);
+  assert.equal(tr.balances.find((b) => b.code === 'cash').balance, 1400);
+  const p1 = tr.partners.find((p) => p.partner === 'معاذ');
+  assert.equal(p1.capital, 5000);
+  assert.equal(tr.partners.find((p) => p.partner === 'الشريك الثاني').drawings, 200);
+  const rep = (await req('owner', 'GET', '/reports')).body;
+  assert.ok(rep.trial_balance.balanced);
+  assert.equal(rep.pnl.total.profit, 2700, 'treasury movements never touch profit');
+  const id = tr.entries.find((e) => e.kind === 'drawing').id;
+  await req('acc', 'POST', `/treasury/${id}/void`, { reason: 'خطأ' });
+  assert.equal((await req('acc', 'GET', '/treasury')).body.balances.find((b) => b.code === 'cash').balance, 1600);
+});
+
+test('owner settings: only owners, lists extend services, defaults applied to new documents', async () => {
+  assert.equal((await req('acc', 'PUT', '/settings', { 'contact.email': 'x@y.z' })).status, 403);
+  const r = await req('owner', 'PUT', '/settings', {
+    'company.partners': 'معاذ، الشريك الثاني', 'docs.quote_valid_days': '7', 'docs.default_terms_ar': 'شروطنا', 'docs.invoice_due_days': '5',
+    'list.service': JSON.stringify([{ code: 'tank_cleaning', ar: 'تنظيف خزانات', en: 'Tank cleaning' }, { code: 'facility_ops', hidden: true }]),
+    'not.allowed': 'x',
+  });
+  assert.equal(r.status, 200);
+  assert.equal(store.list('settings').some((s) => s.key === 'not.allowed'), false);
+  assert.match(r.body['wa.quote_ar'], /\{number\}/, 'message templates have defaults');
+  const q = await req('coord', 'POST', '/sales/documents', { type: 'quote', customer_name: 'خزان', customer_phone: '0500000088', items: [{ description: 'خزان علوي', service: 'tank_cleaning', qty: 1, unit_price: 350 }] });
+  assert.equal(q.status, 201);
+  assert.equal(q.body.items_parsed[0].service, 'tank_cleaning', 'owner-added service accepted');
+  assert.equal(q.body.terms, 'شروطنا');
+  const d = new Date(Date.parse(`${q.body.date}T00:00:00Z`) + 7 * 864e5).toISOString().slice(0, 10);
+  assert.equal(q.body.valid_until, d);
+  const inv = await req('coord', 'POST', '/sales/documents', { type: 'invoice', customer_id: q.body.customer_id, items: [{ description: 'x', qty: 1, unit_price: 10 }] });
+  const iss = await req('acc', 'POST', `/sales/documents/${inv.body.id}/issue`);
+  assert.equal(iss.body.due_date, new Date(Date.parse(`${iss.body.date}T00:00:00Z`) + 5 * 864e5).toISOString().slice(0, 10));
+  assert.deepEqual((await req('acc', 'GET', '/treasury')).body.partner_names, ['معاذ', 'الشريك الثاني']);
+});
+
+test('sending: change the phone on a document and the customer, quote → booking', async () => {
+  const q = await req('coord', 'POST', '/sales/documents', { type: 'quote', customer_name: 'رقم', customer_phone: '0500000123', items: [{ description: 'x', qty: 1, unit_price: 100 }] });
+  const ch = await req('coord', 'POST', `/sales/documents/${q.body.id}/phone`, { phone: '+966 55 111 2222', update_customer: true });
+  assert.equal(ch.body.customer_phone, '0551112222');
+  assert.equal(store.get('customers', q.body.customer_id).phone, '0551112222');
+  assert.equal((await req('coord', 'POST', `/sales/documents/${q.body.id}/phone`, { phone: '12' })).status, 400);
+  await req('owner', 'POST', `/sales/documents/${q.body.id}/approve`);
+  const sh = await req('coord', 'POST', `/sales/documents/${q.body.id}/shared`, { via: 'pdf', phone: '0551112222' });
+  assert.equal(sh.body.status, 'sent', 'sharing an approved quote marks it sent');
+  assert.equal((await req('coord', 'POST', `/sales/documents/${q.body.id}/to-booking`)).status, 409, 'not accepted yet');
+  await req('coord', 'POST', `/sales/documents/${q.body.id}/accept`);
+  const b = await req('coord', 'POST', `/sales/documents/${q.body.id}/to-booking`, { date: today, time: '09:00' });
+  assert.equal(b.body.quote_id, q.body.id);
+  assert.equal(b.body.phone, '0551112222');
+  const h = await req('coord', 'GET', `/history/documents/${q.body.id}`);
+  assert.ok(h.body.some((x) => x.action === 'document.shared'));
+});

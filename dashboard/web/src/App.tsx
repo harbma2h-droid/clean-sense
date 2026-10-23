@@ -1,7 +1,10 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
-import emblem from './assets/emblem.webp';
-import { Home as HomeIcon, Inbox, CalendarClock, FolderKanban, FileText, Receipt, Wallet, TrendingDown, BarChart3, Contact, FileSignature, HardHat, ListChecks, Users as UsersIcon, LogOut, Menu, Languages } from 'lucide-react';
-import { PERMISSIONS } from '@shared/model.js';
+import emblem from './assets/brand/logo-mark.svg';
+import { Home as HomeIcon, Inbox, CalendarClock, FolderKanban, FileText, Receipt, Wallet, TrendingDown, BarChart3, Contact, FileSignature, HardHat, ListChecks, Users as UsersIcon, Landmark, Settings as SettingsIcon, LogOut, Menu, Languages } from 'lucide-react';
+import { PERMISSIONS, applyLists } from '@shared/model.js';
+import { MetaContext, type Meta } from './meta';
+import { Treasury } from './pages/Treasury';
+import { Settings } from './pages/Settings';
 import { api, isDemo, type User } from './api';
 import { LangContext, applyDir, pick, useT, type Key, type Lang } from './i18n';
 import { Login, ChangePassword } from './pages/Login';
@@ -15,7 +18,6 @@ import { Customer } from './pages/Customer';
 import { Users } from './pages/Users';
 import { DocPrint } from './pages/DocPrint';
 
-export type Meta = { company: Record<string, string>; roles: Record<string, { ar: string; en: string; perms: string[] }>; open_access?: boolean };
 
 type NavItem = { route: string; perm: string; Icon: any; label: Key | null };
 const NAV: { group: Key | null; items: NavItem[] }[] = [
@@ -36,9 +38,13 @@ const NAV: { group: Key | null; items: NavItem[] }[] = [
   { group: 'nav_finance', items: [
     { route: 'payments', perm: 'finance', Icon: Wallet, label: 'payments' },
     { route: 't/expenses', perm: 'finance', Icon: TrendingDown, label: 'expenses' },
+    { route: 'treasury', perm: 'finance', Icon: Landmark, label: 'treasury' },
     { route: 'reports', perm: 'reports', Icon: BarChart3, label: 'reports' },
   ] },
-  { group: 'nav_admin', items: [{ route: 'users', perm: 'users', Icon: UsersIcon, label: null }] },
+  { group: 'nav_admin', items: [
+    { route: 'users', perm: 'users', Icon: UsersIcon, label: null },
+    { route: 'settings', perm: 'settings', Icon: SettingsIcon, label: 'settings' },
+  ] },
 ];
 // Bottom bar on phones: the four most used screens for this user.
 const MOBILE_PRIORITY = ['', 'sales/quotes', 't/bookings', 'sales/invoices', 'payments', 't/leads', 't/tasks'];
@@ -68,7 +74,7 @@ export function App() {
   useEffect(() => {
     if (user && !user.must_change_password) {
       if (user.language && user.language !== lang) setLangState(user.language);
-      api<Meta>('/meta').then(setMeta).catch(() => {});
+      api<Meta>('/meta').then((m) => { applyLists(m.company || {}); setMeta(m); }).catch(() => {});
     }
   }, [user]);
 
@@ -84,12 +90,12 @@ export function App() {
       {user === undefined ? <div className="splash"><img src={emblem} alt="" /></div>
         : user === null ? <Login onDone={setUser} />
         : user.must_change_password ? <ChangePassword onDone={setUser} forced />
-        : <Shell user={user} meta={meta} onLogout={() => setUser(null)} />}
+        : <MetaContext.Provider value={meta}><Shell user={user} meta={meta} onLogout={() => setUser(null)} onMeta={setMeta} /></MetaContext.Provider>}
     </LangContext.Provider>
   );
 }
 
-function Shell({ user, meta, onLogout }: { user: User; meta: Meta | null; onLogout: () => void }) {
+function Shell({ user, meta, onLogout, onMeta }: { user: User; meta: Meta | null; onLogout: () => void; onMeta: (m: Meta) => void }) {
   const t = useT();
   const { lang, setLang } = useLangCtx();
   const route = useRoute();
@@ -117,10 +123,13 @@ function Shell({ user, meta, onLogout }: { user: User; meta: Meta | null; onLogo
   else if (parts[0] === 'sales' && has('sales') && ['quotes', 'invoices', 'contracts'].includes(parts[1])) page = <Documents kind={parts[1].slice(0, -1) as any} />;
   else if (parts[0] === 'doc' && parts[1] === 'new' && has('sales')) page = <Doc key={route} kind={parts[2] as any} customerId={query.c} user={user} />;
   else if (parts[0] === 'doc' && (has('sales') || has('finance'))) page = <Doc key={parts[1]} id={parts[1]} user={user} />;
-  else if (parts[0] === 'print' && (has('sales') || has('finance'))) page = <DocPrint id={parts[1]} meta={meta} />;
+  else if (parts[0] === 'print' && parts[1] !== 'receipt' && (has('sales') || has('finance'))) page = <DocPrint id={parts[1]} />;
   else if (parts[0] === 'customer' && (has('customers') || has('finance'))) page = <Customer id={parts[1]} />;
   else if (parts[0] === 'payments' && has('finance')) page = <Payments />;
   else if (parts[0] === 'reports' && has('reports')) page = <Reports />;
+  else if (parts[0] === 'treasury' && has('finance')) page = <Treasury />;
+  else if (parts[0] === 'settings' && has('settings')) page = <Settings onSaved={(company) => { applyLists(company); if (meta) onMeta({ ...meta, company }); }} />;
+  else if (parts[0] === 'print' && parts[1] === 'receipt' && has('finance')) page = <DocPrint paymentId={parts[2]} />;
   else if (parts[0] === 'users' && has('users')) page = <Users me={user} meta={meta} />;
   else page = <Home user={user} />;
 

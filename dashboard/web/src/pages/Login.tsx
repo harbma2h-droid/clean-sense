@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import emblem from '../assets/emblem.webp';
+import emblem from '../assets/brand/logo-mark.svg';
 import { api, ApiError, type User } from '../api';
 import { useT, type Key } from '../i18n';
 

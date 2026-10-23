@@ -34,6 +34,16 @@ export const ROUTES = [
   ['POST', '/payments/:id/void', 'finance', (ctx, p, body) => S.voidPayment(ctx, p.id, body)],
   ['POST', '/payments/:id/allocate', 'finance', (ctx, p, body) => S.allocatePayment(ctx, p.id, body)],
 
+  ['GET', '/treasury', 'finance', (ctx, p, b, q) => S.treasuryOverview(ctx, { to: q.to || '' })],
+  ['POST', '/treasury', 'finance', (ctx, p, body) => S.treasuryRecord(ctx, body)],
+  ['POST', '/treasury/balance', 'finance', (ctx, p, body) => S.treasurySetBalance(ctx, body)],
+  ['POST', '/treasury/:id/void', 'finance', (ctx, p, body) => S.treasuryVoid(ctx, p.id, body)],
+
+  ['GET', '/settings', 'settings', (ctx) => S.companyInfo(ctx)],
+  ['PUT', '/settings', 'settings', (ctx, p, body) => S.updateSettings(ctx, body)],
+  ['POST', '/admin/upgrade-legacy', 'settings', (ctx) => S.upgradeLegacy(ctx)],
+  ['GET', '/history/:entity/:id', ['sales', 'finance', 'customers'], (ctx, p) => S.historyOf(ctx, p.entity, p.id)],
+
   ['GET', '/reports', 'reports', (ctx, p, b, q) => S.reports(ctx, { from: q.from || '', to: q.to || '' })],
   ['GET', '/ledger', 'reports', (ctx, p, b, q) => S.ledger(ctx, { from: q.from || '', to: q.to || '' })],
 ];

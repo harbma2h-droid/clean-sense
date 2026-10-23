@@ -969,6 +969,97 @@
     ]
    ]
   },
+  "treasury": {
+   "ar": "الخزينة والشركاء",
+   "en": "Treasury",
+   "cols": [
+    [
+     "id",
+     "المعرّف",
+     "ID"
+    ],
+    [
+     "date",
+     "التاريخ",
+     "Date"
+    ],
+    [
+     "kind",
+     "النوع",
+     "Kind"
+    ],
+    [
+     "account",
+     "الحساب",
+     "Account"
+    ],
+    [
+     "to_account",
+     "إلى حساب",
+     "To account"
+    ],
+    [
+     "partner",
+     "الشريك",
+     "Partner"
+    ],
+    [
+     "amount",
+     "المبلغ",
+     "Amount"
+    ],
+    [
+     "book_balance",
+     "الرصيد في النظام قبلها",
+     "Book balance before"
+    ],
+    [
+     "actual_balance",
+     "الرصيد الفعلي",
+     "Actual balance"
+    ],
+    [
+     "notes",
+     "ملاحظات",
+     "Notes"
+    ],
+    [
+     "status",
+     "الحالة",
+     "Status"
+    ],
+    [
+     "void_reason",
+     "سبب الإلغاء",
+     "Void reason"
+    ],
+    [
+     "voided_at",
+     "تاريخ الإلغاء",
+     "Voided at"
+    ],
+    [
+     "created_by",
+     "أنشأه",
+     "Created by"
+    ],
+    [
+     "created_at",
+     "وقت الإنشاء",
+     "Created at"
+    ],
+    [
+     "updated_at",
+     "آخر تعديل",
+     "Updated at"
+    ],
+    [
+     "deleted_at",
+     "محذوف في",
+     "Deleted at"
+    ]
+   ]
+  },
   "workers": {
    "ar": "العمال",
    "en": "Workers",

@@ -96,6 +96,21 @@ export function Reports() {
           </section>
         )}
 
+        <div className="two">
+          <section className="card">
+            <h2>{t('balances')}</h2>
+            <dl className="sum">{(r.treasury || []).map((b: Row) => <div key={b.code}><dt>{enumLabel('treasury_account', b.code, lang)}</dt><dd className={`num ${b.balance < 0 ? 'neg-text' : ''}`}>{M(b.balance)}</dd></div>)}</dl>
+            <a className="ghost small" href="#/treasury">{t('treasury')}</a>
+          </section>
+          <section className="card">
+            <h2>{t('partners')}</h2>
+            <table className="mini">
+              <thead><tr><th>{t('partner')}</th><th className="end">{t('capital')}</th><th className="end">{t('drawings')}</th><th className="end">{t('net')}</th></tr></thead>
+              <tbody>{(r.partners || []).map((p: Row) => <tr key={p.partner}><td>{p.partner}</td><td className="num end">{M(p.capital)}</td><td className="num end">{M(p.drawings)}</td><td className="num end">{M(p.net)}</td></tr>)}</tbody>
+            </table>
+          </section>
+        </div>
+
         <section className="card">
           <h2>{t('trial_balance')} <span className={`badge ${r.trial_balance.balanced ? 'green' : 'red'}`}>{r.trial_balance.balanced ? t('balanced') : t('not_balanced')}</span></h2>
           <div className="tw"><table className="mini">

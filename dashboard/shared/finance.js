@@ -14,12 +14,14 @@ const day = (s) => String(s || '').slice(0, 10);
 
 export const ACCOUNTS = {
   1010: { ar: 'الصندوق (كاش)', en: 'Cash on hand', kind: 'asset' },
-  1020: { ar: 'البنك (تحويلات)', en: 'Bank (transfers)', kind: 'asset' },
-  1030: { ar: 'مدفوعات الشبكة', en: 'Card (POS) settlements', kind: 'asset' },
+  1020: { ar: 'البنك (تحويل وشبكة)', en: 'Bank (transfers & card)', kind: 'asset' },
   1040: { ar: 'STC Pay', en: 'STC Pay', kind: 'asset' },
   1090: { ar: 'طرق دفع أخرى', en: 'Other payment methods', kind: 'asset' },
   1200: { ar: 'ذمم العملاء (مستحقات)', en: 'Accounts receivable', kind: 'asset' },
   2200: { ar: 'دفعات عملاء غير مخصصة', en: 'Unallocated customer payments', kind: 'liability' },
+  3100: { ar: 'رأس مال الشركاء', en: "Partners' capital", kind: 'equity' },
+  3200: { ar: 'مسحوبات الشركاء', en: "Partners' drawings", kind: 'equity' },
+  3900: { ar: 'تسويات الأرصدة الافتتاحية', en: 'Opening balance adjustments', kind: 'equity' },
   4000: { ar: 'إيرادات الخدمات', en: 'Service revenue', kind: 'revenue' },
   5010: { ar: 'مواد', en: 'Supplies', kind: 'expense', cat: 'supplies' },
   5020: { ar: 'وقود', en: 'Fuel', kind: 'expense', cat: 'fuel' },
@@ -31,7 +33,9 @@ export const ACCOUNTS = {
   5080: { ar: 'تسويق', en: 'Marketing', kind: 'expense', cat: 'marketing' },
   5090: { ar: 'مصاريف أخرى', en: 'Other expenses', kind: 'expense', cat: 'other' },
 };
-export const METHOD_ACCOUNT = { cash: 1010, bank_transfer: 1020, card: 1030, stc_pay: 1040, other: 1090 };
+// Card (POS) receipts settle into the bank account and card purchases are paid from it, so both use the bank.
+export const METHOD_ACCOUNT = { cash: 1010, bank_transfer: 1020, card: 1020, stc_pay: 1040, other: 1090 };
+export const TREASURY_ACCOUNT = { cash: 1010, bank: 1020, stc_pay: 1040 };
 const expenseAccount = (cat) => Number(Object.keys(ACCOUNTS).find((k) => ACCOUNTS[k].cat === cat) || 5090);
 const cashAccount = (method) => METHOD_ACCOUNT[method] || 1090;
 
@@ -100,7 +104,7 @@ export function enrichDocuments(docs, payments, today) {
  * Double-entry journal generated from invoices, payments and expenses.
  * Voiding creates a reversing entry on the void date, so closed months never change.
  */
-export function journal({ documents = [], payments = [], expenses = [] }) {
+export function journal({ documents = [], payments = [], expenses = [], treasury = [] }) {
   const entries = [];
   const push = (date, ref, memo, source, lines) => entries.push({ date: day(date), ref, memo, source, lines: lines.map(([account, debit, credit]) => ({ account, debit: r2(debit), credit: r2(credit) })) });
 
@@ -124,7 +128,47 @@ export function journal({ documents = [], payments = [], expenses = [] }) {
     if (!amt) continue;
     push(x.date, x.reference || 'EXP', x.notes || x.category, { table: 'expenses', id: x.id }, [[expenseAccount(x.category), amt, 0], [cashAccount(x.method), 0, amt]]);
   }
+  for (const t of live(treasury)) {
+    if (t.status === 'void') continue;
+    const amt = r2(t.amount);
+    const acc = TREASURY_ACCOUNT[t.account];
+    if (!amt || !acc) continue;
+    const src = { table: 'treasury', id: t.id };
+    const memo = [t.partner, t.notes].filter(Boolean).join(' — ');
+    if (t.kind === 'capital_in') push(t.date, 'CAP', memo, src, [[acc, amt, 0], [3100, 0, amt]]);
+    else if (t.kind === 'drawing') push(t.date, 'DRW', memo, src, [[3200, amt, 0], [acc, 0, amt]]);
+    else if (t.kind === 'transfer' && TREASURY_ACCOUNT[t.to_account]) push(t.date, 'TRF', memo, src, [[TREASURY_ACCOUNT[t.to_account], amt, 0], [acc, 0, amt]]);
+    // A reconciliation stores the signed difference between the real balance and the books.
+    else if (t.kind === 'balance_set') push(t.date, 'ADJ', memo, src, amt > 0 ? [[acc, amt, 0], [3900, 0, amt]] : [[3900, -amt, 0], [acc, 0, -amt]]);
+  }
   return entries.sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/** Book balance of one account up to and including a date. */
+export function accountBalance(entries, account, to) {
+  let bal = 0;
+  for (const e of entries) {
+    if (to && e.date > to) continue;
+    for (const l of e.lines) if (l.account === account) bal += l.debit - l.credit;
+  }
+  return r2(bal);
+}
+
+/** Balances of the money accounts (bank, cash box, STC Pay). */
+export function treasuryBalances(entries, to) {
+  return Object.entries(TREASURY_ACCOUNT).map(([code, account]) => ({ code, account, balance: accountBalance(entries, account, to) }));
+}
+
+/** Contributions and drawings per partner. */
+export function partnersEquity(treasury, partners = []) {
+  const out = Object.fromEntries(partners.map((p) => [p, { partner: p, capital: 0, drawings: 0 }]));
+  for (const t of live(treasury)) {
+    if (t.status === 'void' || !['capital_in', 'drawing'].includes(t.kind)) continue;
+    const row = (out[t.partner || '—'] ??= { partner: t.partner || '—', capital: 0, drawings: 0 });
+    if (t.kind === 'capital_in') row.capital = r2(row.capital + Number(t.amount));
+    else row.drawings = r2(row.drawings + Number(t.amount));
+  }
+  return Object.values(out).map((r) => ({ ...r, net: r2(r.capital - r.drawings) }));
 }
 
 const inRange = (date, from, to) => (!from || date >= from) && (!to || date <= to);

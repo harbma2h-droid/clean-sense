@@ -4,8 +4,8 @@
 // ctx = { store, user, perms: string[], audit(action, entity, id, details), today?: 'YYYY-MM-DD' }
 // store = { list(table, {includeDeleted}), get(table, id), insert(table, row), patch(table, id, data) }
 
-import { TABLES, ENUMS } from './model.js';
-import { computeTotals, docTotal, enrichDocuments, invoiceState, paidByInvoice, journal, trialBalance, profitAndLoss, cashByMethod, receivablesAging, revenueByService, projectProfitability, customerStatement, r2 } from './finance.js';
+import { TABLES, ENUMS, SETTINGS_SPEC, DEFAULT_MESSAGES, EDITABLE_LISTS, applyLists } from './model.js';
+import { computeTotals, docTotal, enrichDocuments, invoiceState, paidByInvoice, journal, trialBalance, profitAndLoss, cashByMethod, receivablesAging, revenueByService, projectProfitability, customerStatement, accountBalance, treasuryBalances, partnersEquity, TREASURY_ACCOUNT, r2 } from './finance.js';
 
 export class ServiceError extends Error {
   constructor(status, code, extra = {}) {
@@ -18,6 +18,7 @@ export class ServiceError extends Error {
 const fail = (status, code, extra) => { throw new ServiceError(status, code, extra); };
 
 const nowIso = () => new Date().toISOString();
+const addDays = (date, n) => new Date(Date.parse(`${date}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
 const todayOf = (ctx) => ctx.today || new Date().toISOString().slice(0, 10);
 const rand = () => Math.random().toString(36).slice(2, 6);
 export const newId = (p) => `${p}-${Date.now().toString(36)}${rand()}`.toUpperCase();
@@ -223,6 +224,10 @@ export async function createDocument(ctx, body) {
     created_at: nowIso(), updated_at: nowIso(), created_by: ctx.user?.username || '',
   });
   if (type === 'quote') data.quote_status = 'draft';
+  // Defaults the owners set in Settings.
+  const cfg = settingsMap(ctx);
+  if (!data.terms) data.terms = cfg[`docs.default_terms_${data.language}`] || '';
+  if (type === 'quote' && !data.valid_until && Number(cfg['docs.quote_valid_days']) > 0) data.valid_until = addDays(data.date, Number(cfg['docs.quote_valid_days']));
   const row = await ctx.store.insert('documents', data);
   await ctx.audit('create', 'documents', row.id, { type, total: data.total });
   return getDocument(ctx, row.id);
@@ -278,6 +283,9 @@ export async function documentAction(ctx, id, action, body = {}) {
   if (!d || d.deleted_at) fail(404, 'not_found');
   const now = nowIso();
   const status = d.status || (d.type === 'quote' ? d.quote_status || 'pending' : '');
+  if (action === 'phone') return updateDocumentPhone(ctx, id, body);
+  if (action === 'shared') return markDocumentShared(ctx, id, body);
+  if (action === 'to-booking') return quoteToBooking(ctx, id, body);
 
   if (d.type === 'quote' && QUOTE_FLOW[action]) {
     const rule = QUOTE_FLOW[action];
@@ -316,7 +324,8 @@ export async function documentAction(ctx, id, action, body = {}) {
     if (!(docTotal(d) > 0)) fail(400, 'validation', { fields: ['items:required'] });
     const date = body.date || todayOf(ctx);
     const number = nextNumber(ctx.store.list('documents', { includeDeleted: true }), 'doc_number', 'INV');
-    const res = await setDoc(ctx, d, { status: 'issued', doc_number: number, date, due_date: body.due_date || d.due_date || date, issued_at: now, issued_by: ctx.user?.username || '' }, 'invoice.issue', { number, total: docTotal(d) });
+    const dueDays = Number(settingsMap(ctx)['docs.invoice_due_days']) || 0;
+    const res = await setDoc(ctx, d, { status: 'issued', doc_number: number, date, due_date: body.due_date || d.due_date || addDays(date, dueDays), issued_at: now, issued_by: ctx.user?.username || '' }, 'invoice.issue', { number, total: docTotal(d) });
     const quote = ctx.store.list('documents').find((q) => q.type === 'quote' && q.converted_to === d.id);
     if (quote) await ctx.store.patch('documents', quote.id, { converted_to: number, updated_at: now });
     return res;
@@ -493,7 +502,7 @@ export async function bookingToInvoice(ctx, id) {
 /* ================= Summary and reports ================= */
 
 function financeData(ctx) {
-  return { documents: ctx.store.list('documents'), payments: ctx.store.list('payments'), expenses: ctx.store.list('expenses'), projects: ctx.store.list('projects') };
+  return { documents: ctx.store.list('documents'), payments: ctx.store.list('payments'), expenses: ctx.store.list('expenses'), projects: ctx.store.list('projects'), treasury: ctx.store.list('treasury') };
 }
 
 export function summary(ctx) {
@@ -540,6 +549,8 @@ export function reports(ctx, { from = '', to = '' } = {}) {
     projects: projectProfitability(data),
     trial_balance: trialBalance(entries, to),
     unallocated_payments: ctx.store.list('payments').filter((p) => p.status !== 'void' && !p.invoice_id),
+    treasury: treasuryBalances(entries, to),
+    partners: partnersEquity(data.treasury, partnerNames(ctx)),
   };
 }
 
@@ -551,6 +562,155 @@ export function statement(ctx, customerId) {
   const c = ctx.store.get('customers', customerId);
   if (!c || c.deleted_at) fail(404, 'not_found');
   return { customer: c, ...customerStatement(customerId, financeData(ctx), todayOf(ctx)), bookings: ctx.store.list('bookings').filter((b) => b.customer_id === customerId) };
+}
+
+/* ================= Treasury: partners, transfers, balance reconciliation ================= */
+
+export const partnerNames = (ctx) => String(settingsMap(ctx)['company.partners'] || '').split(/[,،]/).map((x) => x.trim()).filter(Boolean);
+
+export function treasuryOverview(ctx, { to = '' } = {}) {
+  const entries = journal(financeData(ctx));
+  return {
+    balances: treasuryBalances(entries, to),
+    partners: partnersEquity(ctx.store.list('treasury'), partnerNames(ctx)),
+    partner_names: partnerNames(ctx),
+    entries: ctx.store.list('treasury').sort((a, b) => String(b.date).localeCompare(String(a.date))),
+  };
+}
+
+export async function treasuryRecord(ctx, body) {
+  const kind = body.kind;
+  const date = String(body.date || todayOf(ctx)).slice(0, 10);
+  const errors = [];
+  if (!ENUMS.treasury_kind[kind] || kind === 'balance_set') errors.push('kind:invalid');
+  if (!TREASURY_ACCOUNT[body.account]) errors.push('account:required');
+  if (kind === 'transfer' && (!TREASURY_ACCOUNT[body.to_account] || body.to_account === body.account)) errors.push('to_account:invalid');
+  if (['capital_in', 'drawing'].includes(kind) && !String(body.partner || '').trim()) errors.push('partner:required');
+  if (!(r2(body.amount) > 0)) errors.push('amount:positive');
+  if (date > todayOf(ctx)) errors.push('date:future');
+  if (errors.length) fail(400, 'validation', { fields: errors });
+  const row = await ctx.store.insert('treasury', {
+    id: newId('tr'), date, kind, account: body.account, to_account: kind === 'transfer' ? body.to_account : '', partner: String(body.partner || '').trim(),
+    amount: r2(body.amount), notes: String(body.notes || '').slice(0, 1000), status: 'posted', created_at: nowIso(), updated_at: nowIso(), created_by: ctx.user?.username || '',
+  });
+  await ctx.audit(`treasury.${kind}`, 'treasury', row.id, { amount: row.amount });
+  return row;
+}
+
+/**
+ * Record the real balance of an account on a date. The system posts the difference between
+ * the real balance and its books as an adjustment, so balances match reality from then on.
+ */
+export async function treasurySetBalance(ctx, body) {
+  if (!TREASURY_ACCOUNT[body.account]) fail(400, 'validation', { fields: ['account:required'] });
+  const actual = Number(body.actual);
+  if (body.actual === '' || body.actual === undefined || !Number.isFinite(actual)) fail(400, 'validation', { fields: ['actual:required'] });
+  const date = String(body.date || todayOf(ctx)).slice(0, 10);
+  if (date > todayOf(ctx)) fail(400, 'validation', { fields: ['date:future'] });
+  const book = accountBalance(journal(financeData(ctx)), TREASURY_ACCOUNT[body.account], date);
+  const diff = r2(actual - book);
+  const row = await ctx.store.insert('treasury', {
+    id: newId('tr'), date, kind: 'balance_set', account: body.account, amount: diff, book_balance: book, actual_balance: r2(actual),
+    notes: String(body.notes || '').slice(0, 1000), status: 'posted', created_at: nowIso(), updated_at: nowIso(), created_by: ctx.user?.username || '',
+  });
+  await ctx.audit('treasury.balance_set', 'treasury', row.id, { book, actual, diff });
+  return row;
+}
+
+export async function treasuryVoid(ctx, id, body = {}) {
+  const t = ctx.store.get('treasury', id);
+  if (!t || t.deleted_at) fail(404, 'not_found');
+  if (t.status === 'void') fail(409, 'invalid_transition');
+  const reason = String(body.reason || '').trim();
+  if (!reason) fail(400, 'validation', { fields: ['reason:required'] });
+  const row = await ctx.store.patch('treasury', id, { status: 'void', void_reason: reason, voided_at: nowIso(), updated_at: nowIso() });
+  await ctx.audit('treasury.void', 'treasury', id, { reason });
+  return row;
+}
+
+/* ================= Owner settings ================= */
+
+export function settingsMap(ctx) {
+  return Object.fromEntries(ctx.store.list('settings').map((r) => [r.key, r.value]));
+}
+
+/** Public company details plus message templates (with defaults), for documents and screens. */
+export function companyInfo(ctx) {
+  return { ...DEFAULT_MESSAGES, ...settingsMap(ctx) };
+}
+
+export async function updateSettings(ctx, body = {}) {
+  const allowed = new Set([...SETTINGS_SPEC.map((s) => s.key), ...EDITABLE_LISTS.map((n) => `list.${n}`)]);
+  const changes = Object.entries(body).filter(([k]) => allowed.has(k));
+  if (!changes.length) fail(400, 'validation', { fields: ['settings:empty'] });
+  for (const [k, v] of changes) {
+    let value = String(v ?? '').slice(0, 5000);
+    if (k.startsWith('list.')) {
+      let list;
+      try { list = JSON.parse(value); } catch { fail(400, 'validation', { fields: [`${k}:invalid`] }); }
+      if (!Array.isArray(list)) fail(400, 'validation', { fields: [`${k}:invalid`] });
+      value = JSON.stringify(list.filter((it) => /^[a-z0-9_]{2,40}$/.test(it?.code || '')).map((it) => ({ code: it.code, ar: String(it.ar || '').slice(0, 80), en: String(it.en || '').slice(0, 80), hidden: !!it.hidden })));
+    }
+    if (k === 'contact.phone') value = normPhone(value) || value;
+    await ctx.store.setSetting(k, value);
+  }
+  applyLists(settingsMap(ctx));
+  await ctx.audit('settings.update', 'settings', '', Object.fromEntries(changes.map(([k]) => [k, 'changed'])));
+  return companyInfo(ctx);
+}
+
+/* ================= Sending documents to the customer ================= */
+
+/**
+ * Change the phone a document is sent to. The customer record is updated too when asked,
+ * so the next quote or invoice uses the new number. Legacy documents keep their original
+ * number; only the customer record changes.
+ */
+export async function updateDocumentPhone(ctx, id, body = {}) {
+  const d = ctx.store.get('documents', id);
+  if (!d || d.deleted_at) fail(404, 'not_found');
+  const phone = normPhone(body.phone);
+  if (!/^05\d{8}$/.test(phone) && !/^\d{8,15}$/.test(phone)) fail(400, 'validation', { fields: ['phone:invalid'] });
+  if (d.legacy !== 'yes') await ctx.store.patch('documents', id, { customer_phone: phone, updated_at: nowIso() });
+  if (body.update_customer && d.customer_id) {
+    const dup = ctx.store.list('customers').find((c) => c.id !== d.customer_id && normPhone(c.phone) === phone);
+    if (dup) fail(409, 'duplicate_phone', { id: dup.id, name: dup.name });
+    await ctx.store.patch('customers', d.customer_id, { phone, updated_at: nowIso() });
+  }
+  await ctx.audit('document.phone', 'documents', id, { phone, customer: !!body.update_customer });
+  return getDocument(ctx, id);
+}
+
+/** Log that a document was sent (and how), for the history panel. */
+export async function markDocumentShared(ctx, id, body = {}) {
+  const d = ctx.store.get('documents', id);
+  if (!d || d.deleted_at) fail(404, 'not_found');
+  await ctx.audit('document.shared', 'documents', id, { via: String(body.via || 'whatsapp').slice(0, 20), phone: normPhone(body.phone) });
+  if (d.type === 'quote' && d.status === 'approved') return documentAction(ctx, id, 'send');
+  return getDocument(ctx, id);
+}
+
+/** Accepted quote → booking with the same customer, services and project. */
+export async function quoteToBooking(ctx, id, body = {}) {
+  const q = ctx.store.get('documents', id);
+  if (!q || q.deleted_at || q.type !== 'quote') fail(404, 'not_found');
+  if ((q.status || q.quote_status) !== 'accepted') fail(409, 'quote_not_accepted');
+  const existing = ctx.store.list('bookings').find((b) => b.quote_id === q.id);
+  if (existing) fail(409, 'already_converted', { booking_id: existing.id });
+  const lead = ctx.store.list('leads').find((l) => l.quote_id === q.id);
+  const booking = await ctx.store.insert('bookings', {
+    id: newId('bo'), status: 'confirmed', customer_id: q.customer_id, customer_name: q.customer_name, phone: q.customer_phone, city: q.city || lead?.city || '',
+    services: q.services || '', date: String(body.date || lead?.preferred_date || todayOf(ctx)).slice(0, 10), time: String(body.time || '').slice(0, 5),
+    project_id: q.project_id || '', quote_id: q.id, lead_id: lead?.id || '', notes: q.scope || '', created_at: nowIso(), updated_at: nowIso(), created_by: ctx.user?.username || '',
+  });
+  if (lead && !lead.booking_id) await ctx.store.patch('leads', lead.id, { status: 'booked', booking_id: booking.id, updated_at: nowIso() });
+  await ctx.audit('quote.to_booking', 'documents', q.id, { booking: booking.id });
+  return booking;
+}
+
+/** Audit history of one record, newest first. */
+export function historyOf(ctx, entity, id) {
+  return ctx.store.list('audit_log').filter((a) => a.entity === entity && a.entity_id === id).slice(-50).reverse();
 }
 
 /* ================= One-time upgrade of imported legacy data ================= */

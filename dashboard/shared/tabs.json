@@ -58,5 +58,9 @@
  "payments": {
   "sheetId": 115,
   "title": "الدفعات والتحصيل | payments"
+ },
+ "treasury": {
+  "sheetId": 116,
+  "title": "الخزينة والشركاء | treasury"
  }
 }
