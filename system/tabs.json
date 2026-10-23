@@ -1,0 +1,58 @@
+{
+ "customers": {
+  "sheetId": 101,
+  "title": "العملاء | customers"
+ },
+ "leads": {
+  "sheetId": 102,
+  "title": "طلبات الموقع | leads"
+ },
+ "bookings": {
+  "sheetId": 103,
+  "title": "الحجوزات | bookings"
+ },
+ "projects": {
+  "sheetId": 104,
+  "title": "المشاريع | projects"
+ },
+ "documents": {
+  "sheetId": 105,
+  "title": "الفواتير والمستندات | documents"
+ },
+ "revenue": {
+  "sheetId": 106,
+  "title": "الإيرادات | revenue"
+ },
+ "expenses": {
+  "sheetId": 107,
+  "title": "المصروفات | expenses"
+ },
+ "workers": {
+  "sheetId": 108,
+  "title": "العمال | workers"
+ },
+ "tasks": {
+  "sheetId": 109,
+  "title": "المهام | tasks"
+ },
+ "users": {
+  "sheetId": 110,
+  "title": "المستخدمون | users"
+ },
+ "pricing": {
+  "sheetId": 111,
+  "title": "الأسعار | pricing"
+ },
+ "settings": {
+  "sheetId": 112,
+  "title": "الإعدادات | settings"
+ },
+ "audit_log": {
+  "sheetId": 113,
+  "title": "سجل العمليات | audit_log"
+ },
+ "legacy_raw": {
+  "sheetId": 114,
+  "title": "الأصل من النظام القديم | legacy_raw"
+ }
+}
