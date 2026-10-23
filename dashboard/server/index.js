@@ -8,7 +8,8 @@
 //   OWNER_USERNAME / OWNER_PASSWORD  only used on first run, when there are no users yet
 //   MIRROR_SPREADSHEET_ID          optional: read-only Google Sheets copy of all tables (uses the service account)
 //   MIRROR_MINUTES                 how often the copy refreshes (default 15)
-//   BACKUP_DIR                     optional: daily gzip JSON backup of every table (keeps 30); use a folder
+//   IMPORT_FROM                    one-time: sheets | backup:<file> → copied into the EMPTY MySQL database at start
+//   BACKUP_DIR                    optional: daily gzip JSON backup of every table (keeps 30); use a folder
 //                                  outside the app folder so a redeploy never removes it
 //   OPEN_ACCESS=1                  temporary: no sign-in, every visitor acts as the owner
 //   PORT                           set by the host
@@ -18,7 +19,9 @@ import { fileURLToPath } from 'node:url';
 import { Store } from './store.js';
 import { createApp } from './app.js';
 import { SheetsMirror } from './mirror.js';
-import { writeBackup } from './backup.js';
+import { writeBackup, readBackup } from './backup.js';
+import { SheetsBackend } from './sheets.js';
+import { importIntoMysql } from './migrate.js';
 import bcrypt from 'bcryptjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -39,6 +42,30 @@ const store = new Store(
       : { kind: 'file', file: env.DATA_FILE || join(here, '..', 'data', 'db.json') },
 );
 await store.init();
+
+// One-time move into MySQL on the server, so the database password never leaves Hostinger.
+// IMPORT_FROM=sheets (needs SPREADSHEET_ID + GOOGLE_SERVICE_ACCOUNT_JSON; the Sheet is only read)
+// or IMPORT_FROM=backup:/path/file.json.gz. Runs only while the database is empty: once data is
+// there, it is skipped, so leaving the variable set by mistake does nothing. Remove it afterwards.
+if (env.IMPORT_FROM && store.kind === 'mysql') {
+  const empty = Object.values(store.tables).every((rows) => rows.length === 0);
+  if (!empty) {
+    console.warn('IMPORT_FROM ignored: the database already has data. Remove IMPORT_FROM.');
+  } else {
+    const source = env.IMPORT_FROM === 'sheets'
+      ? await new SheetsBackend({ spreadsheetId: env.SPREADSHEET_ID, credentials: serviceAccount(), readOnly: true }).loadAll()
+      : readBackup(env.IMPORT_FROM.replace(/^backup:/, '')).tables;
+    try {
+      const totals = await importIntoMysql(store.backend, source);
+      await store.init();
+      console.log('IMPORT OK: all rows and amount totals match', JSON.stringify(totals));
+    } catch (e) {
+      // Stop instead of running on half-copied data; the transaction left the database empty.
+      console.error('IMPORT FAILED, nothing was kept:', e.message);
+      process.exit(1);
+    }
+  }
+}
 
 if (!store.list('users').length) {
   const username = (env.OWNER_USERNAME || 'owner').toLowerCase();

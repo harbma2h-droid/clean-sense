@@ -63,15 +63,22 @@ Tests: `cd dashboard && npm test`. With `TEST_MYSQL_URL=mysql://…/cleansense_t
 
 ### Switching to MySQL (needs owner approval at each ⚠️ step)
 
-1. In hPanel → Databases, the owner creates a new database and user. The password is never shared in chat.
-2. ⚠️ Run the migration dry run. Text found in amount columns is fixed in the Sheet first.
-3. ⚠️ Run `to-mysql.mjs --from-sheets`. The report must say *All rows and amount totals match*.
-4. ⚠️ Set these on the Hostinger web app, then restart:
+1. ✅ 2026-10-23: the owner created `u579605167_cs_system` (user of the same name) next to the site's database. It is empty.
+   - From the app on Hostinger, the host is `127.0.0.1`.
+   - The password stays with the owner; it was not shared in chat.
+2. ✅ 2026-10-23: dry run on the real Sheet (read-only).
+   - Every data tab was read and nothing needs fixing: 53 documents, 172 expenses, 7 revenue rows, 2 bookings, 3 users, 19 settings.
+   - Customers are 0 until the legacy upgrade runs.
+3. ⚠️ Deploy the API as a Hostinger web app with these settings:
    - `STORE=mysql`
-   - `DATABASE_URL`
-   - `BACKUP_DIR`
-   - `MIRROR_SPREADSHEET_ID` (a **new** Sheet shared with the service account)
-5. The old Sheet stays untouched as the pre-migration record.
+   - `DATABASE_URL=mysql://u579605167_cs_system:<password>@127.0.0.1:3306/u579605167_cs_system` (the owner types the password)
+   - `IMPORT_FROM=sheets`, `SPREADSHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`
+   - `BACKUP_DIR`, `MIRROR_SPREADSHEET_ID` (a **new** Sheet), `SESSION_SECRET`
+4. On first start the server copies the Sheet into the empty database in one transaction and compares totals.
+   - The log shows `IMPORT OK`, or `IMPORT FAILED, nothing was kept` (the app then stops).
+   - Later starts skip the import. Remove `IMPORT_FROM` afterwards.
+5. ⚠️ Run the legacy upgrade and opening balances (`system/README.md`) in the new system.
+6. The old Sheet stays untouched as the pre-migration record.
 
 ## Decision 2 — Google Cloud
 
