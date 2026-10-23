@@ -9,7 +9,9 @@ const COOKIE = 'cs_session';
 const TTL_MS = 1000 * 60 * 60 * 24 * 14; // 14 days
 const WINDOW_MS = 15 * 60 * 1000;
 
-export function createAuth({ store, secret, secureCookies }) {
+// openAccess: temporary build-phase switch. Requests without a session act as the
+// owner, so nobody needs to sign in. Roles and permissions stay as they are.
+export function createAuth({ store, secret, secureCookies, openAccess = false }) {
   if (!secret || secret.length < 32) throw new Error('SESSION_SECRET must be at least 32 characters');
 
   const sign = (body) => createHmac('sha256', secret).update(body).digest('base64url');
@@ -102,6 +104,10 @@ export function createAuth({ store, secret, secureCookies }) {
         const u = store.get('users', p.uid);
         // Changing the password invalidates older sessions (v = hash suffix).
         if (u && u.active !== 'no' && u.password_hash?.slice(-8) === p.v) req.user = u;
+      }
+      if (!req.user && openAccess) {
+        const owner = store.list('users').find((u) => u.role === 'owner' && u.active !== 'no');
+        if (owner) req.user = { ...owner, must_change_password: 'no' };
       }
       next();
     },

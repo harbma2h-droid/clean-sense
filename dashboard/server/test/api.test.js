@@ -78,6 +78,16 @@ test('document numbers are sequential per type', async () => {
   const q = await mk('quote');
   assert.equal(q.body.doc_number, 'QO-0001');
   assert.equal(q.body.price, 1500);
+
+  const inv = await req('o', 'POST', `/data/documents/${q.body.id}/to-invoice`);
+  assert.equal(inv.status, 201);
+  assert.equal(inv.body.doc_number, 'INV-0003');
+  assert.equal(inv.body.converted_from, 'QO-0001');
+  assert.equal(inv.body.price, 1500);
+  const quote = (await req('o', 'GET', '/data/documents')).body.find((d) => d.id === q.body.id);
+  assert.equal(quote.converted_to, 'INV-0003');
+  assert.equal(quote.quote_status, 'accepted');
+  assert.equal((await req('o', 'POST', `/data/documents/${q.body.id}/to-invoice`)).status, 409);
 });
 
 test('public lead: validation, honeypot, idempotency, CORS, convert', async () => {
@@ -118,4 +128,21 @@ test('account locks after 5 wrong passwords', async () => {
   for (let i = 0; i < 5; i++) await req('x', 'POST', '/auth/login', { username: 'acc', password: 'nope' });
   const r = await req('x', 'POST', '/auth/login', { username: 'acc', password: 'Acc12345' });
   assert.equal(r.status, 429);
+});
+
+test('open access: no sign-in needed, acts as owner; off by default', async () => {
+  assert.equal((await req(null, 'GET', '/auth/me')).status, 401);
+  const app = createApp({ store, secret: 'x'.repeat(40), secureCookies: false, openAccess: true });
+  const s = await new Promise((r) => { const x = app.listen(0, () => r(x)); });
+  try {
+    const res = await fetch(`http://127.0.0.1:${s.address().port}/api/auth/me`);
+    const me = await res.json();
+    assert.equal(res.status, 200);
+    assert.equal(me.role, 'owner');
+    assert.equal(me.must_change_password, false);
+    const meta = await (await fetch(`http://127.0.0.1:${s.address().port}/api/meta`)).json();
+    assert.equal(meta.open_access, true);
+  } finally {
+    s.close();
+  }
 });

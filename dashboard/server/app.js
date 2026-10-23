@@ -16,9 +16,9 @@ const newId = (p) => `${p}-${Date.now().toString(36)}${randomBytes(2).toString('
 const nowIso = () => new Date().toISOString();
 const asNumber = (v) => (v === '' || v === null || v === undefined ? '' : Number.isFinite(Number(v)) ? Number(v) : String(v));
 
-export function createApp({ store, secret, secureCookies = true, webDist, extraOrigins = [] }) {
+export function createApp({ store, secret, secureCookies = true, webDist, extraOrigins = [], openAccess = false }) {
   const app = express();
-  const auth = createAuth({ store, secret, secureCookies });
+  const auth = createAuth({ store, secret, secureCookies, openAccess });
   const allowedOrigins = [...PUBLIC_ORIGINS, ...extraOrigins];
 
   app.disable('x-powered-by');
@@ -106,7 +106,7 @@ export function createApp({ store, secret, secureCookies = true, webDist, extraO
   /* ---------- Lookups ---------- */
   api.get('/meta', auth.require(), (req, res) => {
     const company = Object.fromEntries(store.list('settings').map((s) => [s.key, s.value]));
-    res.json({ company, roles: ROLES, permissions: PERMISSIONS });
+    res.json({ company, roles: ROLES, permissions: PERMISSIONS, open_access: openAccess });
   });
 
   /* ---------- Home summary ---------- */
@@ -186,6 +186,22 @@ export function createApp({ store, secret, secureCookies = true, webDist, extraO
     await store.patch('leads', lead.id, { status: 'booked', booking_id: booking.id });
     await audit(req, 'convert', 'leads', lead.id, { booking: booking.id });
     res.status(201).json(booking);
+  });
+
+  /* ---------- Accepted quote -> invoice (same details, linked both ways) ---------- */
+  api.post('/data/documents/:id/to-invoice', auth.require('documents'), async (req, res) => {
+    const quote = store.get('documents', req.params.id);
+    if (!quote || quote.deleted_at || quote.type !== 'quote') return res.status(404).json({ error: 'not_found' });
+    if (quote.converted_to) return res.status(409).json({ error: 'already_converted', doc_number: quote.converted_to });
+    const keep = ['customer_name', 'customer_phone', 'services', 'custom_service', 'scope', 'price', 'duration', 'payment_method', 'terms', 'notes', 'city', 'property_type', 'language'];
+    const invoice = await store.insert('documents', {
+      ...Object.fromEntries(keep.map((k) => [k, quote[k] ?? ''])),
+      id: newId('do'), type: 'invoice', doc_number: nextDocNumber('invoice'), date: nowIso().slice(0, 10), converted_from: quote.doc_number,
+      created_at: nowIso(), updated_at: nowIso(), created_by: req.user.username,
+    });
+    await store.patch('documents', quote.id, { quote_status: 'accepted', converted_to: invoice.doc_number, updated_at: nowIso() });
+    await audit(req, 'convert', 'documents', quote.id, { invoice: invoice.doc_number });
+    res.status(201).json(invoice);
   });
 
   /* ---------- Users (owner / users permission) ---------- */
