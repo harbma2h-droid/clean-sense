@@ -67,12 +67,19 @@ if (env.IMPORT_FROM && store.kind === 'mysql') {
   }
 }
 
-if (!store.list('users').length) {
+// Make sure an owner can sign in. Imported data may hold only inactive role templates
+// (no username, no password), so "no users at all" is not the right test.
+const owners = store.list('users').filter((u) => u.role === 'owner' && u.active !== 'no');
+if (!owners.some((u) => u.username && u.password_hash) && !(openAccess && owners.length)) {
   const username = (env.OWNER_USERNAME || 'owner').toLowerCase();
   const password = env.OWNER_PASSWORD;
-  if (!password && !openAccess) throw new Error('First run: set OWNER_PASSWORD to create the owner account');
+  if (!password && !openAccess) throw new Error('No owner can sign in: set OWNER_PASSWORD (and OWNER_USERNAME) to create the owner account');
+  if (store.list('users', { includeDeleted: true }).some((u) => String(u.username).toLowerCase() === username)) {
+    throw new Error(`OWNER_USERNAME "${username}" is already used by another account: choose another one`);
+  }
+  const ids = new Set(store.list('users', { includeDeleted: true }).map((u) => u.id));
   await store.insert('users', {
-    id: 'US-OWNER', name: 'معاذ', username, job_title: 'المالك', role: 'owner', permissions: '',
+    id: ids.has('US-OWNER') ? `US-OWNER-${Date.now().toString(36).toUpperCase()}` : 'US-OWNER', name: 'معاذ', username, job_title: 'المالك', role: 'owner', permissions: '',
     language: 'ar', active: 'yes', password_hash: password ? bcrypt.hashSync(password, 10) : '', must_change_password: 'yes',
   });
   console.log(`Owner account created: ${username} (must change password at first login)`);
