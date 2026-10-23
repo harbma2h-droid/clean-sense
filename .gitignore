@@ -4,3 +4,8 @@ dist/
 .DS_Store
 *.log
 dist-preview/
+dist-demo/
+dashboard/data/
+.env
+*.pem
+service-account*.json
