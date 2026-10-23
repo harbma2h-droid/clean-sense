@@ -22,6 +22,8 @@ export interface Service {
   category: Category;
   image?: ImageMetadata;
   featured?: boolean;
+  /** Offered on request while the team expands (shown with a note). */
+  expanding?: boolean;
   ar: Copy;
   en: Copy;
 }
@@ -375,6 +377,47 @@ export const SERVICES: Service[] = [
     },
   },
   {
+    slug: 'ac-cleaning',
+    icon: 'air-vent',
+    category: 'specialised',
+    ar: {
+      name: 'تنظيف المكيفات',
+      short: 'غسيل وتنظيف المكيفات السبليت والشباك من الغبار والأوساخ المتراكمة.',
+      intro:
+        'المكيف يشتغل أغلب السنة في الشرقية، ومع الوقت يتجمع الغبار في الفلاتر والوحدة الداخلية ويقل التبريد. ننظف الفلاتر والوحدة الداخلية بأدوات مخصصة مع حماية المكان حول المكيف، ونقدر نضيفها مع تنظيف البيت في نفس الزيارة.',
+      includes: [
+        'فك الفلاتر وغسلها',
+        'تنظيف الوحدة الداخلية وفتحات الهواء',
+        'حماية الجدار والأرضية أثناء التنظيف',
+        'تنظيف الغطاء الخارجي للوحدة',
+        'تجربة التشغيل بعد الانتهاء',
+      ],
+      ideal: ['الشقق والفلل', 'قبل الصيف', 'مع التنظيف العميق أو بعد التشطيب'],
+      faqs: [
+        { q: 'هل تنظفون المكيفات مع تنظيف البيت؟', a: 'نعم، تقدر تضيفها لنفس الحجز ويتم تحديد العدد في عرض السعر.' },
+        { q: 'كم يستغرق تنظيف المكيف؟', a: 'حسب نوع المكيف وحالته، ونوضح المدة في عرض السعر.' },
+      ],
+    },
+    en: {
+      name: 'AC Cleaning',
+      short: 'Washing and cleaning split and window AC units of built-up dust and dirt.',
+      intro:
+        'In the Eastern Province the AC runs most of the year, and dust builds up in the filters and indoor unit, reducing cooling. We clean the filters and indoor unit with dedicated tools while protecting the area around it — and can add it to a home clean in the same visit.',
+      includes: [
+        'Filters removed and washed',
+        'Indoor unit and air vents cleaned',
+        'Wall and floor protected while cleaning',
+        'Unit cover cleaned',
+        'Test run after cleaning',
+      ],
+      ideal: ['Apartments and villas', 'Before summer', 'Together with a deep or post-construction clean'],
+      faqs: [
+        { q: 'Can you clean the ACs during a home clean?', a: 'Yes, add them to the same booking; the number of units is set in the quotation.' },
+        { q: 'How long does one AC take?', a: 'It depends on the type and condition; the quotation states the duration.' },
+      ],
+    },
+  },
+  {
     slug: 'water-tank-cleaning',
     icon: 'droplets',
     category: 'property',
@@ -505,6 +548,7 @@ export const SERVICES: Service[] = [
     slug: 'building-operation-maintenance',
     icon: 'wrench',
     category: 'property',
+    expanding: true,
     ar: {
       name: 'تشغيل وصيانة المباني',
       short: 'إدارة تشغيلية متكاملة للمبنى: نظافة، متابعة، وصيانة دورية بعقد واحد.',
@@ -521,7 +565,7 @@ export const SERVICES: Service[] = [
       ideal: ['العمائر السكنية', 'المجمعات السكنية', 'اتحادات الملاك', 'المباني التجارية الصغيرة والمتوسطة'],
       faqs: [
         { q: 'وش يشمل عقد التشغيل والصيانة؟', a: 'نحدد النطاق معك بعد معاينة المبنى — من النظافة فقط إلى تشغيل كامل مع صيانة وقائية.' },
-        { q: 'هل المعاينة مجانية؟', a: 'نعم، نزور المبنى ونرسل لك عرض سعر مفصّل بدون أي التزام.' },
+        { q: 'هل الخدمة متاحة الحين؟', a: 'الخدمة قيد التوسع، ونستقبل الطلبات ونرتب معاينة للمبنى حسب النطاق والموقع.' },
       ],
     },
     en: {
@@ -540,7 +584,7 @@ export const SERVICES: Service[] = [
       ideal: ['Residential buildings', 'Residential compounds', "Owners' associations (HOA)", 'Small and mid-size commercial buildings'],
       faqs: [
         { q: 'What does an O&M contract include?', a: 'We define the scope with you after a site visit — from cleaning only to full operation with preventive maintenance.' },
-        { q: 'Is the site visit free?', a: 'Yes. We visit the building and send a detailed quotation with no obligation.' },
+        { q: 'Is the service available now?', a: 'The service is expanding; we take requests and arrange a site visit depending on scope and location.' },
       ],
     },
   },

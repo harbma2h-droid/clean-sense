@@ -9,8 +9,8 @@ interface Props {
 }
 const { lang } = Astro.props;
 const t = ui[lang];
-// NOTE: placeholder testimonials — replace with real Google / WhatsApp reviews
-// (with the client's permission) in src/i18n/ui.ts → reviews.items.
+// Only real reviews, published with the client's permission (src/i18n/ui.ts → reviews.items).
+// While the list is empty the section points to the real work on Instagram and TikTok.
 ---
 
 <section class="section" id="reviews">
@@ -19,7 +19,7 @@ const t = ui[lang];
       <p class="eyebrow">{t.reviews.eyebrow}</p>
       <h2 class="h2">{t.reviews.title}</h2>
     </div>
-    <ul class="rev-grid">
+    {t.reviews.items.length > 0 && <ul class="rev-grid">
       {t.reviews.items.map((r) => (
         <li class="rev card reveal">
           <div class="rev__stars" aria-hidden="true">
@@ -35,12 +35,12 @@ const t = ui[lang];
           </div>
         </li>
       ))}
-    </ul>
+    </ul>}
     <div class="rev__more reveal">
       <p>{t.reviews.more}</p>
       <div class="rev__social">
-        <a class="btn btn--outline" href={SITE.instagram} target="_blank" rel="noopener"><Icon name="instagram" size={20} />Instagram</a>
-        <a class="btn btn--outline" href={SITE.tiktok} target="_blank" rel="noopener"><Icon name="tiktok" size={20} />TikTok</a>
+        <a class="btn btn--outline" href={SITE.instagram} target="_blank" rel="noopener"><Icon name="instagram" size={20} /><span dir="ltr">{SITE.instagramHandle}</span></a>
+        <a class="btn btn--outline" href={SITE.tiktok} target="_blank" rel="noopener"><Icon name="tiktok" size={20} /><span dir="ltr">{SITE.tiktokHandle}</span></a>
       </div>
     </div>
   </div>

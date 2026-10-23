@@ -38,7 +38,9 @@
   --header-h: 68px;
   --mobile-bar-h: 72px;
 
-  --font: 'IBM Plex Sans Arabic', system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
+  /* Brand fonts (Design System v1.9): Cairo for Arabic, Montserrat for English. */
+  --font: 'Cairo', system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
+  --font-en: 'Montserrat', 'Cairo', system-ui, sans-serif;
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
@@ -77,6 +79,9 @@ html {
 body {
   margin: 0;
   font-family: var(--font);
+}
+html[lang='en'] body {
+  font-family: var(--font-en);
   font-size: 16px;
   line-height: 1.75;
   color: var(--text);

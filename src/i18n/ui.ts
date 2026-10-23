@@ -11,7 +11,7 @@ export const servicePath = (lang: Lang, slug: string) => `${prefix(lang)}/servic
 export const ui = {
   ar: {
     meta: {
-      title: 'كلين سنس | شركة تنظيف احترافية في الخبر والدمام والجبيل',
+      title: 'كلين سنس | شركة تنظيف احترافية في الخبر والدمام والظهران',
       description:
         'كلين سنس — تنظيف عميق للمنازل والفلل، تنظيف ما بعد البناء، الكنب والموكيت، الخزانات، وعقود تنظيف وتشغيل العمائر في المنطقة الشرقية. احجز عبر واتساب.',
     },
@@ -43,13 +43,13 @@ export const ui = {
       visit: 'مرحبًا كلين سنس، أبغى أطلب معاينة مجانية.',
     },
     hero: {
-      badge: 'نخدم الخبر • الدمام • الجبيل',
+      badge: 'نخدم الخبر • الدمام • الظهران',
       title1: 'نظافة فندقية لبيتك،',
       title2: 'تحسّها من أول زيارة.',
-      sub: 'فريق مدرّب، مواد آمنة، وضمان إعادة العمل — للمنازل والفلل والعمائر في المنطقة الشرقية.',
+      sub: 'فريق مدرّب، مواد آمنة، والضمان الذهبي — للمنازل والفلل والعمائر في المنطقة الشرقية.',
       primary: 'احجز عبر واتساب',
       secondary: 'احسب السعر التقديري',
-      points: ['المواد والمعدات علينا', 'ضمان إعادة العمل', 'فريق مدرّب وموثوق'],
+      points: ['المواد والمعدات علينا', 'الضمان الذهبي', 'فريق مدرّب وموثوق'],
       card: {
         title: 'احجز في أقل من دقيقة',
         steps: ['اختر الخدمة', 'حدد الموعد', 'نأكد لك على واتساب'],
@@ -144,11 +144,11 @@ export const ui = {
         { icon: 'scan-search', title: 'منهجية لكل سطح', text: 'أدوات ومواد مخصصة للرخام والخشب والزجاج والأقمشة.' },
         { icon: 'receipt', title: 'سعر واضح قبل البدء', text: 'تعرف السعر قبل ما نبدأ — بدون رسوم مخفية.' },
         { icon: 'calendar-check', title: 'التزام بالمواعيد', text: 'نوصل في الموعد المتفق عليه ونبلغك أول بأول.' },
-        { icon: 'shield-check', title: 'الضمان الذهبي', text: 'إذا ما رضيت عن جزء من الشغل، نرجع ونعيده بدون تكلفة.' },
+        { icon: 'shield-check', title: 'الضمان الذهبي', text: 'ما نعتبر الشغل منتهي إلا بعد رضاك، وأي ملاحظة ضمن النطاق نعالجها خلال 24 ساعة من التسليم بدون تكلفة.' },
       ],
       guarantee: {
         title: 'الضمان الذهبي',
-        text: 'إذا لاحظت أي جزء ما وصل للمستوى المتفق عليه، بلّغنا خلال ٢٤ ساعة ونرجع نعيده — بدون أي تكلفة إضافية.',
+        text: 'لا نعتبر العمل منتهياً إلا بعد رضاك. أي ملاحظة ضمن نطاق العمل المتفق عليه نعالجها مباشرة دون أي تكلفة إضافية، خلال 24 ساعة من تاريخ التسليم.',
       },
     },
     business: {
@@ -165,14 +165,10 @@ export const ui = {
       cta2: 'تفاصيل التشغيل والصيانة',
     },
     reviews: {
-      eyebrow: 'آراء العملاء',
-      title: 'عملاؤنا يقولون',
-      items: [
-        { text: 'نظّفوا الفيلا بعد التشطيب وشالوا كل آثار الدهان والغبار بدقة. استلمناها جاهزة للسكن.', who: 'عميل — فيلا', city: 'الدمام', service: 'تنظيف ما بعد البناء' },
-        { text: 'نتعامل معهم شهريًا للتنظيف العميق. الفريق محترم وملتزم بالموعد، والفرق واضح من أول زيارة.', who: 'عميلة — شقة', city: 'الخبر', service: 'تنظيف عميق' },
-        { text: 'غسلوا الكنب والموكيت ورجعت كأنها جديدة وبريحة حلوة. خدمة مرتبة من الحجز للتسليم.', who: 'عميل — منزل', city: 'الجبيل', service: 'الكنب والموكيت' },
-      ],
-      more: 'شوف شغلنا الحقيقي — قبل وبعد',
+      eyebrow: 'من الميدان',
+      title: 'شغلنا الحقيقي',
+      items: [] as { text: string; who: string; city: string; service: string }[],
+      more: 'صور وفيديوهات من مواقع عملنا الفعلية، أول بأول على حساباتنا:',
     },
     areas: {
       eyebrow: 'مناطق الخدمة',
@@ -189,7 +185,7 @@ export const ui = {
         { q: 'هل السعر في الحاسبة نهائي؟', a: 'السعر تقديري ويعطيك فكرة واضحة. السعر النهائي نأكده بعد الصور أو المعاينة وقبل البدء — بدون مفاجآت.' },
         { q: 'هل لازم أكون موجود في البيت؟', a: 'لا. كثير من عملائنا يسلموننا المفتاح ويرجعون لبيت نظيف.' },
         { q: 'هل عمالتكم مدربة وموثوقة؟', a: 'نعم، كل فرد في الفريق يمر بتدريب على معايير النظافة والضيافة، ويعمل تحت إشراف.' },
-        { q: 'وش هو الضمان الذهبي؟', a: 'إذا ما كنت راضي عن أي جزء من الشغل، بلّغنا خلال ٢٤ ساعة ونرجع نعيده بدون تكلفة.' },
+        { q: 'وش هو الضمان الذهبي؟', a: 'لا نعتبر العمل منتهياً إلا بعد رضاك. أي ملاحظة ضمن نطاق العمل المتفق عليه نعالجها مباشرة دون أي تكلفة إضافية، خلال 24 ساعة من تاريخ التسليم.' },
         { q: 'هل عندكم عقود للعمائر والمجمعات؟', a: 'نعم، عقود شهرية وسنوية للتنظيف والتشغيل والصيانة، مع معاينة مجانية وعرض سعر مفصل.' },
       ],
     },
@@ -234,7 +230,7 @@ export const ui = {
 
   en: {
     meta: {
-      title: 'Clean Sense | Professional Cleaning in Al Khobar, Dammam & Jubail',
+      title: 'Clean Sense | Professional Cleaning in Al Khobar, Dammam & Dhahran',
       description:
         'Clean Sense — deep cleaning for homes and villas, post-construction cleaning, sofa and carpet cleaning, water tanks and building cleaning & O&M contracts across the Eastern Province. Book on WhatsApp.',
     },
@@ -266,13 +262,13 @@ export const ui = {
       visit: 'Hello Clean Sense, I would like to request a free site visit.',
     },
     hero: {
-      badge: 'Serving Al Khobar • Dammam • Jubail',
+      badge: 'Serving Al Khobar • Dammam • Dhahran',
       title1: 'Hotel-standard cleaning',
       title2: 'you can feel.',
-      sub: 'Trained teams, safe products and a re-clean guarantee — for homes, villas and buildings across the Eastern Province.',
+      sub: 'Trained teams, safe products and the Golden Guarantee — for homes, villas and buildings across the Eastern Province.',
       primary: 'Book on WhatsApp',
       secondary: 'Get an instant estimate',
-      points: ['Supplies & equipment included', 'Re-clean guarantee', 'Trained, vetted team'],
+      points: ['Supplies & equipment included', 'Golden Guarantee', 'Trained, vetted team'],
       card: {
         title: 'Book in under a minute',
         steps: ['Choose a service', 'Pick a time', 'We confirm on WhatsApp'],
@@ -367,11 +363,11 @@ export const ui = {
         { icon: 'scan-search', title: 'A method for every surface', text: 'The right tools for marble, wood, glass and fabric.' },
         { icon: 'receipt', title: 'Clear price up front', text: 'You know the price before we start — no hidden fees.' },
         { icon: 'calendar-check', title: 'On time, every time', text: 'We arrive at the agreed time and keep you updated.' },
-        { icon: 'shield-check', title: 'Golden guarantee', text: 'Not happy with part of the job? We come back and redo it free.' },
+        { icon: 'shield-check', title: 'Golden guarantee', text: 'The job is not finished until you are satisfied; notes within scope are fixed within 24 hours of handover, free.' },
       ],
       guarantee: {
         title: 'The Golden Guarantee',
-        text: 'If any part of the job is not up to the agreed standard, tell us within 24 hours and we will come back and redo it — at no extra cost.',
+        text: "We don't consider the job finished until you're satisfied. Any note within the agreed scope of work is fixed right away at no extra cost, within 24 hours of handover.",
       },
     },
     business: {
@@ -388,14 +384,10 @@ export const ui = {
       cta2: 'Operation & maintenance details',
     },
     reviews: {
-      eyebrow: 'Client feedback',
-      title: 'What our clients say',
-      items: [
-        { text: 'They cleaned our villa after the fit-out and removed every trace of paint and dust. We moved straight in.', who: 'Client — villa', city: 'Dammam', service: 'Post-construction' },
-        { text: 'We book them monthly for deep cleaning. Respectful, punctual team — you notice the difference from the first visit.', who: 'Client — apartment', city: 'Al Khobar', service: 'Deep cleaning' },
-        { text: 'Our sofa and carpet came back looking new and smelling fresh. Smooth from booking to hand-over.', who: 'Client — home', city: 'Jubail', service: 'Sofa & carpet' },
-      ],
-      more: 'See our real work — before & after',
+      eyebrow: 'From the field',
+      title: 'Our real work',
+      items: [] as { text: string; who: string; city: string; service: string }[],
+      more: 'Photos and videos from our actual job sites, on our accounts:',
     },
     areas: {
       eyebrow: 'Service areas',
@@ -412,7 +404,7 @@ export const ui = {
         { q: 'Is the calculator price final?', a: 'It is an estimate that gives you a clear idea. The final price is confirmed from photos or a site visit, before we start — no surprises.' },
         { q: 'Do I need to be at home?', a: 'No. Many clients hand us the key and come back to a clean home.' },
         { q: 'Is your team trained and trustworthy?', a: 'Yes. Every team member is trained in cleaning and hospitality standards and works under supervision.' },
-        { q: 'What is the Golden Guarantee?', a: 'If you are not happy with any part of the job, tell us within 24 hours and we will redo it at no cost.' },
+        { q: 'What is the Golden Guarantee?', a: "We don't consider the job finished until you're satisfied. Any note within the agreed scope of work is fixed right away at no extra cost, within 24 hours of handover." },
         { q: 'Do you offer contracts for buildings and compounds?', a: 'Yes — monthly and annual cleaning, operation and maintenance contracts, with a free site visit and detailed quotation.' },
       ],
     },

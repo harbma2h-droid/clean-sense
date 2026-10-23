@@ -11,8 +11,7 @@ const { lang, size = 'md' } = Astro.props;
 
 <a class:list={['logo', `logo--${size}`]} href={homePath(lang)} aria-label={lang === 'ar' ? 'كلين سنس — الرئيسية' : 'Clean Sense — Home'}>
   <picture>
-    <source srcset="/brand/emblem.webp" type="image/webp" />
-    <img src="/brand/emblem.png" alt="" width="176" height="160" class="logo__emblem" />
+    <img src="/brand/logo-mark.svg" alt="" width="176" height="158" class="logo__emblem" />
   </picture>
   <span class="logo__text">
     <span class="logo__en">CLEAN SENSE</span>

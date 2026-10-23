@@ -25,8 +25,8 @@ const cities = SITE.cities.map((x) => x[lang]).join(lang === 'ar' ? '، ' : ', '
 const brand = SITE.name[lang];
 const title =
   lang === 'ar'
-    ? `${c.name} في الخبر والدمام والجبيل | ${brand}`
-    : `${c.name} in Al Khobar, Dammam & Jubail | ${brand}`;
+    ? `${c.name} في الخبر والدمام والظهران | ${brand}`
+    : `${c.name} in Al Khobar, Dammam & Dhahran | ${brand}`;
 const description = `${c.short} ${lang === 'ar' ? `${sp.areaLine} ${cities}. احجز عبر واتساب.` : `${sp.areaLine} ${cities}. Book on WhatsApp.`}`;
 
 const related = [
@@ -60,6 +60,7 @@ const crumbs = [
         </nav>
         <span class="icon-badge icon-badge--dark sp-hero__icon"><Icon name={service.icon} size={28} /></span>
         <h1 class="sp-hero__title">{c.name}</h1>
+        {service.expanding && <p class="sp-hero__note">{lang === 'ar' ? 'الخدمة قيد التوسع — نستقبل الطلبات ونرتب المعاينة حسب النطاق والموقع.' : 'This service is expanding — we take requests and arrange a site visit by scope and location.'}</p>}
         <p class="sp-hero__intro">{c.intro}</p>
         <p class="sp-hero__area"><Icon name="map-pin" size={18} />{sp.areaLine} {cities}</p>
         <div class="sp-hero__ctas">
@@ -175,6 +176,16 @@ const crumbs = [
     margin-top: 16px;
     max-width: 640px;
     font-size: 1.0625rem;
+  }
+  .sp-hero__note {
+    display: inline-block;
+    background: rgba(234, 213, 125, 0.16);
+    color: var(--gold-light, #EAD57D);
+    border: 1px solid rgba(234, 213, 125, 0.4);
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-size: 14px;
+    margin: 0 0 12px;
   }
   .sp-hero__area {
     display: flex;

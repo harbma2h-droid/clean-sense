@@ -8,7 +8,8 @@ interface Props {
   lang: Lang;
   badge?: string;
 }
-const { service, lang, badge } = Astro.props;
+const { service, lang, badge: given } = Astro.props;
+const badge = given || (service.expanding ? (lang === 'ar' ? 'قيد التوسع' : 'Expanding') : undefined);
 const c = service[lang];
 ---
 

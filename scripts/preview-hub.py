@@ -13,7 +13,7 @@ rows = '\n'.join(
 html = f'''<title>معاينة موقع كلين سنس</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap">
 <style>
   :root {{
     color-scheme: dark;
@@ -24,7 +24,7 @@ html = f'''<title>معاينة موقع كلين سنس</title>
   }}
   * {{ box-sizing: border-box; }}
   body {{ margin: 0; background: var(--navy); color: var(--text);
-    font-family: 'IBM Plex Sans Arabic', system-ui, Tahoma, sans-serif; font-size: 16px; line-height: 1.7; }}
+    font-family: 'Cairo', system-ui, Tahoma, sans-serif; font-size: 16px; line-height: 1.7; }}
   .wrap {{ max-width: 760px; margin: 0 auto; padding-inline: 18px; padding-block: 32px 56px; display: grid; gap: 28px; }}
   header {{ display: flex; align-items: center; gap: 14px; }}
   header img {{ height: 56px; width: auto; }}
@@ -57,7 +57,7 @@ html = f'''<title>معاينة موقع كلين سنس</title>
 
 <div class="wrap" dir="rtl" lang="ar">
   <header>
-    <img src="site/brand/emblem.webp" alt="">
+    <img src="site/brand/logo-mark.svg" alt="">
     <div class="brand"><b>CLEAN SENSE</b><span>معاينة التصميم الجديد</span></div>
   </header>
 

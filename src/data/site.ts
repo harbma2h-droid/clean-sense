@@ -9,24 +9,35 @@ export const SITE = {
   phone: '+966537717716',
   phoneDisplay: '053 771 7716',
   email: 'info@cleansense.co',
-  instagram: 'https://www.instagram.com/clean_sense',
-  tiktok: 'https://www.tiktok.com/@clean_sense',
+  instagram: 'https://www.instagram.com/Clean_sense',
+  instagramHandle: '@Clean_sense',
+  tiktok: 'https://www.tiktok.com/@Cleansense25',
+  tiktokHandle: '@Cleansense25',
+  // Working hours (approved): Saturday–Thursday 8 am – 10 pm; Friday on request.
+  hours: { ar: 'السبت – الخميس: 8 صباحاً – 10 مساءً · الجمعة حسب الطلب', en: 'Saturday – Thursday: 8 am – 10 pm · Friday on request' },
+  openingHours: { days: ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'], opens: '08:00', closes: '22:00' },
+  legalName: { ar: 'مؤسسة كلين سنس', en: 'Clean Sense Est.' },
+  unifiedNumber: '7049749042',
   region: { ar: 'المنطقة الشرقية', en: 'Eastern Province' },
   // Cities currently served. Add more here and they appear everywhere.
+  // primary: main service area; the others are served too.
   cities: [
-    { id: 'khobar', ar: 'الخبر', en: 'Al Khobar' },
-    { id: 'dammam', ar: 'الدمام', en: 'Dammam' },
-    { id: 'jubail', ar: 'الجبيل', en: 'Jubail' },
+    { id: 'khobar', ar: 'الخبر', en: 'Al Khobar', primary: true },
+    { id: 'dammam', ar: 'الدمام', en: 'Dammam', primary: true },
+    { id: 'dhahran', ar: 'الظهران', en: 'Dhahran', primary: true },
+    { id: 'jubail', ar: 'الجبيل', en: 'Jubail', primary: false },
+    { id: 'ras_tanura', ar: 'رأس تنورة', en: 'Ras Tanura', primary: false },
+    { id: 'qatif', ar: 'القطيف', en: 'Qatif', primary: false },
   ],
 } as const;
 
-// Headline numbers shown in the trust bar. Keep these truthful —
-// update them as the business grows.
+// Headline facts shown in the trust bar. Only verifiable facts: no client counts or
+// percentages until the owners approve real numbers.
 export const STATS = [
-  { value: '+500', ar: 'عميل خدمناهم', en: 'Clients served' },
-  { value: '12', ar: 'خدمة متخصصة', en: 'Specialised services' },
-  { value: '3', ar: 'مدن في الشرقية', en: 'Cities covered' },
-  { value: '100%', ar: 'ضمان إعادة العمل', en: 'Re-clean guarantee' },
+  { value: '24h', ar: 'الضمان الذهبي بعد التسليم', en: 'Golden Guarantee after handover' },
+  { value: '6', ar: 'مدن في الشرقية', en: 'Cities in the Eastern Province' },
+  { value: '8–10', ar: 'من 8 ص إلى 10 م', en: '8 am to 10 pm' },
+  { value: '0%', ar: 'بدون ضريبة مضافة', en: 'No VAT added' },
 ] as const;
 
 // Estimate calculator — same numbers and formula as the previous live site.

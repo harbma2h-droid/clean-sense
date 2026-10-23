@@ -52,12 +52,13 @@ const cities = SITE.cities.map((c) => c[lang]).join(' • ');
         <li><a href={waLink(t.wa.general)} target="_blank" rel="noopener" data-wa="footer"><Icon name="whatsapp" size={18} /><span dir="ltr">{SITE.phoneDisplay}</span></a></li>
         <li><a href={`mailto:${SITE.email}`}><Icon name="mail" size={18} /><span>{SITE.email}</span></a></li>
         <li><span class="footer__area"><Icon name="map-pin" size={18} /><span>{cities} — {SITE.region[lang]}</span></span></li>
+        <li><span class="footer__area"><Icon name="clock" size={18} /><span>{SITE.hours[lang]}</span></span></li>
       </ul>
     </div>
   </div>
 
   <div class="container footer__bottom">
-    <p>© {year} {SITE.name[lang]} — {t.footer.rights}</p>
+    <p>© {year} {SITE.legalName[lang]} — {t.footer.rights} · {lang === 'ar' ? 'الرقم الوطني الموحد' : 'Unified number'} <span dir="ltr">{SITE.unifiedNumber}</span></p>
     <p class="footer__slogan">Clean You Can Feel</p>
   </div>
 </footer>

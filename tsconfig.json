@@ -1,5 +1,14 @@
 {
   "extends": "astro/tsconfigs/strict",
-  "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist", "legacy-live-snapshot"]
+  "include": [
+    ".astro/types.d.ts",
+    "**/*"
+  ],
+  "exclude": [
+    "dashboard",
+    "dist",
+    "dist-preview",
+    "legacy-live-snapshot",
+    "system"
+  ]
 }

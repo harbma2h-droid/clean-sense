@@ -37,7 +37,7 @@ const settings: Record<string, string> = {
 
 const d = (offset: number) => new Date(Date.now() + offset * 864e5).toISOString().slice(0, 10);
 
-tables.settings = Object.entries({ ...settings, 'company.partners': 'معاذ، الشريك الثاني', 'docs.invoice_due_days': '7', 'docs.quote_valid_days': '14', 'docs.show_bank': 'yes', 'bank.name': 'بنك تجريبي', 'bank.account_name': 'مؤسسة كلين سنس', 'bank.iban': 'SA00 0000 0000 0000 0000 0000', 'docs.default_terms_ar': 'السعر شامل المواد والعمالة حسب نطاق العمل المذكور أعلاه. أي بند خارج النطاق يُحتسب بشكل منفصل. الدفع: دفعة مقدمة والمتبقي عند التسليم حسب الاتفاق.' }).map(([key, value]) => ({ key, value }));
+tables.settings = Object.entries({ ...settings, 'company.partners': 'معاذ، عبدالرحمن', 'docs.invoice_due_days': '7', 'docs.quote_valid_days': '14', 'docs.show_bank': 'yes', 'bank.name': 'بنك تجريبي', 'bank.account_name': 'مؤسسة كلين سنس', 'bank.iban': 'SA00 0000 0000 0000 0000 0000', 'docs.default_terms_ar': 'السعر شامل المواد والعمالة حسب نطاق العمل المذكور أعلاه. أي بند خارج النطاق يُحتسب بشكل منفصل. الدفع: دفعة مقدمة والمتبقي عند التسليم حسب الاتفاق.' }).map(([key, value]) => ({ key, value }));
 
 /** Build the sample data through the real business rules, so every link and number is consistent. */
 async function seed() {
@@ -95,7 +95,7 @@ async function seed() {
   await S.createRecord(ctx, 'workers', { name: 'عامل تجريبي 2', role: 'فني مكيفات', employment_type: 'daily', status: 'active' });
   // Opening balances as they are today, and partner movements
   await S.treasuryRecord(ctx, { kind: 'capital_in', account: 'bank', amount: 3000, partner: 'معاذ', date: d(-15), notes: 'شراء معدات' });
-  await S.treasuryRecord(ctx, { kind: 'drawing', account: 'cash', amount: 300, partner: 'الشريك الثاني', date: d(-4) });
+  await S.treasuryRecord(ctx, { kind: 'drawing', account: 'cash', amount: 300, partner: 'عبدالرحمن', date: d(-4) });
   await S.createRecord(ctx, 'tasks', { title: 'تجهيز مواد الدور الخامس', assigned_worker: 'عامل تجريبي 1', project: prj.name, due_date: d(1), status: 'open' });
   // Last: today's real balances, so everything recorded before them is reconciled.
   await S.treasurySetBalance(ctx, { account: 'bank', actual: 8000, date: d(0), notes: 'الرصيد الفعلي حسب كشف البنك' });

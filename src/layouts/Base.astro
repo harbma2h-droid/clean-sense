@@ -1,7 +1,12 @@
 ---
-import '@fontsource/ibm-plex-sans-arabic/400.css';
-import '@fontsource/ibm-plex-sans-arabic/600.css';
-import '@fontsource/ibm-plex-sans-arabic/700.css';
+import '@fontsource/cairo/arabic-400.css';
+import '@fontsource/cairo/arabic-600.css';
+import '@fontsource/cairo/arabic-700.css';
+import '@fontsource/cairo/latin-400.css';
+import '@fontsource/cairo/latin-700.css';
+import '@fontsource/montserrat/latin-500.css';
+import '@fontsource/montserrat/latin-600.css';
+import '@fontsource/montserrat/latin-700.css';
 import '../styles/global.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
@@ -24,7 +29,7 @@ const { lang, title, description, paths, schema = [], noindex = false } = Astro.
 const t = ui[lang];
 const dir = lang === 'ar' ? 'rtl' : 'ltr';
 const canonical = new URL(paths[lang], SITE.url).href;
-const ogImage = new URL(lang === 'ar' ? '/og-ar.jpg' : '/og-en.jpg', SITE.url).href;
+const ogImage = new URL(lang === 'ar' ? '/og-ar.png' : '/og-en.png', SITE.url).href;
 ---
 
 <!doctype html>
