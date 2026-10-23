@@ -36,12 +36,16 @@ npm run build:demo                          # single-file demo → dashboard/dis
 STORE=sheets SPREADSHEET_ID=... GOOGLE_SERVICE_ACCOUNT_JSON=... SESSION_SECRET=... npm start
 ```
 
+## Done on 2026-10-23 (second machine)
+- Hostinger inventoried (read-only); details in `private/` on the owner's laptop. DNS is at Namecheap.
+- Replit apps confirmed not live; full backups kept off-repo by the owner.
+- Google Cloud project `clean-sense-system`, service account `clean-sense-server` (Sheet shared as editor), key held by the owner.
+- Website booking form saves leads via `POST /api/public/leads` when `PUBLIC_LEADS_API` is set.
+- Architecture and the recommended move to MySQL: `docs/ARCHITECTURE.md`.
+
 ## Next steps
-1. Hostinger (needs the owner to log in in the browser): inventory the account — domains, DNS
-   (Namecheap), SSL, email, the current dashboard app, Node.js support — and report before changing anything.
-2. Replit: confirm the "Asset Manager" app is not the live system; leave untouched.
-3. Google service account for the Sheet (owner shares the sheet with it); set env vars on the host.
-4. Connect the website booking form to `POST /api/public/leads`.
+1. Owner decision: MySQL on Hostinger as the main store with a Google Sheets mirror (`docs/ARCHITECTURE.md`).
+2. Set env vars on the host at deploy time.
 5. Credit notes for partial corrections of issued invoices.
 6. Go-live (after approval): follow `system/README.md` (upgrade legacy data, opening balances,
    review 25 unverified legacy invoices, turn off OPEN_ACCESS, create users).
