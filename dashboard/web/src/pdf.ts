@@ -55,7 +55,16 @@ export async function sheetToPdf(el: HTMLElement, fileName: string): Promise<Fil
   return new File([pdf.output('blob')], fileName, { type: 'application/pdf' });
 }
 
-export function downloadFile(file: File) {
+export async function downloadFile(file: File) {
+  // Inside the claude.ai preview the page may not download directly: use its save capability.
+  const host = (window as any).claude;
+  if (host?.use) {
+    const downloads = await host.use('downloads').catch(() => null);
+    if (downloads) {
+      try { await downloads.save({ filename: file.name, data: file }); } catch { /* declined or unavailable */ }
+      return;
+    }
+  }
   const url = URL.createObjectURL(file);
   const a = document.createElement('a');
   a.href = url;
