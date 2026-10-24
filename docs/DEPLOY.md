@@ -73,6 +73,10 @@ Secrets (passwords, keys) are typed by the owner directly into Hostinger. They n
   3. Only new or changed records are added. The new system has its own work since the import (legacy upgrade, opening balances), so it is **not** emptied and re-imported.
   4. Only after that is `dashboard.cleansense.co` redirected to the new system. Redirecting earlier would hide the browser data that still has to be exported.
   5. Staff get logins: Users → «تفعيل الدخول» (imported staff have no username yet).
+- **Cut-over done 2026-10-24:** the owner confirmed nothing was entered in the old dashboard after the 2026-10-23 export, so no records had to be added.
+  - `public_html/dashboard/.htaccess` now sends every request to `https://system.cleansense.co/` (302, `.well-known` left open so the SSL certificate keeps renewing).
+  - Its previous content is in `archive-2026-10-24/dashboard.htaccess.before-redirect`; copy it back to undo.
+  - The old Node app and its files are untouched.
 - **Subscriptions (hPanel → Billing):** auto-renew is on for Google Workspace (invoice 2027-01-31) and for hosting (2027-06-22).
 
 ## Phase C — website and addresses (separate approval)
