@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState, type ReactNode } from 'react';
 import { ENUMS, HIDDEN, MONEY_FMT, enumLabel } from '@shared/model.js';
+import { normPhone } from '@shared/services.js';
 
 /** Options of a list, without items the owners hid (the current value always stays). */
 export const options = (name: string, keep?: string | string[]) => {
@@ -139,9 +140,9 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
   );
 }
 
+/** WhatsApp chat link: Saudi mobiles (05…, 5…, +966…, ٠٥…) become 9665…; other numbers stay international. */
 export const waLink = (phone: string, text = '') => {
-  let p = String(phone).replace(/[^\d]/g, '');
-  if (p.startsWith('05')) p = '966' + p.slice(1);
-  else if (p.startsWith('5') && p.length === 9) p = '966' + p;
+  let p = normPhone(phone);
+  if (/^05\d{8}$/.test(p)) p = '966' + p.slice(1);
   return `https://wa.me/${p}${text ? `?text=${encodeURIComponent(text)}` : ''}`;
 };

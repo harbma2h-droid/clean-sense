@@ -708,6 +708,16 @@
      "deleted_at",
      "تاريخ الحذف",
      "Deleted at"
+    ],
+    [
+     "share_token",
+     "رمز رابط العميل",
+     "Customer link token"
+    ],
+    [
+     "viewed_at",
+     "أول فتح من العميل",
+     "First opened by customer"
     ]
    ]
   },
@@ -1265,6 +1275,11 @@
      "last_login_at",
      "آخر دخول",
      "Last login"
+    ],
+    [
+     "calendar_token",
+     "رمز رابط التقويم",
+     "Calendar link token"
     ]
    ]
   },

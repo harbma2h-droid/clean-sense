@@ -1,0 +1,20 @@
+# Changelog
+
+## Unreleased (waiting for approval)
+- **WhatsApp:** the customer's saved number is used automatically and goes straight to their chat, with a private document link in the message. Arabic-digit numbers are understood.
+- **Customer document page:** `/d/<link>` gives a phone-friendly quote or invoice with a PDF download. The link can be reset and stops when the document is cancelled.
+- **Calendar subscription:** bookings and open tasks with reminders, for Apple, Google and Outlook calendars.
+- **Financial report PDF:** download or share.
+- **Mobile:** fields are 16px on touch screens, so iPhone no longer zooms in.
+- **Docs:** `PROJECT_STATUS.md` and `docs/RESEARCH-ZATCA-MUDAD-BANKING.md`.
+
+## 2026-10-24
+- New website published on cleansense.co; booking form connected to the system.
+- Old dashboard retired: it redirects to the new system (reversible).
+- "Enable sign-in" for staff imported without a username.
+- Owner password reset through the private config folder (temporary password written to a file, never logged).
+- Staff system sends `X-Robots-Tag: noindex`.
+
+## 2026-10-23
+- New system live on MySQL with a checked import from the Sheet, daily backups and a read-only Sheets copy.
+- Financial dashboard on the home page.

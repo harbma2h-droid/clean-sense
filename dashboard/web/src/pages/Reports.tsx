@@ -1,9 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Download, Share2 } from 'lucide-react';
 import { ACCOUNTS } from '@shared/finance.js';
 import { enumLabel } from '@shared/model.js';
 import { api, type Row } from '../api';
 import { useT, type Key } from '../i18n';
 import { money, useLang } from '../ui';
+import { MetaContext } from '../meta';
+import { ReportSheet } from '../components/ReportSheet';
+import { downloadFile, sharePdf, sheetToPdf } from '../pdf';
 
 const ym = () => new Date().toISOString().slice(0, 7);
 const lastDay = (m: string) => new Date(Number(m.slice(0, 4)), Number(m.slice(5, 7)), 0).toISOString().slice(0, 10);
@@ -17,11 +22,31 @@ export function Reports() {
   useEffect(() => { setR(null); api<Row>(`/reports?from=${from}&to=${to}`).then(setR).catch(() => setR({})); }, [from, to]);
   const M = (n: number) => money(n, lang);
   const monthName = (m: string) => new Date(`${m}-01T00:00:00`).toLocaleDateString(lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-GB', { month: 'short', year: 'numeric' });
+  const meta = useContext(MetaContext);
+  const sheet = useRef<HTMLDivElement>(null);
+  const [busy, setBusy] = useState('');
+
+  /** Branded A4 PDF of the report for the chosen period: shared from the phone, or downloaded. */
+  const exportPdf = async (share: boolean) => {
+    setBusy(share ? 'share' : 'pdf');
+    try {
+      const file = await sheetToPdf(sheet.current!, `${lang === 'ar' ? 'التقرير-المالي' : 'Financial-report'}-${from}_${to}.pdf`);
+      if (!share || !(await sharePdf(file, `${t('reports')} ${from} → ${to}`))) await downloadFile(file);
+    } finally {
+      setBusy('');
+    }
+  };
 
   return (
     <div className="page reports">
       <div className="page-head">
         <h1>{t('reports')}</h1>
+        {r?.pnl && (
+          <div className="row-actions">
+            <button className="btn" disabled={!!busy} onClick={() => exportPdf(true)}><Share2 size={16} />{busy === 'share' ? t('preparing_pdf') : t('share_pdf')}</button>
+            <button className="btn" disabled={!!busy} onClick={() => exportPdf(false)}><Download size={16} />{busy === 'pdf' ? t('preparing_pdf') : t('download_pdf')}</button>
+          </div>
+        )}
         <div className="range">
           <label>{t('from')} <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label>
           <label>{t('to')} <input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label>
@@ -119,6 +144,7 @@ export function Reports() {
             <tfoot><tr><th>{t('total')}</th><th className="num end">{M(r.trial_balance.debit)}</th><th className="num end">{M(r.trial_balance.credit)}</th><th /></tr></tfoot>
           </table></div>
         </section>
+        {createPortal(<div className="pdf-stage" aria-hidden="true"><ReportSheet ref={sheet} r={r} from={from} to={to} lang={lang} company={meta?.company || {}} /></div>, document.body)}
       </>}
     </div>
   );

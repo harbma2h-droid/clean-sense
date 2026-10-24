@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { ROLES, PERMISSIONS } from '../shared/model.js';
 import { ROUTES, allowed } from '../shared/routes.js';
-import { ServiceError, createRecord, companyInfo, settingsMap } from '../shared/services.js';
+import { ServiceError, createRecord, companyInfo, settingsMap, publicDocument, calendarLink, calendarFeed } from '../shared/services.js';
 import { applyLists } from '../shared/model.js';
 import { createAuth } from './auth.js';
 
@@ -62,6 +62,11 @@ export function createApp({ store, secret, secureCookies = true, webDist, extraO
     onPasswordChanged(u);
     auth.reissue(res, u);
     res.json(auth.publicUser(u));
+  });
+
+  // The signed-in user's private calendar feed (bookings and tasks they may see).
+  api.post('/auth/calendar', auth.require(), async (req, res) => {
+    res.json(await calendarLink({ store, user: req.user, perms: auth.permsOf(req.user), audit: (...a) => audit(req, ...a) }, req.body || {}));
   });
 
   /* ---------- Lookups ---------- */
@@ -185,6 +190,30 @@ export function createApp({ store, secret, secureCookies = true, webDist, extraO
       utm_source: String(b.utm_source || '').slice(0, 80), utm_medium: String(b.utm_medium || '').slice(0, 80), utm_campaign: String(b.utm_campaign || '').slice(0, 80),
     });
     res.status(201).json({ id: lead.id });
+  });
+  // A customer's private document link (/d/<token>): the document as printed, no sign-in.
+  pub.get('/doc/:token', async (req, res, next) => {
+    const ctx = { store, user: { username: 'customer-link' }, perms: [], audit: (action, entity, id, details) => audit({ user: null }, action, entity, id, details) };
+    try {
+      res.setHeader('Cache-Control', 'no-store');
+      res.json(await publicDocument(ctx, req.params.token));
+    } catch (e) {
+      if (e instanceof ServiceError) return res.status(e.status).json({ error: e.code });
+      next(e);
+    }
+  });
+  // Calendar apps fetch this address on their own schedule (iPhone, Google, Outlook).
+  pub.get('/calendar/:file', (req, res, next) => {
+    try {
+      const ics = calendarFeed({ store }, req.params.file.replace(/\.ics$/, ''));
+      res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+      res.setHeader('Content-Disposition', 'inline; filename="clean-sense.ics"');
+      res.setHeader('Cache-Control', 'no-store');
+      res.send(ics);
+    } catch (e) {
+      if (e instanceof ServiceError) return res.status(e.status).type('text/plain').send('not found');
+      next(e);
+    }
   });
   pub.get('/pricing', (req, res) => {
     res.json(store.list('pricing').filter((p) => p.active === 'yes' && p.approved === 'yes')

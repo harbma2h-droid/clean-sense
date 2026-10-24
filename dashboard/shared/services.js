@@ -4,7 +4,7 @@
 // ctx = { store, user, perms: string[], audit(action, entity, id, details), today?: 'YYYY-MM-DD' }
 // store = { list(table, {includeDeleted}), get(table, id), insert(table, row), patch(table, id, data) }
 
-import { TABLES, ENUMS, SETTINGS_SPEC, DEFAULT_MESSAGES, EDITABLE_LISTS, applyLists } from './model.js';
+import { TABLES, ENUMS, ROLES, SETTINGS_SPEC, DEFAULT_MESSAGES, EDITABLE_LISTS, applyLists, enumLabel } from './model.js';
 import { computeTotals, docTotal, enrichDocuments, invoiceState, paidByInvoice, journal, trialBalance, profitAndLoss, cashByMethod, receivablesAging, revenueByService, projectProfitability, customerStatement, accountBalance, treasuryBalances, partnersEquity, TREASURY_ACCOUNT, r2 } from './finance.js';
 
 export class ServiceError extends Error {
@@ -27,11 +27,25 @@ const isOwner = (ctx) => ctx.user?.role === 'owner';
 const asNumber = (v) => (v === '' || v === null || v === undefined ? '' : Number.isFinite(Number(v)) ? Number(v) : String(v));
 
 export function normPhone(p) {
-  let d = String(p || '').replace(/\D/g, '');
+  // Arabic-Indic (٠-٩) and Persian (۰-۹) digits typed on Arabic keyboards count as digits.
+  let d = String(p || '').replace(/[٠-٩۰-۹]/g, (c) => String(c.charCodeAt(0) & 0xf)).replace(/\D/g, '');
   if (d.startsWith('00966')) d = d.slice(5);
   else if (d.startsWith('966')) d = d.slice(3);
   if (d.length === 9 && d.startsWith('5')) d = `0${d}`;
   return d;
+}
+
+/** A Saudi mobile (05xxxxxxxx) or another full international number; '' when unusable. */
+export const validPhone = (p) => {
+  const d = normPhone(p);
+  return /^05\d{8}$/.test(d) || /^[1-9]\d{9,14}$/.test(d) ? d : '';
+};
+
+/** Random URL-safe token (192 bits) for links that work without signing in. */
+export function newToken() {
+  const b = new Uint8Array(24);
+  globalThis.crypto.getRandomValues(b);
+  return btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 function nextNumber(rows, field, prefix) {
@@ -207,7 +221,10 @@ export function getDocument(ctx, id) {
   const d = listDocuments(ctx).find((x) => x.id === id);
   if (!d) fail(404, 'not_found');
   const payments = d.type === 'invoice' ? ctx.store.list('payments').filter((p) => p.invoice_id === id) : [];
-  return { ...d, payments };
+  // The number to send to: the customer's current number, else the one on the document.
+  const customer = d.customer_id ? ctx.store.get('customers', d.customer_id) : null;
+  const send_phone = validPhone(customer?.phone) || validPhone(d.customer_phone);
+  return { ...d, payments, send_phone, share_token: undefined, has_link: !!d.share_token };
 }
 
 export async function createDocument(ctx, body) {
@@ -285,6 +302,7 @@ export async function documentAction(ctx, id, action, body = {}) {
   const status = d.status || (d.type === 'quote' ? d.quote_status || 'pending' : '');
   if (action === 'phone') return updateDocumentPhone(ctx, id, body);
   if (action === 'shared') return markDocumentShared(ctx, id, body);
+  if (action === 'link') return documentLink(ctx, id, body);
   if (action === 'to-booking') return quoteToBooking(ctx, id, body);
 
   if (d.type === 'quote' && QUOTE_FLOW[action]) {
@@ -725,6 +743,131 @@ export async function markDocumentShared(ctx, id, body = {}) {
   await ctx.audit('document.shared', 'documents', id, { via: String(body.via || 'whatsapp').slice(0, 20), phone: normPhone(body.phone) });
   if (d.type === 'quote' && d.status === 'approved') return documentAction(ctx, id, 'send');
   return getDocument(ctx, id);
+}
+
+/**
+ * The customer's private link to view and download a document without signing in.
+ * One token per document, kept until it is reset ({ reset: true }), so a link already sent keeps working.
+ */
+export async function documentLink(ctx, id, body = {}) {
+  const d = ctx.store.get('documents', id);
+  if (!d || d.deleted_at) fail(404, 'not_found');
+  if (d.status === 'void' || d.status === 'cancelled' || !d.doc_number) fail(409, 'not_shareable', { status: d.status });
+  let token = d.share_token;
+  if (!token || body.reset) {
+    token = newToken();
+    await ctx.store.patch('documents', id, { share_token: token, updated_at: nowIso() });
+    await ctx.audit(body.reset ? 'document.link_reset' : 'document.link', 'documents', id);
+  }
+  return { path: `/d/${token}` };
+}
+
+const PUBLIC_DOC_FIELDS = ['doc_number', 'type', 'status', 'state', 'date', 'valid_until', 'due_date', 'converted_from', 'project_name', 'start_date', 'end_date', 'duration',
+  'customer_name', 'customer_phone', 'city', 'services', 'items_parsed', 'discount', 'total_value', 'paid', 'paid_amount', 'balance', 'payment_method', 'scope', 'terms', 'notes', 'language'];
+const PUBLIC_SETTINGS = /^(company\.|contact\.|guarantee\.|docs\.footer_note|docs\.show_bank$)/;
+
+/** What the customer sees behind a document link: the printed fields only, never internal ones. */
+export async function publicDocument(ctx, token) {
+  const t = String(token || '');
+  const raw = t.length >= 20 && ctx.store.list('documents').find((x) => x.share_token === t);
+  if (!raw || raw.status === 'void' || raw.status === 'cancelled') fail(404, 'not_found');
+  const d = listDocuments(ctx).find((x) => x.id === raw.id);
+  if (!raw.viewed_at) {
+    await ctx.store.patch('documents', raw.id, { viewed_at: nowIso() });
+    await ctx.audit('document.viewed', 'documents', raw.id, 'customer link');
+  }
+  const settings = settingsMap(ctx);
+  const company = Object.fromEntries(Object.entries(settings).filter(([k]) => PUBLIC_SETTINGS.test(k)));
+  if (d.type === 'invoice' && settings['docs.show_bank'] === 'yes') for (const k of ['bank.name', 'bank.account_name', 'bank.iban']) company[k] = settings[k] || '';
+  return { doc: Object.fromEntries(PUBLIC_DOC_FIELDS.map((k) => [k, d[k] ?? ''])), company };
+}
+
+/* ================= Calendar subscription (iPhone, Google, Outlook) ================= */
+
+/** The signed-in user's private calendar feed address; { reset: true } makes a new one. */
+export async function calendarLink(ctx, body = {}) {
+  const u = ctx.store.get('users', ctx.user?.id);
+  if (!u) fail(404, 'not_found');
+  let token = u.calendar_token;
+  if (!token || body.reset) {
+    token = newToken();
+    await ctx.store.patch('users', u.id, { calendar_token: token });
+    await ctx.audit(body.reset ? 'calendar.link_reset' : 'calendar.link', 'users', u.id);
+  }
+  return { path: `/api/public/calendar/${token}.ics` };
+}
+
+const icsText = (s) => String(s ?? '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+const icsUtc = (iso) => new Date(iso).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+const icsDate = (d) => String(d).replace(/-/g, '');
+/** RFC 5545 lines are at most 75 bytes; longer ones continue on the next line after a space. */
+function icsFold(line) {
+  const out = [];
+  let cur = '';
+  let bytes = 0;
+  for (const ch of line) {
+    const n = new TextEncoder().encode(ch).length;
+    if (bytes + n > (out.length ? 74 : 75)) { out.push(cur); cur = ''; bytes = 0; }
+    cur += ch;
+    bytes += n;
+  }
+  out.push(cur);
+  return out.join('\r\n ');
+}
+
+/**
+ * Bookings (and open tasks) as an iCalendar feed for the user behind the token, following their
+ * permissions. Every event keeps the record id as UID, so edits and cancellations update the same
+ * event in the calendar instead of adding a copy. Times are Riyadh time (UTC+3, no daylight saving).
+ */
+export function calendarFeed(ctx, token) {
+  const t = String(token || '');
+  const u = t.length >= 20 && ctx.store.list('users').find((x) => x.calendar_token === t && x.active !== 'no');
+  if (!u) fail(404, 'not_found');
+  const custom = String(u.permissions || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const perms = custom.length ? custom : (ROLES[u.role]?.perms ?? []);
+  const lang = u.language === 'en' ? 'en' : 'ar';
+  const host = 'system.cleansense.co';
+  const since = addDays(todayOf(ctx), -60);
+  const stamp = icsUtc(nowIso());
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Clean Sense//System//AR', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+    `X-WR-CALNAME:${lang === 'ar' ? 'كلين سنس' : 'Clean Sense'}`, 'X-WR-TIMEZONE:Asia/Riyadh', 'REFRESH-INTERVAL;VALUE=DURATION:PT1H', 'X-PUBLISHED-TTL:PT1H'];
+  const event = (fields) => lines.push('BEGIN:VEVENT', ...fields.filter(Boolean), 'END:VEVENT');
+
+  if (perms.includes('bookings')) {
+    for (const b of ctx.store.list('bookings')) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(b.date || '') || b.date < since) continue;
+      const services = String(b.services || '').split(',').filter(Boolean).map((s) => enumLabel('service', s, lang)).join(lang === 'ar' ? '، ' : ', ');
+      const summary = `${b.customer_name || ''}${services ? ` — ${services}` : ''}`;
+      const desc = [b.phone && `${lang === 'ar' ? 'الجوال' : 'Phone'}: ${b.phone}`, b.city && enumLabel('city', b.city, lang), b.assigned_workers && `${lang === 'ar' ? 'الفريق' : 'Team'}: ${b.assigned_workers}`, b.notes, `https://${host}/#/t/bookings`].filter(Boolean).join('\n');
+      const timed = /^\d{2}:\d{2}/.test(b.time || '');
+      const start = timed ? new Date(`${b.date}T${b.time.slice(0, 5)}:00+03:00`) : null;
+      const updated = b.updated_at || b.created_at || nowIso();
+      event([
+        `UID:${b.id}@${host}`, `DTSTAMP:${stamp}`, `LAST-MODIFIED:${icsUtc(updated)}`, `SEQUENCE:${Math.max(0, Math.floor(Date.parse(updated) / 1000) - 1.7e9)}`,
+        timed ? `DTSTART:${icsUtc(start)}` : `DTSTART;VALUE=DATE:${icsDate(b.date)}`,
+        timed ? `DTEND:${icsUtc(new Date(start.getTime() + 3 * 3600e3))}` : `DTEND;VALUE=DATE:${icsDate(addDays(b.date, 1))}`,
+        `SUMMARY:${icsText(summary)}`, `DESCRIPTION:${icsText(desc)}`, b.location_url && `URL:${icsText(b.location_url)}`,
+        b.city && `LOCATION:${icsText(enumLabel('city', b.city, lang))}`,
+        `STATUS:${b.status === 'cancelled' ? 'CANCELLED' : b.status === 'pending' ? 'TENTATIVE' : 'CONFIRMED'}`,
+        ...(timed && b.status !== 'cancelled' ? ['BEGIN:VALARM', 'ACTION:DISPLAY', 'TRIGGER:-PT1H', `DESCRIPTION:${icsText(summary)}`, 'END:VALARM'] : []),
+      ]);
+    }
+  }
+  if (perms.includes('tasks')) {
+    for (const k of ctx.store.list('tasks')) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(k.due_date || '') || ['done', 'cancelled'].includes(k.status)) continue;
+      const updated = k.updated_at || k.created_at || nowIso();
+      event([
+        `UID:${k.id}@${host}`, `DTSTAMP:${stamp}`, `LAST-MODIFIED:${icsUtc(updated)}`, `SEQUENCE:${Math.max(0, Math.floor(Date.parse(updated) / 1000) - 1.7e9)}`,
+        `DTSTART;VALUE=DATE:${icsDate(k.due_date)}`, `DTEND;VALUE=DATE:${icsDate(addDays(k.due_date, 1))}`,
+        `SUMMARY:${icsText(`${lang === 'ar' ? 'مهمة' : 'Task'}: ${k.title || ''}`)}`, `DESCRIPTION:${icsText([k.assigned_worker, k.notes, `https://${host}/#/t/tasks`].filter(Boolean).join('\n'))}`,
+        'TRANSP:TRANSPARENT',
+      ]);
+    }
+  }
+  lines.push('END:VCALENDAR');
+  return lines.map(icsFold).join('\r\n') + '\r\n';
 }
 
 /** Accepted quote → booking with the same customer, services and project. */

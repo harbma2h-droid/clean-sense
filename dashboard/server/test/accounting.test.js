@@ -288,3 +288,71 @@ test('sending: change the phone on a document and the customer, quote → bookin
   const h = await req('coord', 'GET', `/history/documents/${q.body.id}`);
   assert.ok(h.body.some((x) => x.action === 'document.shared'));
 });
+
+test('sending: the number comes from the customer record, Arabic digits included', async () => {
+  const q = await req('coord', 'POST', '/sales/documents', { type: 'quote', customer_name: 'أرقام عربية', customer_phone: '٠٥٥٠٠٠٠٣٣٣', items: [{ description: 'x', qty: 1, unit_price: 100 }] });
+  assert.equal(store.get('customers', q.body.customer_id).phone, '0550000333');
+  assert.equal(q.body.send_phone, '0550000333');
+  // The customer's number changed later in their record: documents follow it.
+  await store.patch('customers', q.body.customer_id, { phone: '+966 55 000 0444' });
+  assert.equal((await req('coord', 'GET', `/sales/documents/${q.body.id}`)).body.send_phone, '0550000444');
+  await store.patch('customers', q.body.customer_id, { phone: '' });
+  assert.equal((await req('coord', 'GET', `/sales/documents/${q.body.id}`)).body.send_phone, '0550000333', 'falls back to the number on the document');
+});
+
+test('calendar feed: bookings in Riyadh time, same UID after edits, cancellations, permissions', async () => {
+  const day = new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10);
+  const b = await req('coord', 'POST', '/data/bookings', { customer_name: 'تقويم, وفاصلة', phone:'0500000666', date: day, time: '09:00', services: 'deep_cleaning', status: 'confirmed' });
+  assert.equal(b.status, 201);
+  const link = await req('coord', 'POST', '/auth/calendar');
+  assert.match(link.body.path, /^\/api\/public\/calendar\/[\w-]{32}\.ics$/);
+  const feed = async (path) => { const r = await fetch(base.replace(/\/api$/, '') + path); return { status: r.status, type: r.headers.get('content-type'), text: await r.text() }; };
+  const f = await feed(link.body.path);
+  assert.equal(f.status, 200);
+  assert.match(f.type, /text\/calendar/);
+  assert.match(f.text, /^BEGIN:VCALENDAR\r\n/);
+  assert.ok(f.text.includes(`UID:${b.body.id}@system.cleansense.co`));
+  assert.ok(f.text.includes(`DTSTART:${day.replace(/-/g, '')}T060000Z`), '09:00 Riyadh = 06:00 UTC');
+  assert.ok(f.text.replace(/\r\n /g, '').includes('SUMMARY:تقويم\\, وفاصلة'), 'commas escaped (after unfolding)');
+  assert.ok(f.text.split('\r\n').every((l) => new TextEncoder().encode(l).length <= 75), 'lines folded');
+  assert.ok(f.text.includes('TRIGGER:-PT1H'), 'reminder an hour before');
+
+  await req('coord', 'PATCH', `/data/bookings/${b.body.id}`, { status: 'cancelled' });
+  const g = await feed(link.body.path);
+  assert.equal(g.text.split(`UID:${b.body.id}@`).length, 2, 'still one event for the booking');
+  assert.ok(/STATUS:CANCELLED/.test(g.text));
+
+  const acc = await req('acc', 'POST', '/auth/calendar');
+  assert.ok(!(await feed(acc.body.path)).text.includes(b.body.id), 'no bookings without the bookings permission');
+  assert.equal((await feed('/api/public/calendar/wrong-token-0000000000000.ics')).status, 404);
+  const again = await req('coord', 'POST', '/auth/calendar', { reset: true });
+  assert.equal((await feed(link.body.path)).status, 404, 'old address stops after a reset');
+  assert.equal((await feed(again.body.path)).status, 200);
+});
+
+test('customer link: private, reused, shows only printed fields, marks first view', async () => {
+  const q = await req('coord', 'POST', '/sales/documents', { type: 'quote', customer_name: 'رابط', customer_phone: '0500000555', items: [{ description: 'تنظيف', qty: 2, unit_price: 150 }], notes: 'ملاحظة للعميل' });
+  assert.equal(q.body.share_token, undefined, 'the token is not sent with the document');
+  const a = await req('coord', 'POST', `/sales/documents/${q.body.id}/link`);
+  assert.equal(a.status, 201);
+  assert.match(a.body.path, /^\/d\/[\w-]{32}$/);
+  assert.equal((await req('coord', 'POST', `/sales/documents/${q.body.id}/link`)).body.path, a.body.path, 'same link every time');
+
+  const token = a.body.path.slice(3);
+  const pub = await req(null, 'GET', `/public/doc/${token}`);
+  assert.equal(pub.status, 200);
+  assert.equal(pub.body.doc.doc_number, q.body.doc_number);
+  assert.equal(pub.body.doc.total_value, 300);
+  assert.equal(pub.body.doc.notes, 'ملاحظة للعميل');
+  for (const k of ['id', 'customer_id', 'created_by', 'approved_by', 'share_token', 'submitted_by']) assert.equal(pub.body.doc[k], undefined, `${k} stays internal`);
+  assert.ok(Object.keys(pub.body.company).every((k) => /^(company|contact|guarantee|docs)\./.test(k)), 'only public settings');
+  assert.ok(store.get('documents', q.body.id).viewed_at, 'first view recorded');
+
+  assert.equal((await req(null, 'GET', '/public/doc/not-a-real-token-123456789')).status, 404);
+  const reset = await req('coord', 'POST', `/sales/documents/${q.body.id}/link`, { reset: true });
+  assert.notEqual(reset.body.path, a.body.path);
+  assert.equal((await req(null, 'GET', `/public/doc/${token}`)).status, 404, 'old link stops working after a reset');
+  await req('coord', 'POST', `/sales/documents/${q.body.id}/cancel`);
+  assert.equal((await req(null, 'GET', `/public/doc/${reset.body.path.slice(3)}`)).status, 404, 'cancelled documents are not shown');
+  assert.equal((await req('coord', 'POST', `/sales/documents/${q.body.id}/link`)).status, 409);
+});

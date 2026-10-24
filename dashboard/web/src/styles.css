@@ -23,6 +23,8 @@ html, body { margin: 0; }
 body { background: var(--bg); color: var(--text); font: 15px/1.6 var(--font); -webkit-font-smoothing: antialiased; }
 a { color: inherit; }
 button, input, select, textarea { font: inherit; color: inherit; }
+/* iPhone zooms the page into any field under 16px; keep fields at 16px on touch screens. */
+@media (pointer: coarse) { input, select, textarea { font-size: 16px; } }
 .num { font-family: 'Montserrat', var(--font); font-variant-numeric: tabular-nums; }
 .muted { color: var(--muted); }
 .pad { padding: 24px; }
@@ -422,6 +424,17 @@ details summary { cursor: pointer; margin-top: 10px; color: var(--muted); }
 .ds-foot p { margin: 0 0 4px; }
 .ds-foot div { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 .ds-foot strong { color: #A7780D; letter-spacing: 2px; font-family: 'Montserrat', sans-serif; font-size: 10px; }
+.ds.report { min-height: 0; gap: 14px; }
+.ds-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.ds-kpis > div { background: #F7F3E9; border-radius: 10px; padding: 8px 12px; display: grid; }
+.ds-kpis span { font-size: 11px; color: #5f6b80; } .ds-kpis b { font-size: 16px; }
+.ds-kpis .pos b { color: #1f7a44; } .ds-kpis .neg b { color: #b3261e; }
+.ds-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.ds-table th { background: #0B1F41; color: #EAD57D; font-weight: 600; padding: 6px 10px; text-align: start; }
+.ds-table tfoot th { background: #F7F3E9; color: #0B1F41; }
+.ds-table td { padding: 6px 10px; border-bottom: 1px solid #ece6d6; }
+.ds-table tbody tr:nth-child(even) td { background: #fbf9f3; }
+.ds-table .num { text-align: end; white-space: nowrap; }
 .pdf-stage { position: fixed; inset-inline-start: -10000px; top: 0; width: 794px; pointer-events: none; }
 .pdf-stage .ds { box-shadow: none; }
 @media (max-width: 840px) { .sheet-wrap .ds { zoom: .46; } }
@@ -440,6 +453,46 @@ details summary { cursor: pointer; margin-top: 10px; color: var(--muted); }
 .preview-scale { transform: scale(.44); transform-origin: top center; width: 794px; margin: 0 auto; }
 [dir="rtl"] .preview-scale { transform-origin: top center; }
 @media (min-width: 700px) { .send-actions { grid-template-columns: repeat(3, 1fr); } }
+
+.cal-actions { grid-template-columns: 1fr 1fr !important; margin: 8px 0; }
+@media (max-width: 420px) { .cal-actions { grid-template-columns: 1fr !important; } }
+.link-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+.link-row code { direction: ltr; overflow-wrap: anywhere; background: var(--bg); padding: 4px 8px; border-radius: 6px; }
+
+/* ---------- Customer document link (/d/<token>) ---------- */
+.pd { max-width: 640px; margin: 0 auto; padding: 16px 16px calc(96px + env(safe-area-inset-bottom)); display: grid; gap: 12px; }
+.pd-msg { text-align: center; color: var(--muted); padding: 40px 8px; }
+.pd-logo { height: 44px; width: auto; }
+.pd > .pd-logo { margin: 40px auto 0; height: 64px; }
+.pd-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 0 8px; border-bottom: 2px solid var(--gold); }
+.pd-title { display: grid; justify-items: end; gap: 2px; text-align: end; }
+.pd-title h1 { margin: 0; font-size: 22px; color: var(--text); }
+.pd-title .num { color: var(--muted); font-size: 15px; }
+.pd-stamp { background: color-mix(in srgb, #2e9d5b 18%, var(--surface)); color: #1f7a44; padding: 2px 10px; border-radius: 999px; font-size: 13px; }
+.pd-stamp.warn { background: color-mix(in srgb, var(--gold-light) 50%, var(--surface)); color: #6b4c05; }
+.pd-card { background: var(--surface); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow); }
+.pd-card h2 { font-size: 16px; margin: 0 0 8px; }
+.pd-card summary { cursor: pointer; font-weight: 700; }
+.pd-card summary + p { margin: 10px 0 0; }
+.pd-rows { display: grid; gap: 8px; margin: 0; }
+.pd-rows div, .pd-total div { display: flex; justify-content: space-between; gap: 12px; }
+.pd-rows dt, .pd-total dt { color: var(--muted); }
+.pd-rows dd, .pd-total dd { margin: 0; font-weight: 600; text-align: end; }
+.pd-iban { overflow-wrap: anywhere; user-select: all; }
+.pd-items { list-style: none; margin: 0; padding: 0; display: grid; }
+.pd-items li { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.pd-items p { margin: 0 0 4px; }
+.pd-items div { display: flex; justify-content: space-between; gap: 12px; }
+.pd-total { display: grid; gap: 6px; margin: 12px 0 0; }
+.pd-total .grand { font-size: 19px; padding-top: 6px; }
+.pd-total .grand dt { color: var(--text); font-weight: 700; }
+.pd-total .due dd { color: #b23b2e; }
+.pd-small { font-size: 12px; color: var(--muted); margin: 10px 0 0; }
+.pd-foot { text-align: center; color: var(--muted); font-size: 13px; display: grid; gap: 4px; padding: 8px 0; }
+.pd-foot strong { color: var(--gold-deep); letter-spacing: 2px; font-family: 'Montserrat', sans-serif; font-size: 11px; }
+.pd-actions { position: fixed; inset-inline: 0; bottom: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(8px); border-top: 1px solid var(--line); }
+.pd-actions > * { justify-content: center; }
+@media (min-width: 700px) { .pd-actions { position: static; background: none; border: 0; padding: 0; backdrop-filter: none; } .pd { padding-bottom: 32px; } }
 
 /* ---------- Settings ---------- */
 .settings .card { margin-bottom: 14px; }

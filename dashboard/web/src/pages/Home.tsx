@@ -3,6 +3,7 @@ import { enumLabel } from '@shared/model.js';
 import { api, type Row, type User } from '../api';
 import { useT, type Key } from '../i18n';
 import { Badge, money, useLang, waLink } from '../ui';
+import { CalendarConnect } from '../components/CalendarConnect';
 
 type MonthFig = { month: string; revenue: number; expenses: number; profit: number; collected: number };
 type Finance = {
@@ -172,7 +173,7 @@ export function Home({ user }: { user: User }) {
 
       {s.today && (
         <section className="card">
-          <h2>{t('today_schedule')}</h2>
+          <div className="card-top"><h2>{t('today_schedule')}</h2><CalendarConnect /></div>
           {s.today.length === 0 ? <p className="muted">{t('nothing_today')}</p> : (
             <ul className="agenda">
               {s.today.map((b) => (

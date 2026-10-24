@@ -1,11 +1,12 @@
 // One-way copy of the database into a Google Sheet, for viewing, filtering, sharing and Power BI.
 // The Sheet is overwritten on every push, so edits made there are not kept: changes go
-// through the dashboard (permissions, audit log, accounting). Password hashes are never copied.
+// through the dashboard (permissions, audit log, accounting). Password hashes and link tokens
+// (customer document links, calendar feeds) are never copied.
 
 import { SheetsBackend } from './sheets.js';
 import { SCHEMA } from './store.js';
 
-const HIDDEN = new Set(['password_hash']);
+const HIDDEN = new Set(['password_hash', 'share_token', 'calendar_token']);
 const INFO_TAB = 'معلومات النسخة | info';
 
 export class SheetsMirror {
