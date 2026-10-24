@@ -16,7 +16,7 @@ const PUBLIC_ORIGINS = ['https://cleansense.co', 'https://www.cleansense.co'];
 const newId = (p) => `${p}-${Date.now().toString(36)}${randomBytes(2).toString('hex')}`.toUpperCase();
 const nowIso = () => new Date().toISOString();
 
-export function createApp({ store, secret, secureCookies = true, webDist, extraOrigins = [], openAccess = false, mirror = null }) {
+export function createApp({ store, secret, secureCookies = true, webDist, extraOrigins = [], openAccess = false, mirror = null, onPasswordChanged = () => {} }) {
   const app = express();
   const auth = createAuth({ store, secret, secureCookies, openAccess });
   applyLists(settingsMap({ store })); // owner-edited lists (services, cities, ...)
@@ -59,6 +59,7 @@ export function createApp({ store, secret, secureCookies = true, webDist, extraO
     if (bad) return res.status(400).json({ error: `password_${bad}` });
     const u = await store.patch('users', req.user.id, { password_hash: auth.hash(next), must_change_password: 'no' });
     await audit(req, 'password.changed', 'users', u.id);
+    onPasswordChanged(u);
     auth.reissue(res, u);
     res.json(auth.publicUser(u));
   });

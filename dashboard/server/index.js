@@ -24,8 +24,8 @@ import { writeBackup, readBackup, hasBackupToday } from './backup.js';
 import { SheetsBackend } from './sheets.js';
 import { importIntoMysql } from './migrate.js';
 import bcrypt from 'bcryptjs';
-import { createHash } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import { createHash, randomBytes } from 'node:crypto';
+import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { parseEnv } from 'node:util';
 
@@ -129,6 +129,25 @@ if (!owners.some((u) => u.username && u.password_hash) && !(openAccess && owners
   notice(`Owner account created: ${username} (must change password at first login)`);
 }
 
+// Forgotten owner password: put a file named reset-owner (holding the username) in the
+// private config folder and restart. The temporary password goes to owner-temp-password.txt
+// beside it, never to the log, and that file is removed once the owner sets a new password.
+const configDir = configFile ? dirname(configFile) : '';
+const tempPasswordFile = configDir && join(configDir, 'owner-temp-password.txt');
+if (configDir && existsSync(join(configDir, 'reset-owner'))) {
+  const uname = readFileSync(join(configDir, 'reset-owner'), 'utf8').trim().toLowerCase();
+  unlinkSync(join(configDir, 'reset-owner'));
+  const u = store.list('users').find((x) => x.role === 'owner' && x.active !== 'no' && String(x.username).toLowerCase() === uname);
+  if (u) {
+    const temp = randomBytes(6).toString('base64url');
+    await store.patch('users', u.id, { password_hash: bcrypt.hashSync(temp, 10), must_change_password: 'yes' });
+    writeFileSync(tempPasswordFile, `username: ${u.username}\ntemporary password: ${temp}\n`, { mode: 0o600 });
+    notice(`password reset for ${u.username}: temporary password written to ${tempPasswordFile}`);
+  } else {
+    notice(`reset-owner ignored: no active owner named "${uname}"`);
+  }
+}
+
 // Pick up manual edits made directly in the spreadsheet or in phpMyAdmin.
 if (store.kind !== 'file') {
   setInterval(() => {
@@ -171,6 +190,9 @@ const app = createApp({
   webDist: join(here, '..', 'web', 'dist'),
   extraOrigins: (env.EXTRA_ORIGINS || '').split(',').filter(Boolean),
   openAccess,
+  onPasswordChanged: () => {
+    if (tempPasswordFile && existsSync(tempPasswordFile)) unlinkSync(tempPasswordFile);
+  },
 });
 if (openAccess) console.warn('OPEN_ACCESS=1: sign-in is disabled, every visitor acts as the owner. Turn it off before real use.');
 const port = Number(env.PORT) || 3000;
