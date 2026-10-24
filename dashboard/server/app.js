@@ -105,8 +105,18 @@ export function createApp({ store, secret, secureCookies = true, webDist, extraO
     const u = store.get('users', req.params.id);
     if (!u) return res.status(404).json({ error: 'not_found' });
     const patch = {};
-    const { role, active, job_title, name, permissions, reset_password } = req.body || {};
+    const { role, active, job_title, name, permissions, username } = req.body || {};
+    let { reset_password } = req.body || {};
     if (u.id === req.user.id && (active === false || (role && role !== u.role))) return res.status(400).json({ error: 'cannot_change_self' });
+    // Imported staff have no username yet: setting one gives them a login (once; usernames never change).
+    if (username !== undefined) {
+      const uname = String(username).trim().toLowerCase();
+      if (u.username || !/^[a-z0-9._-]{3,30}$/.test(uname)) return res.status(400).json({ error: 'validation' });
+      if (store.list('users', { includeDeleted: true }).some((x) => String(x.username).toLowerCase() === uname)) return res.status(409).json({ error: 'username_taken' });
+      patch.username = uname;
+      patch.active = 'yes';
+      reset_password = true;
+    }
     if (role !== undefined) { if (!ROLES[role]) return res.status(400).json({ error: 'validation' }); patch.role = role; }
     if (active !== undefined) patch.active = active ? 'yes' : 'no';
     if (job_title !== undefined) patch.job_title = String(job_title).slice(0, 80);

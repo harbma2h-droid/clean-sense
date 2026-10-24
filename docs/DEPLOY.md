@@ -64,11 +64,16 @@ Secrets (passwords, keys) are typed by the owner directly into Hostinger. They n
 ## Phase B — running both systems side by side (about 1–2 weeks)
 
 - Staff keep using the old dashboard. The owners try the new one with the imported data, and run the legacy upgrade and opening balances (`system/README.md`).
+- **Where the old data lives (checked 2026-10-24):** the old dashboard's server only handles sign-in. All business data sits in each device's browser (localStorage of `dashboard.cleansense.co`), as its own settings page says.
+  - The new system holds everything in the export of 2026-10-23.
+  - Anything entered later, or only on another device, exists only on that device.
 - **Cut-over day:**
-  1. Stop entering data in the old dashboard.
-  2. Export a fresh backup from it.
-  3. Claude converts the backup and re-imports it into an emptied new database. Same checks: every total must match.
-  4. The owners switch.
+  1. On every device that used the old dashboard: الإعدادات → نسخة احتياطية → «تصدير نسخة احتياطية». Put the files in `D:\CleanSense-Backup`.
+  2. Claude converts each file and compares it by record id with the live system.
+  3. Only new or changed records are added. The new system has its own work since the import (legacy upgrade, opening balances), so it is **not** emptied and re-imported.
+  4. Only after that is `dashboard.cleansense.co` redirected to the new system. Redirecting earlier would hide the browser data that still has to be exported.
+  5. Staff get logins: Users → «تفعيل الدخول» (imported staff have no username yet).
+- **Subscriptions (hPanel → Billing):** auto-renew is on for Google Workspace (invoice 2027-01-31) and for hosting (2027-06-22).
 
 ## Phase C — website and addresses (separate approval)
 

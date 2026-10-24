@@ -20,13 +20,18 @@ export function Users({ me, meta }: { me: User; meta: Meta | null }) {
   const load = () => api<Row[]>('/users').then(setRows).catch(() => setRows([]));
   useEffect(() => { load(); }, []);
 
+  const [loginFor, setLoginFor] = useState<Row | null>(null);
+
   const patch = async (u: Row, body: Row) => {
     setErr('');
     try {
       const r = await api<{ user: Row; temporary_password?: string }>(`/users/${u.id}`, { method: 'PATCH', body });
-      if (r.temporary_password) setTemp({ name: u.name, username: u.username, password: r.temporary_password });
+      if (r.temporary_password) setTemp({ name: u.name, username: r.user.username, password: r.temporary_password });
       load();
-    } catch { setErr(t('error')); }
+    } catch (x) {
+      if (body.username) throw x;
+      setErr(t('error'));
+    }
   };
 
   return (
@@ -58,6 +63,9 @@ export function Users({ me, meta }: { me: User; meta: Meta | null }) {
                 {u.username && u.id !== me.id && (
                   <button className="ghost small" onClick={() => patch(u, { reset_password: true })}><KeyRound size={16} />{t('reset_password')}</button>
                 )}
+                {!u.username && u.id !== me.id && (
+                  <button className="ghost small" onClick={() => setLoginFor(u)}><KeyRound size={16} />{t('enable_login')}</button>
+                )}
                 {u.id !== me.id && <button className="ghost small" onClick={() => setPermsFor(u)}><ShieldCheck size={16} />{t('permissions')}</button>}
               </div>
             </li>
@@ -66,6 +74,7 @@ export function Users({ me, meta }: { me: User; meta: Meta | null }) {
       )}
       {permsFor && <PermsDialog user={permsFor} onClose={() => setPermsFor(null)} onSave={async (permissions) => { await patch(permsFor, { permissions }); setPermsFor(null); }} />}
       {adding && <AddUser onClose={() => setAdding(false)} onDone={(r) => { setAdding(false); setTemp(r); load(); }} />}
+      {loginFor && <EnableLogin user={loginFor} onClose={() => setLoginFor(null)} onSave={async (username) => { await patch(loginFor, { username }); setLoginFor(null); }} />}
       {temp && (
         <Modal title={temp.name} onClose={() => setTemp(null)}>
           <p>{t('temp_password')}</p>
@@ -106,6 +115,35 @@ function AddUser({ onClose, onDone }: { onClose: () => void; onDone: (r: { name:
           <div className="field"><label htmlFor="j">{t('job_title')}</label><input id="j" value={d.job_title} onChange={(e) => setD({ ...d, job_title: e.target.value })} /></div>
           <div className="field"><label htmlFor="l">{t('language')}</label>
             <select id="l" value={d.language} onChange={(e) => setD({ ...d, language: e.target.value as 'ar' | 'en' })}><option value="ar">العربية</option><option value="en">English</option></select></div>
+        </div>
+        {err && <p className="err">{err}</p>}
+        <div className="modal-foot"><span className="grow" /><button type="button" className="ghost" onClick={onClose}>{t('cancel')}</button><button className="primary">{t('save')}</button></div>
+      </form>
+    </Modal>
+  );
+}
+
+function EnableLogin({ user, onClose, onSave }: { user: Row; onClose: () => void; onSave: (username: string) => Promise<void> }) {
+  const t = useT();
+  const [username, setUsername] = useState('');
+  const [err, setErr] = useState('');
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      await onSave(username);
+    } catch (x) {
+      setErr(x instanceof ApiError && x.code === 'username_taken' ? t('username_taken') : t('username_rule'));
+    }
+  };
+
+  return (
+    <Modal title={`${t('enable_login')} — ${user.name}`} onClose={onClose}>
+      <form onSubmit={submit}>
+        <div className="form">
+          <div className="field"><label htmlFor="eun">{t('username')}</label>
+            <input id="eun" required autoFocus dir="ltr" autoCapitalize="none" pattern="[a-z0-9._\-]{3,30}" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} />
+            <small className="muted">{t('username_rule')}</small></div>
         </div>
         {err && <p className="err">{err}</p>}
         <div className="modal-foot"><span className="grow" /><button type="button" className="ghost" onClick={onClose}>{t('cancel')}</button><button className="primary">{t('save')}</button></div>

@@ -182,6 +182,20 @@ test('users: create with temp password, cannot lock yourself out', async () => {
   assert.equal(login.body.language, 'en');
 });
 
+test('users: an imported user without a username gets a login once', async () => {
+  await store.insert('users', { id: 'U-IMP', name: 'أم عبدالله', username: '', role: 'booking_coordinator', active: 'no', password_hash: '', must_change_password: 'yes' });
+  assert.equal((await req('o', 'PATCH', '/users/U-IMP', { username: 'acc' })).status, 409);
+  assert.equal((await req('o', 'PATCH', '/users/U-IMP', { username: 'A B' })).status, 400);
+  const r = await req('o', 'PATCH', '/users/U-IMP', { username: 'Umabdullah' });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.user.username, 'umabdullah');
+  assert.equal(r.body.user.active, true);
+  assert.ok(r.body.temporary_password.length >= 8);
+  assert.equal((await req('o', 'PATCH', '/users/U-IMP', { username: 'other' })).status, 400, 'usernames never change');
+  const login = await req('n', 'POST', '/auth/login', { username: 'umabdullah', password: r.body.temporary_password });
+  assert.equal(login.status, 200);
+});
+
 test('account locks after 5 wrong passwords', async () => {
   for (let i = 0; i < 5; i++) await req('x', 'POST', '/auth/login', { username: 'acc', password: 'nope' });
   const r = await req('x', 'POST', '/auth/login', { username: 'acc', password: 'Acc12345' });

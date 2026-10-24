@@ -71,6 +71,7 @@ const STRINGS = {
   username_rule: { ar: 'حروف إنجليزية صغيرة أو أرقام، 3 خانات أو أكثر', en: 'Lowercase English letters or digits, 3+ characters' },
   username_taken: { ar: 'اسم المستخدم مستخدم', en: 'Username already taken' },
   no_login: { ar: 'بدون دخول', en: 'No login yet' },
+  enable_login: { ar: 'تفعيل الدخول', en: 'Enable sign-in' },
   set_login: { ar: 'إنشاء دخول', en: 'Create login' },
   // Documents
   doc_customer: { ar: 'العميل', en: 'Customer' },
