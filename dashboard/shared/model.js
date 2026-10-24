@@ -237,13 +237,23 @@ export const SETTINGS_GROUPS = {
 };
 // {name} {number} {total} {balance} {company} are replaced when a message is prepared.
 export const DEFAULT_MESSAGES = {
-  'wa.quote_ar': 'هلا {name}، يسعدنا نرسل لك عرض سعر {company} رقم {number} بقيمة {total}. حياك لأي استفسار.',
-  'wa.quote_en': 'Hello {name}, please find {company} quotation {number} for {total}. Happy to answer any questions.',
-  'wa.invoice_ar': 'هلا {name}، هذي فاتورة {company} رقم {number} بقيمة {total}. المتبقي: {balance}. شاكرين ثقتك.',
-  'wa.invoice_en': 'Hello {name}, here is {company} invoice {number} for {total}. Balance due: {balance}. Thank you.',
-  'wa.receipt_ar': 'هلا {name}، استلمنا منك {total}، وهذا سند القبض رقم {number}. شاكرين لك.',
-  'wa.receipt_en': 'Hello {name}, we received {total}. This is receipt {number}. Thank you.',
+  'wa.quote_ar': 'هلا {name} 👋\nيسعدنا نرسل لك عرض السعر بقيمة {total}.\nتقدر تشوفه وتحمّله من هنا:\n{link}\n\nحياك لأي استفسار.',
+  'wa.quote_en': 'Hello {name} 👋\nHere is your quotation for {total}.\nYou can view and download it here:\n{link}\n\nHappy to help with any questions.',
+  'wa.invoice_ar': 'هلا {name} 👋\nهذي فاتورتك بقيمة {total}، والمتبقي {balance}.\nتقدر تشوفها وتحمّلها من هنا:\n{link}\n\nشاكرين ثقتك.',
+  'wa.invoice_en': 'Hello {name} 👋\nHere is your invoice for {total}. Balance due: {balance}.\nYou can view and download it here:\n{link}\n\nThank you.',
+  'wa.receipt_ar': 'هلا {name} 👋\nاستلمنا منك {total}، وهذا سند القبض. شاكرين لك.',
+  'wa.receipt_en': 'Hello {name} 👋\nWe received {total}; here is your receipt. Thank you.',
 };
+
+// Earlier default wording. A saved message still equal to one of these follows the new default.
+export const OLD_DEFAULT_MESSAGES = new Set([
+  'هلا {name}، يسعدنا نرسل لك عرض سعر {company} رقم {number} بقيمة {total}. حياك لأي استفسار.',
+  'Hello {name}, please find {company} quotation {number} for {total}. Happy to answer any questions.',
+  'هلا {name}، هذي فاتورة {company} رقم {number} بقيمة {total}. المتبقي: {balance}. شاكرين ثقتك.',
+  'Hello {name}, here is {company} invoice {number} for {total}. Balance due: {balance}. Thank you.',
+  'هلا {name}، استلمنا منك {total}، وهذا سند القبض رقم {number}. شاكرين لك.',
+  'Hello {name}, we received {total}. This is receipt {number}. Thank you.',
+]);
 
 // Lists the owners can extend or hide from the system. Codes never change once created,
 // so old records keep their meaning; hidden items stay valid but are no longer offered.

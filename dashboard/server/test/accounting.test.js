@@ -258,7 +258,11 @@ test('owner settings: only owners, lists extend services, defaults applied to ne
   });
   assert.equal(r.status, 200);
   assert.equal(store.list('settings').some((s) => s.key === 'not.allowed'), false);
-  assert.match(r.body['wa.quote_ar'], /\{number\}/, 'message templates have defaults');
+  assert.match(r.body['wa.quote_ar'], /\{link\}/, 'message templates have defaults');
+  assert.doesNotMatch(r.body['wa.quote_ar'], /\{number\}|\{company\}/, 'customer messages carry no internal numbers or system name');
+  // A message saved with the earlier default wording follows the new default.
+  await store.setSetting('wa.invoice_ar', 'هلا {name}، هذي فاتورة {company} رقم {number} بقيمة {total}. المتبقي: {balance}. شاكرين ثقتك.');
+  assert.match((await req('owner', 'GET', '/settings')).body['wa.invoice_ar'], /\{link\}/);
   const q = await req('coord', 'POST', '/sales/documents', { type: 'quote', customer_name: 'خزان', customer_phone: '0500000088', items: [{ description: 'خزان علوي', service: 'tank_cleaning', qty: 1, unit_price: 350 }] });
   assert.equal(q.status, 201);
   assert.equal(q.body.items_parsed[0].service, 'tank_cleaning', 'owner-added service accepted');
@@ -335,7 +339,7 @@ test('customer link: private, reused, shows only printed fields, marks first vie
   assert.equal(q.body.share_token, undefined, 'the token is not sent with the document');
   const a = await req('coord', 'POST', `/sales/documents/${q.body.id}/link`);
   assert.equal(a.status, 201);
-  assert.match(a.body.path, /^\/d\/[\w-]{32}$/);
+  assert.match(a.body.path, /^\/d\/[\w-]{16}$/);
   assert.equal((await req('coord', 'POST', `/sales/documents/${q.body.id}/link`)).body.path, a.body.path, 'same link every time');
 
   const token = a.body.path.slice(3);

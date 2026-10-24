@@ -10,6 +10,9 @@ DirectoryIndex index.html
   RewriteCond %{HTTP_HOST} ^www\. [NC]
   RewriteRule ^ https://cleansense.co%{REQUEST_URI} [L,R=301]
 
+  # Customer document links sent on WhatsApp (cleansense.co/d/<code>) open in the system.
+  RewriteRule ^d/([A-Za-z0-9_-]{16,})/?$ https://system.cleansense.co/d/$1 [L,R=302]
+
   # Add trailing slash to directory-style URLs (e.g. /en -> /en/).
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^(.*[^/])$ /$1/ [L,R=301]

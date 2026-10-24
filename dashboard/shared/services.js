@@ -4,7 +4,7 @@
 // ctx = { store, user, perms: string[], audit(action, entity, id, details), today?: 'YYYY-MM-DD' }
 // store = { list(table, {includeDeleted}), get(table, id), insert(table, row), patch(table, id, data) }
 
-import { TABLES, ENUMS, ROLES, SETTINGS_SPEC, DEFAULT_MESSAGES, EDITABLE_LISTS, applyLists, enumLabel } from './model.js';
+import { TABLES, ENUMS, ROLES, SETTINGS_SPEC, DEFAULT_MESSAGES, OLD_DEFAULT_MESSAGES, EDITABLE_LISTS, applyLists, enumLabel } from './model.js';
 import { computeTotals, docTotal, enrichDocuments, invoiceState, paidByInvoice, journal, trialBalance, profitAndLoss, cashByMethod, receivablesAging, revenueByService, projectProfitability, customerStatement, accountBalance, treasuryBalances, partnersEquity, TREASURY_ACCOUNT, r2 } from './finance.js';
 
 export class ServiceError extends Error {
@@ -41,9 +41,9 @@ export const validPhone = (p) => {
   return /^05\d{8}$/.test(d) || /^[1-9]\d{9,14}$/.test(d) ? d : '';
 };
 
-/** Random URL-safe token (192 bits) for links that work without signing in. */
-export function newToken() {
-  const b = new Uint8Array(24);
+/** Random URL-safe token for links that work without signing in (24 bytes = 192 bits by default). */
+export function newToken(bytes = 24) {
+  const b = new Uint8Array(bytes);
   globalThis.crypto.getRandomValues(b);
   return btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
@@ -691,7 +691,8 @@ export function settingsMap(ctx) {
 
 /** Public company details plus message templates (with defaults), for documents and screens. */
 export function companyInfo(ctx) {
-  return { ...DEFAULT_MESSAGES, ...settingsMap(ctx) };
+  const saved = Object.entries(settingsMap(ctx)).filter(([k, v]) => !(k.startsWith('wa.') && OLD_DEFAULT_MESSAGES.has(v)));
+  return { ...DEFAULT_MESSAGES, ...Object.fromEntries(saved) };
 }
 
 export async function updateSettings(ctx, body = {}) {
@@ -755,7 +756,8 @@ export async function documentLink(ctx, id, body = {}) {
   if (d.status === 'void' || d.status === 'cancelled' || !d.doc_number) fail(409, 'not_shareable', { status: d.status });
   let token = d.share_token;
   if (!token || body.reset) {
-    token = newToken();
+    // 96 bits: short enough to look tidy in a WhatsApp message, far too many to guess.
+    token = newToken(12);
     await ctx.store.patch('documents', id, { share_token: token, updated_at: nowIso() });
     await ctx.audit(body.reset ? 'document.link_reset' : 'document.link', 'documents', id);
   }
@@ -769,7 +771,7 @@ const PUBLIC_SETTINGS = /^(company\.|contact\.|guarantee\.|docs\.footer_note|doc
 /** What the customer sees behind a document link: the printed fields only, never internal ones. */
 export async function publicDocument(ctx, token) {
   const t = String(token || '');
-  const raw = t.length >= 20 && ctx.store.list('documents').find((x) => x.share_token === t);
+  const raw = t.length >= 16 && ctx.store.list('documents').find((x) => x.share_token === t);
   if (!raw || raw.status === 'void' || raw.status === 'cancelled') fail(404, 'not_found');
   const d = listDocuments(ctx).find((x) => x.id === raw.id);
   if (!raw.viewed_at) {

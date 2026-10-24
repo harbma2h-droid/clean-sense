@@ -2,7 +2,7 @@
 
 import express from 'express';
 import cookieParser from 'cookie-parser';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { ROLES, PERMISSIONS } from '../shared/model.js';
@@ -226,6 +226,15 @@ export function createApp({ store, secret, secureCookies = true, webDist, extraO
 
   if (webDist && existsSync(webDist)) {
     app.use(express.static(webDist, { index: false, maxAge: '1h' }));
+    // Customer links (/d/<code>): the WhatsApp preview shows the company, not the internal system.
+    let customerHtml = '';
+    app.get('/d/:code', (req, res) => {
+      customerHtml ||= readFileSync(join(webDist, 'index.html'), 'utf8').replace(/<title>[^<]*<\/title>/,
+        '<title>كلين سنس | Clean Sense</title><meta property="og:title" content="كلين سنس | Clean Sense" />' +
+        '<meta property="og:description" content="اضغط لعرض المستند وتحميله" /><meta property="og:image" content="https://cleansense.co/og-ar.png" />');
+      res.setHeader('Cache-Control', 'no-store');
+      res.type('html').send(customerHtml);
+    });
     app.get('*', (req, res) => res.sendFile(join(webDist, 'index.html')));
   }
 

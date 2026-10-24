@@ -9,7 +9,10 @@ import { Modal, errText, useLang, waLink } from '../ui';
 import { DocSheet } from './DocSheet';
 import { downloadFile, sharePdf, sheetToPdf } from '../pdf';
 
-const fill = (tpl: string, v: Record<string, string>) => tpl.replace(/\{(\w+)\}/g, (_, k) => v[k] ?? '');
+const fill = (tpl: string, v: Record<string, string>) => tpl.replace(/\{(\w+)\}/g, (_, k) => (k === 'link' ? '{link}' : v[k] ?? ''));
+// Customers get links on the company's own domain (cleansense.co/d/…, redirected to the system),
+// so the message does not mention the internal system.
+const linkBase = () => (location.hostname === 'system.cleansense.co' ? 'https://cleansense.co' : location.origin);
 
 /**
  * Send a quote, invoice or receipt to the customer.
@@ -45,10 +48,13 @@ export function SendDialog({ doc, payment, company, onClose, onDone }: { doc?: R
   // The customer's link is made once per document and reused, so a link already sent keeps working.
   useEffect(() => {
     if (!doc || !doc.doc_number || ['void', 'cancelled'].includes(doc.status)) return;
-    api<{ path: string }>(`/sales/documents/${doc.id}/link`, { method: 'POST' }).then((r) => setLink(location.origin + r.path)).catch(() => setLink(''));
+    api<{ path: string }>(`/sales/documents/${doc.id}/link`, { method: 'POST' }).then((r) => setLink(linkBase() + r.path)).catch(() => setLink(''));
   }, [doc?.id]);
 
-  const message = link ? `${text}\n\n${lang === 'ar' ? 'تقدر تشوفه وتحمّله من هنا:' : 'View and download it here:'}\n${link}` : text;
+  // {link} in the message is where the customer's link goes; a message without it gets the link at the end.
+  const message = text.includes('{link}')
+    ? (link ? text.replace(/\{link\}/g, link) : text.replace(/^.*\{link\}.*$\n?/gm, '')).trim()
+    : link ? `${text}\n\n${link}` : text;
   const typeName = payment ? (lang === 'ar' ? 'سند-قبض' : 'Receipt') : enumLabel('doc_type', doc!.type, lang).replace(/\s+/g, '-');
   const fileName = `${typeName}-${number || 'draft'}-${lang === 'ar' ? 'كلين-سنس' : 'Clean-Sense'}.pdf`;
 
@@ -118,7 +124,7 @@ export function SendDialog({ doc, payment, company, onClose, onDone }: { doc?: R
         </div>
         <div className="field">
           <label htmlFor="st">{t('message')}</label>
-          <textarea id="st" rows={4} value={text} onChange={(e) => setText(e.target.value)} />
+          <textarea id="st" rows={6} value={text} onChange={(e) => setText(e.target.value)} />
           {link && <div className="link-row"><small className="muted">{t('link_added')}</small><code>{link}</code></div>}
         </div>
         <div className="send-actions">

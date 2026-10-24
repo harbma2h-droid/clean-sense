@@ -105,7 +105,7 @@ const STRINGS = {
   whatsapp_customer:{ ar: 'إرسال واتساب للعميل', en: 'WhatsApp the customer' },
   phone_invalid: { ar: 'الرقم غير صحيح. اكتبه مثل 05xxxxxxxx', en: 'Invalid number. Use 05xxxxxxxx' },
   no_saved_number: { ar: 'ما فيه رقم محفوظ لهذا العميل. اكتبه هنا، وينحفظ في ملفه.', en: 'No saved number for this customer. Type it here and it is saved to the customer.' },
-  link_added: { ar: 'يُضاف لرسالتك رابط خاص للعميل يعرض المستند ويحمّله:', en: "A private link to view and download the document is added to your message:" },
+  link_added: { ar: 'مكان {link} في الرسالة ينحط الرابط الخاص بالعميل:', en: "{link} in the message becomes the customer's private link:" },
   send_link_hint: { ar: '"إرسال واتساب للعميل" يفتح محادثة العميل مباشرة والرسالة جاهزة مع الرابط، بدون ما تختار جهة اتصال. "مشاركة PDF" ترسل الملف نفسه من قائمة المشاركة.', en: '"WhatsApp the customer" opens their chat directly with the message and link ready, no contact picking. "Share PDF" sends the file itself through the share sheet.' },
   err_not_shareable: { ar: 'المستند ملغي أو بدون رقم، ما ينرسل.', en: 'This document is void or has no number, so it cannot be sent.' },
   download_pdf: { ar: 'تحميل PDF', en: 'Download PDF' },

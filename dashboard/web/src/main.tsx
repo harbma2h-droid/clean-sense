@@ -5,7 +5,7 @@ import { isDemo } from './api';
 import './styles.css';
 
 // /d/<token> is a customer's document link: no sign-in, no staff screens.
-const docLink = location.pathname.match(/^\/d\/([\w-]{20,})\/?$/);
+const docLink = location.pathname.match(/^\/d\/([\w-]{16,})\/?$/);
 createRoot(document.getElementById('root')!).render(docLink ? <PublicDoc token={docLink[1]} /> : <App />);
 
 if (!isDemo && 'serviceWorker' in navigator && location.protocol === 'https:') {
