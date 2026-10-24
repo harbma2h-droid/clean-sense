@@ -16,9 +16,17 @@
   - `clean-sense-config/system.env` holds secrets. The owner uploads it.
   - `clean-sense-config/app.json` holds non-secret settings, which only fill gaps.
   - hPanel's variables page is not used: new keys added there never reached the app.
-- The old dashboard and the website are untouched.
+- The old dashboard is untouched.
+- **Phase C (website) done 2026-10-24, with the owner's approval:**
+  - The previous site was saved first: an HTTP copy plus a zip of the whole `public_html`.
+  - The new site was uploaded into `public_html`. Each built file was written to its path through File Browser's API, overwriting old files with the same name.
+  - Checked: AR and EN pages and service pages return 200, an unknown page returns 404, and http and www redirect to `https://cleansense.co/`.
+  - The booking form's API call from `cleansense.co` reached the system: test lead `CS-2610-0001` was created, then deleted.
+  - `public_html/clean-sense-hostinger.zip` (an old package anyone could download) was moved out of public reach to `archive-2026-10-24/`.
+  - `public_html/dashboard/` was **not** moved: it is the folder `dashboard.cleansense.co` runs from, and staff still use the old dashboard.
+  - The system now sends `X-Robots-Tag: noindex, nofollow`, so search engines leave the staff system out.
 
-Plan prepared on 2026-10-23. Nothing below has been done yet: every phase starts only with the owner's approval.
+Plan prepared on 2026-10-23. Each phase started only with the owner's approval.
 Secrets (passwords, keys) are typed by the owner directly into Hostinger. They never go into chat, files or git.
 
 ## Principles

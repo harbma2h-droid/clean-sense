@@ -28,6 +28,8 @@ export function createApp({ store, secret, secureCookies = true, webDist, extraO
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    // Internal staff system: keep it out of search engines.
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
     next();
   });
   app.use(express.json({ limit: '1mb' }));
