@@ -462,8 +462,9 @@ details summary { cursor: pointer; margin-top: 10px; color: var(--muted); }
 /* ---------- Customer document link (/d/<token>) ---------- */
 .pd { max-width: 640px; margin: 0 auto; padding: 16px 16px calc(96px + env(safe-area-inset-bottom)); display: grid; gap: 12px; }
 .pd-msg { text-align: center; color: var(--muted); padding: 40px 8px; }
-.pd-logo { height: 44px; width: auto; }
-.pd > .pd-logo { margin: 40px auto 0; height: 64px; }
+/* The approved logo: gold on its navy square, with rounded corners. */
+.pd-logo { height: 64px; width: 64px; border-radius: 14px; box-shadow: var(--shadow); }
+.pd > .pd-logo { margin: 40px auto 0; height: 96px; width: 96px; }
 .pd-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 0 8px; border-bottom: 2px solid var(--gold); }
 .pd-title { display: grid; justify-items: end; gap: 2px; text-align: end; }
 .pd-title h1 { margin: 0; font-size: 22px; color: var(--text); }

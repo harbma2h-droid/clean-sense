@@ -231,7 +231,8 @@ export function createApp({ store, secret, secureCookies = true, webDist, extraO
     app.get('/d/:code', (req, res) => {
       customerHtml ||= readFileSync(join(webDist, 'index.html'), 'utf8').replace(/<title>[^<]*<\/title>/,
         '<title>كلين سنس | Clean Sense</title><meta property="og:title" content="كلين سنس | Clean Sense" />' +
-        '<meta property="og:description" content="اضغط لعرض المستند وتحميله" /><meta property="og:image" content="https://cleansense.co/og-ar.png" />');
+        '<meta property="og:description" content="اضغط لعرض المستند وتحميله" /><meta property="og:type" content="website" />' +
+        '<meta property="og:image" content="https://system.cleansense.co/og-logo.png" /><meta property="og:image:width" content="600" /><meta property="og:image:height" content="600" />');
       res.setHeader('Cache-Control', 'no-store');
       res.type('html').send(customerHtml);
     });

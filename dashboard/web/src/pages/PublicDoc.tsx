@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Download, MessageCircle } from 'lucide-react';
 import { ENUMS, MONEY_FMT, enumLabel } from '@shared/model.js';
-import logo from '../assets/brand/logo-transparent.svg';
+import logo from '../assets/brand/logo-navy.svg';
 import type { Row } from '../api';
 import { DocSheet } from '../components/DocSheet';
 import { downloadFile, sheetToPdf } from '../pdf';
