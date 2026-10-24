@@ -1,6 +1,13 @@
 # Changelog
 
-## Unreleased (waiting for approval) — payroll, periods, menu
+## 2026-10-24 17:13 — payroll, periods, menu (backup first, verified after)
+- **Backup taken first:** `D:\CleanSense-Backup\cs_system-before-payroll-release-2026-10-24.sql` (16 tables).
+- **Checked after deploy:** counts and totals unchanged (43 customers, 54 documents, 9 payments, 172 expenses, revenue 36,990, collected 8,715, cash 8,600, ledger balanced at 91,567.62).
+  - The new screens and endpoints answer.
+  - The Sheets copy refreshed with no error.
+- **Final-review fixes:**
+  - "Today" now follows Riyadh time; it used UTC, which was wrong from midnight to 3 am.
+  - A partly recovered advance cannot be voided.
 - **Payroll (مسير الرواتب):**
   - Monthly runs, auto-filled from active workers: salary, allowances, and days × daily rate for daily workers.
   - Overtime, bonus, deductions and advance recovery per worker.

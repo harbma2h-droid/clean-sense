@@ -44,7 +44,7 @@
 
 | Priority | Item | What is needed |
 |---|---|---|
-| 1 | Payroll: salaries, history, monthly register, advances and deductions, employee statement, bank export | Approve the database design in `docs/RESEARCH-ZATCA-MUDAD-BANKING.md` §2, and name the payroll bank |
+| ✅ | Payroll: monthly runs, advances and debts, worker statements, bank CSV, all posted to the books | Live since 2026-10-24 17:13. Next: the owner enters the workers. The CSV columns may need adjusting to the payroll bank's own template. |
 | 2 | Bank statement import with suggested invoice matches | Owner sends one sample statement export (CSV or Excel) |
 | 3 | PDF for customer statements and the employee statement | Comes with item 1 |
 | 4 | VAT-ready fields, credit notes, Phase 1 QR (switched off) | Confirm annual taxable revenue and VAT status with the accountant |
