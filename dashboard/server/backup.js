@@ -26,6 +26,15 @@ export function writeBackup(store, dir, keep = 30) {
   return file;
 }
 
+/** True when `dir` already holds a backup written today (UTC), so restarts don't pile them up. */
+export function hasBackupToday(dir, today = new Date().toISOString().slice(0, 10)) {
+  try {
+    return readdirSync(dir).some((f) => f.startsWith(`cleansense-${today}`));
+  } catch {
+    return false;
+  }
+}
+
 export function readBackup(file) {
   const raw = readFileSync(file);
   const data = JSON.parse((file.endsWith('.gz') ? gunzipSync(raw) : raw).toString('utf8'));

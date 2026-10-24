@@ -4,7 +4,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Store } from '../store.js';
-import { writeBackup, readBackup } from '../backup.js';
+import { writeBackup, readBackup, hasBackupToday } from '../backup.js';
 import { summary, problems } from '../../../system/migrate/to-mysql.mjs';
 
 async function sampleStore() {
@@ -21,7 +21,10 @@ async function sampleStore() {
 
 test('backup: written gzip file reads back identical, deleted rows included', async () => {
   const store = await sampleStore();
-  const file = writeBackup(store, mkdtempSync(join(tmpdir(), 'cs-bk-')), 2);
+  const dir = mkdtempSync(join(tmpdir(), 'cs-bk-'));
+  assert.equal(hasBackupToday(dir), false);
+  const file = writeBackup(store, dir, 2);
+  assert.equal(hasBackupToday(dir), true, 'restarts later today will not write another one');
   const data = readBackup(file);
   assert.equal(data.tables.customers.length, 2);
   assert.deepEqual(data.tables.payments, store.list('payments', { includeDeleted: true }));

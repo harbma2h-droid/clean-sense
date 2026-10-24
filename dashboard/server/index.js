@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { Store } from './store.js';
 import { createApp } from './app.js';
 import { SheetsMirror } from './mirror.js';
-import { writeBackup, readBackup } from './backup.js';
+import { writeBackup, readBackup, hasBackupToday } from './backup.js';
 import { SheetsBackend } from './sheets.js';
 import { importIntoMysql } from './migrate.js';
 import bcrypt from 'bcryptjs';
@@ -44,6 +44,16 @@ const configFile = [env.CONFIG_FILE, join(homedir(), 'clean-sense-config', 'syst
 if (configFile) {
   Object.assign(env, parseEnv(readFileSync(configFile, 'utf8').replace(/^﻿/, '')));
   notice('settings loaded from', configFile);
+  // Non-secret settings (e.g. MIRROR_SPREADSHEET_ID) in app.json beside it; they only fill gaps.
+  const appJson = join(dirname(configFile), 'app.json');
+  if (existsSync(appJson)) {
+    try {
+      for (const [k, v] of Object.entries(JSON.parse(readFileSync(appJson, 'utf8')))) if (!env[k] && /^[A-Z][A-Z0-9_]*$/.test(k)) env[k] = String(v);
+      notice('settings loaded from', appJson);
+    } catch (e) {
+      console.error('app.json ignored:', e.message);
+    }
+  }
 }
 const openAccess = env.OPEN_ACCESS === '1';
 
@@ -129,12 +139,19 @@ if (store.kind !== 'file') {
   }, 5 * 60 * 1000).unref();
 }
 
-if (env.BACKUP_DIR) {
-  const backup = () => store.run(() => writeBackup(store, env.BACKUP_DIR))
-    .then((f) => notice('backup written', f))
-    .catch((e) => console.error('backup failed', e.message));
-  setTimeout(backup, 2 * 60 * 1000).unref();
-  setInterval(backup, 24 * 60 * 60 * 1000).unref();
+// Daily backups: BACKUP_DIR, or by default a private folder next to the app on Hostinger
+// (outside public_html and hbuilds/, so never served and kept across redeploys).
+const backupDir = env.BACKUP_DIR || (siteDir && store.kind !== 'file' ? join(siteDir, 'clean-sense-backups') : '');
+if (backupDir) {
+  // Hostinger stops idle apps, so check soon after every start and then hourly; one backup per day.
+  const backup = () => {
+    if (hasBackupToday(backupDir)) return;
+    store.run(() => writeBackup(store, backupDir))
+      .then((f) => notice('backup written', f))
+      .catch((e) => console.error('backup failed', e.message));
+  };
+  setTimeout(backup, 30 * 1000).unref();
+  setInterval(backup, 60 * 60 * 1000).unref();
 }
 
 let mirror = null;

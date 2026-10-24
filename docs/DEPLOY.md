@@ -3,7 +3,19 @@
 **Status 2026-10-24:**
 - Phase A is done: `https://system.cleansense.co` runs on MySQL.
 - The one-time import from the Sheet passed (`IMPORT OK`, all row counts and totals match), and the owner account `moath` was created.
-- Not set yet: `BACKUP_DIR` and `MIRROR_SPREADSHEET_ID`.
+- **Data:**
+  - The legacy upgrade ran with approval: 41 customers, 53 linked documents, 9 payments, 25 invoices marked "unverified".
+  - Opening balances recorded: bank 8,000, cash 600.
+  - The ledger balances.
+- **Daily backups:** in `clean-sense-backups/` beside the app. The default needs no setting. One file per day, newest 30 kept.
+- **Sheets view copy:**
+  - The sheet "Clean Sense — عرض البيانات (نسخة للقراءة فقط)" belongs to info@cleansense.co and is shared with the service account.
+  - It refreshes every 15 minutes, and owners can refresh it now with `POST /api/admin/mirror`.
+  - Its ID is in `clean-sense-config/app.json`.
+- **Config files:**
+  - `clean-sense-config/system.env` holds secrets. The owner uploads it.
+  - `clean-sense-config/app.json` holds non-secret settings, which only fill gaps.
+  - hPanel's variables page is not used: new keys added there never reached the app.
 - The old dashboard and the website are untouched.
 
 Plan prepared on 2026-10-23. Nothing below has been done yet: every phase starts only with the owner's approval.
