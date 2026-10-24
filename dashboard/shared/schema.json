@@ -1143,6 +1143,26 @@
      "deleted_at",
      "تاريخ الحذف",
      "Deleted at"
+    ],
+    [
+     "allowances",
+     "البدلات الشهرية",
+     "Monthly allowances"
+    ],
+    [
+     "bank_name",
+     "البنك",
+     "Bank"
+    ],
+    [
+     "iban",
+     "الآيبان",
+     "IBAN"
+    ],
+    [
+     "id_number",
+     "رقم الهوية / الإقامة",
+     "ID / Iqama no."
     ]
    ]
   },
@@ -1424,6 +1444,264 @@
      "imported_at",
      "وقت النقل",
      "Imported at"
+    ]
+   ]
+  },
+  "payroll_runs": {
+   "ar": "مسيرات الرواتب",
+   "en": "Payroll runs",
+   "cols": [
+    [
+     "id",
+     "المعرّف",
+     "ID"
+    ],
+    [
+     "month",
+     "الشهر",
+     "Month"
+    ],
+    [
+     "status",
+     "الحالة",
+     "Status"
+    ],
+    [
+     "notes",
+     "ملاحظات",
+     "Notes"
+    ],
+    [
+     "approved_by",
+     "اعتمده",
+     "Approved by"
+    ],
+    [
+     "approved_at",
+     "تاريخ الاعتماد",
+     "Approved at"
+    ],
+    [
+     "voided_at",
+     "تاريخ الإلغاء",
+     "Voided at"
+    ],
+    [
+     "void_reason",
+     "سبب الإلغاء",
+     "Void reason"
+    ],
+    [
+     "created_by",
+     "أنشأه",
+     "Created by"
+    ],
+    [
+     "created_at",
+     "تاريخ الإنشاء",
+     "Created at"
+    ],
+    [
+     "updated_at",
+     "آخر تعديل",
+     "Updated at"
+    ],
+    [
+     "deleted_at",
+     "تاريخ الحذف",
+     "Deleted at"
+    ]
+   ]
+  },
+  "payroll_lines": {
+   "ar": "بنود مسير الرواتب",
+   "en": "Payroll lines",
+   "cols": [
+    [
+     "id",
+     "المعرّف",
+     "ID"
+    ],
+    [
+     "run_id",
+     "المسير",
+     "Run"
+    ],
+    [
+     "worker_id",
+     "العامل",
+     "Worker"
+    ],
+    [
+     "worker_name",
+     "اسم العامل",
+     "Worker name"
+    ],
+    [
+     "days",
+     "أيام العمل",
+     "Days worked"
+    ],
+    [
+     "basic",
+     "الأساسي",
+     "Basic"
+    ],
+    [
+     "allowances",
+     "البدلات",
+     "Allowances"
+    ],
+    [
+     "overtime",
+     "إضافي",
+     "Overtime"
+    ],
+    [
+     "bonus",
+     "مكافأة",
+     "Bonus"
+    ],
+    [
+     "deductions",
+     "خصومات",
+     "Deductions"
+    ],
+    [
+     "advance_recovery",
+     "استقطاع سلف",
+     "Advance recovery"
+    ],
+    [
+     "paid_at",
+     "تاريخ الصرف",
+     "Paid on"
+    ],
+    [
+     "method",
+     "طريقة الصرف",
+     "Paid by"
+    ],
+    [
+     "reference",
+     "المرجع",
+     "Reference"
+    ],
+    [
+     "notes",
+     "ملاحظات",
+     "Notes"
+    ],
+    [
+     "created_by",
+     "أنشأه",
+     "Created by"
+    ],
+    [
+     "created_at",
+     "تاريخ الإنشاء",
+     "Created at"
+    ],
+    [
+     "updated_at",
+     "آخر تعديل",
+     "Updated at"
+    ],
+    [
+     "deleted_at",
+     "تاريخ الحذف",
+     "Deleted at"
+    ]
+   ]
+  },
+  "worker_advances": {
+   "ar": "سلف ومديونيات العمال",
+   "en": "Worker advances & debts",
+   "cols": [
+    [
+     "id",
+     "المعرّف",
+     "ID"
+    ],
+    [
+     "worker_id",
+     "العامل",
+     "Worker"
+    ],
+    [
+     "worker_name",
+     "اسم العامل",
+     "Worker name"
+    ],
+    [
+     "kind",
+     "النوع",
+     "Kind"
+    ],
+    [
+     "date",
+     "التاريخ",
+     "Date"
+    ],
+    [
+     "amount",
+     "المبلغ",
+     "Amount"
+    ],
+    [
+     "method",
+     "طريقة الدفع",
+     "Method"
+    ],
+    [
+     "category",
+     "بند المصروف",
+     "Expense category"
+    ],
+    [
+     "installment",
+     "القسط الشهري",
+     "Monthly instalment"
+    ],
+    [
+     "notes",
+     "البيان",
+     "Description"
+    ],
+    [
+     "status",
+     "الحالة",
+     "Status"
+    ],
+    [
+     "voided_at",
+     "تاريخ الإلغاء",
+     "Voided at"
+    ],
+    [
+     "void_reason",
+     "سبب الإلغاء",
+     "Void reason"
+    ],
+    [
+     "created_by",
+     "أنشأه",
+     "Created by"
+    ],
+    [
+     "created_at",
+     "تاريخ الإنشاء",
+     "Created at"
+    ],
+    [
+     "updated_at",
+     "آخر تعديل",
+     "Updated at"
+    ],
+    [
+     "deleted_at",
+     "تاريخ الحذف",
+     "Deleted at"
     ]
    ]
   }

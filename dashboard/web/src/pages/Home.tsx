@@ -4,15 +4,18 @@ import { api, type Row, type User } from '../api';
 import { useT, type Key } from '../i18n';
 import { Badge, money, useLang, waLink } from '../ui';
 import { CalendarConnect } from '../components/CalendarConnect';
+import { PeriodPicker, usePeriod, type Period } from '../components/PeriodPicker';
 
 type MonthFig = { month: string; revenue: number; expenses: number; profit: number; collected: number };
+type PeriodFig = { from: string; to: string; revenue: number; expenses: number; profit: number; collected: number };
 type Finance = {
   cash_total: number;
   accounts: { code: string; balance: number }[];
-  month: MonthFig;
-  prev: MonthFig;
+  period: PeriodFig;
+  prev: PeriodFig;
   trend: MonthFig[];
   receivable: { confirmed: number; unverified: number; overdue: number };
+  payroll?: { salary_due: number; worker_debts: number };
   top_expenses: { category: string; amount: number }[];
 };
 type Summary = Record<string, any> & { today?: Row[]; finance?: Finance };
@@ -35,34 +38,36 @@ const whole = (n: number, lang: 'ar' | 'en') => money(Math.round(n), lang);
 const monthName = (key: string, lang: 'ar' | 'en', style: 'long' | 'short' = 'long') =>
   new Date(`${key}-01T00:00:00Z`).toLocaleDateString(lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-GB', { month: style, timeZone: 'UTC' });
 
-/** Change against last month; for costs a rise is bad, so the colour flips. */
-function Delta({ cur, prev, month, costs = false }: { cur: number; prev: number; month: string; costs?: boolean }) {
+/** Change against the period before; for costs a rise is bad, so the colour flips. */
+function Delta({ cur, prev, costs = false }: { cur: number; prev: number; costs?: boolean }) {
   const t = useT();
-  const lang = useLang();
   if (!prev) return <small className="muted">—</small>;
   const pct = Math.round(((cur - prev) / Math.abs(prev)) * 100);
   const good = costs ? pct <= 0 : pct >= 0;
   return (
     <small className={good ? 'delta up' : 'delta down'}>
-      <span className="num">{pct > 0 ? '▲' : pct < 0 ? '▼' : '•'} {Math.abs(pct)}%</span> <span className="muted">{t('vs_month')} {monthName(month, lang)}</span>
+      <span className="num">{pct > 0 ? '▲' : pct < 0 ? '▼' : '•'} {Math.abs(pct)}%</span> <span className="muted">{t('vs_prev')}</span>
     </small>
   );
 }
 
-function FinanceSnapshot({ f }: { f: Finance }) {
+function FinanceSnapshot({ f, period, onPeriod }: { f: Finance; period: Period; onPeriod: (p: Period) => void }) {
   const t = useT();
   const lang = useLang();
   const max = Math.max(1, ...f.trend.flatMap((m) => [m.collected, m.expenses]));
   // Bars are relative to the largest category, so the biggest one fills the track.
   const max4 = Math.max(1, ...f.top_expenses.map((x) => x.amount));
   const accounts = f.accounts.filter((a) => a.balance !== 0);
+  const cur = f.period;
 
   return (
     <section className="fin">
       <div className="fin-head">
-        <h2>{t('fin_title')} <span className="muted">· {monthName(f.month.month, lang)}</span></h2>
+        <h2>{t('fin_title')}</h2>
+        <PeriodPicker value={period} onChange={onPeriod} />
         <a href="#/reports" className="link">{t('view_reports')} ←</a>
       </div>
+      {period.key !== 'this_month' && <p className="small muted fin-range num">{cur.from} → {cur.to}</p>}
 
       <div className="kpis">
         <a href="#/treasury" className="kpi main">
@@ -74,30 +79,30 @@ function FinanceSnapshot({ f }: { f: Finance }) {
         </a>
         <a href="#/reports" className="kpi">
           <span className="tile-label">{t('fin_invoiced')}</span>
-          <b className="num">{whole(f.month.revenue, lang)}</b>
-          <Delta month={f.prev.month} cur={f.month.revenue} prev={f.prev.revenue} />
+          <b className="num">{whole(cur.revenue, lang)}</b>
+          <Delta cur={cur.revenue} prev={f.prev.revenue} />
         </a>
         <a href="#/payments" className="kpi">
           <span className="tile-label">{t('fin_collected')}</span>
-          <b className="num">{whole(f.month.collected, lang)}</b>
-          <Delta month={f.prev.month} cur={f.month.collected} prev={f.prev.collected} />
+          <b className="num">{whole(cur.collected, lang)}</b>
+          <Delta cur={cur.collected} prev={f.prev.collected} />
         </a>
         <a href="#/t/expenses" className="kpi">
           <span className="tile-label">{t('fin_spent')}</span>
-          <b className="num">{whole(f.month.expenses, lang)}</b>
-          <Delta month={f.prev.month} cur={f.month.expenses} prev={f.prev.expenses} costs />
+          <b className="num">{whole(cur.expenses, lang)}</b>
+          <Delta cur={cur.expenses} prev={f.prev.expenses} costs />
         </a>
-        <a href="#/reports" className={`kpi ${f.month.profit < 0 ? 'neg' : 'pos'}`}>
+        <a href="#/reports" className={`kpi ${cur.profit < 0 ? 'neg' : 'pos'}`}>
           <span className="tile-label">{t('fin_profit')}</span>
-          <b className={`num ${f.month.profit < 0 ? 'neg-text' : ''}`}>{whole(f.month.profit, lang)}</b>
-          <Delta month={f.prev.month} cur={f.month.profit} prev={f.prev.profit} />
+          <b className={`num ${cur.profit < 0 ? 'neg-text' : ''}`}>{whole(cur.profit, lang)}</b>
+          <Delta cur={cur.profit} prev={f.prev.profit} />
         </a>
       </div>
 
       <div className="fin-grid">
         <div className="card">
-          <h3>{t('last_6_months')}</h3>
-          <div className="bars" role="img" aria-label={t('last_6_months')}>
+          <h3>{t('by_month')}</h3>
+          <div className={`bars ${f.trend.length > 8 ? 'many' : ''}`} role="img" aria-label={t('by_month')}>
             {f.trend.map((m) => (
               <div key={m.month} className="bar-col" title={`${monthName(m.month, lang)} — ${t('fin_collected')} ${money(m.collected, lang)} · ${t('fin_spent')} ${money(m.expenses, lang)}`}>
                 <div className="bar-pair">
@@ -122,6 +127,8 @@ function FinanceSnapshot({ f }: { f: Finance }) {
             {f.receivable.unverified > 0 && (
               <div><dt>{t('needs_review')}</dt><dd><span className="num">{money(f.receivable.unverified, lang)}</span> <a href="#/sales/invoices" className="link small">{t('review_now')}</a></dd></div>
             )}
+            {f.payroll && f.payroll.salary_due > 0 && <div><dt><a href="#/payroll" className="link">{t('salary_due')}</a></dt><dd className="num neg-text">{money(f.payroll.salary_due, lang)}</dd></div>}
+            {f.payroll && f.payroll.worker_debts > 0 && <div><dt><a href="#/payroll" className="link">{t('worker_debts')}</a></dt><dd className="num">{money(f.payroll.worker_debts, lang)}</dd></div>}
           </dl>
           <h3 className="mt">{t('top_expenses')}</h3>
           {f.top_expenses.length === 0 ? <p className="muted small">{t('no_expenses_month')}</p> : (
@@ -145,8 +152,9 @@ export function Home({ user }: { user: User }) {
   const t = useT();
   const lang = useLang();
   const [s, setS] = useState<Summary | null>(null);
+  const [period, setPeriod] = usePeriod('cs_home_period');
 
-  useEffect(() => { api<Summary>('/summary').then(setS).catch(() => setS({})); }, []);
+  useEffect(() => { api<Summary>(`/summary?from=${period.from}&to=${period.to}`).then(setS).catch(() => setS({})); }, [period.from, period.to]);
   if (!s) return <p className="muted pad">{t('loading')}</p>;
 
   const tiles = TILES.filter((x) => s[x.key] !== undefined);
@@ -155,7 +163,7 @@ export function Home({ user }: { user: User }) {
     <div className="page">
       <h1 className="hello">{t('hello')} {user.name} 👋</h1>
 
-      {s.finance && <FinanceSnapshot f={s.finance} />}
+      {s.finance?.period && <FinanceSnapshot f={s.finance} period={period} onPeriod={setPeriod} />}
 
       {tiles.length > 0 && (
         <>

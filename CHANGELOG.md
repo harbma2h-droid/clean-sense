@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased (waiting for approval) — payroll, periods, menu
+- **Payroll (مسير الرواتب):**
+  - Monthly runs, auto-filled from active workers: salary, allowances, and days × daily rate for daily workers.
+  - Overtime, bonus, deductions and advance recovery per worker.
+  - Flow: approve → pay each line or all at once (cash, bank…). Undo a payment; void a run with a reason.
+  - CSV export for the bank.
+- **Advances and debts (السلف والمديونيات):**
+  - Three kinds: an advance (cash to the worker), a charge (a cost recharged to the worker) and a repayment.
+  - Monthly instalments are suggested in the next run.
+  - Each worker has a statement: earned, paid, recovered, salary owed, debt.
+- **Automatic accounting:**
+  - Approving a run books wages (5070), recovers advances (1300 «سلف وذمم العمال») and records what is owed (2100 «رواتب مستحقة»).
+  - Each payment reduces the cash box or bank.
+  - Treasury, profit and loss, reports and the trial balance follow with no extra entry.
+- **Period picker on the home dashboard and in reports:** this month, last month, last 3 or 6 months, this year, last year, last 12 months, or a custom range. Comparisons are with the period before, and the choice is remembered per device.
+- **Three-line menu:**
+  - Has «الرئيسية» at the top.
+  - Scrolls when it is taller than the phone (its top items were cut off before).
+- **Custom expense categories** that owners add in settings now keep their own name in reports, instead of falling under «مصاريف أخرى».
+- **Workers** have new fields: allowances, ID/Iqama, bank and IBAN. IBAN and ID are never copied to the Sheets view.
+
 ## 2026-10-24 16:27 — approved navy logo on customer links (backup first, verified after)
 - The customer document page shows the approved logo: gold on navy, with rounded corners.
 - WhatsApp link previews use `og-logo.png`, a 600×600 image made from `logo-navy.svg`.

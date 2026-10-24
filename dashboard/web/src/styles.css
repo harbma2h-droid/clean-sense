@@ -92,8 +92,10 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .bottom span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .bottom .on { color: var(--text); font-weight: 700; }
 .bottom .on svg { color: var(--gold-deep); }
-.sheet { position: fixed; inset-inline: 0; bottom: 0; background: var(--surface); border-radius: 20px 20px 0 0; padding: 12px 12px calc(20px + env(safe-area-inset-bottom)); display: grid; gap: 4px; }
-.sheet a, .sheet button { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 12px; text-decoration: none; background: none; border: 0; font-weight: 600; cursor: pointer; text-align: start; }
+/* Scrolls inside itself when the list is taller than the phone, so the top items stay reachable. */
+.sheet { position: fixed; inset-inline: 0; bottom: 0; max-height: calc(100dvh - 48px); overflow-y: auto; overscroll-behavior: contain; background: var(--surface); border-radius: 20px 20px 0 0; padding: 12px 12px calc(20px + env(safe-area-inset-bottom)); display: grid; align-content: start; gap: 2px; }
+.sheet a.on { background: var(--bg); color: var(--gold-deep); }
+.sheet a, .sheet button { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; text-decoration: none; background: none; border: 0; font-weight: 600; cursor: pointer; text-align: start; }
 .sheet a:hover, .sheet button:hover { background: var(--bg); }
 
 @media (min-width: 900px) {
@@ -128,7 +130,13 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* Home: financial snapshot */
 .fin { margin-bottom: 8px; }
-.fin-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+.fin-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.fin-head .period { margin-inline-start: auto; }
+.fin-range { margin: -4px 0 10px; }
+.period { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.period select, .period input { border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; background: var(--surface); min-height: 38px; }
+.period-range { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+@media (max-width: 480px) { .period, .period select { width: 100%; } .period-range { width: 100%; } .period-range input { flex: 1; min-width: 0; } }
 .fin-head h2 { margin: 0; font-size: 18px; }
 .fin-head h2 .muted { font-weight: 500; font-size: 14px; }
 .kpis { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 12px; }
@@ -143,7 +151,10 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .delta.up { color: var(--green); }
 .delta.down { color: var(--red); }
 .fin-grid { display: grid; gap: 12px; }
-.bars { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; height: 150px; align-items: end; }
+.bars { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; height: 150px; align-items: end; }
+.bars.many { gap: 3px; }
+.bars.many .bar-col small { font-size: 9px; }
+.bars.many .bar-col:nth-child(even) small { visibility: hidden; }
 .bar-col { display: grid; grid-template-rows: 1fr auto; height: 100%; gap: 6px; justify-items: center; min-width: 0; }
 .bar-pair { display: flex; align-items: end; gap: 3px; height: 100%; width: 100%; justify-content: center; }
 .bar { width: 40%; max-width: 18px; min-height: 2px; border-radius: 4px 4px 0 0; }
@@ -494,6 +505,22 @@ details summary { cursor: pointer; margin-top: 10px; color: var(--muted); }
 .pd-actions { position: fixed; inset-inline: 0; bottom: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(8px); border-top: 1px solid var(--line); }
 .pd-actions > * { justify-content: center; }
 @media (min-width: 700px) { .pd-actions { position: static; background: none; border: 0; padding: 0; backdrop-filter: none; } .pd { padding-bottom: 32px; } }
+
+/* ---------- Payroll ---------- */
+.payroll .tabs { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); }
+.payroll .tabs button { padding-inline: 6px; font-size: 14px; line-height: 1.3; }
+.payroll .tiles.three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.new-run { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.new-run input { border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; background: var(--surface); min-height: 40px; }
+.payroll .page-head h1 { display: flex; align-items: center; gap: 6px; }
+[dir="ltr"] .payroll .page-head h1 .icon-btn svg { transform: scaleX(-1); }
+.payroll .sum.card { margin: 12px 0; }
+.pay-lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.pay-lines > li { display: grid; gap: 8px; }
+.pay-lines .card-top > span { display: flex; gap: 8px; align-items: center; }
+.pl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; align-items: end; }
+.pl-field { display: grid; gap: 2px; font-size: 12px; color: var(--muted); }
+.pl-field input { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: var(--surface); min-height: 38px; width: 100%; color: var(--text); }
 
 /* ---------- Settings ---------- */
 .settings .card { margin-bottom: 14px; }

@@ -1,6 +1,6 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
 import emblem from './assets/brand/logo-mark.svg';
-import { Home as HomeIcon, Inbox, CalendarClock, FolderKanban, FileText, Receipt, Wallet, TrendingDown, BarChart3, Contact, FileSignature, HardHat, ListChecks, Users as UsersIcon, Landmark, Settings as SettingsIcon, LogOut, Menu, Languages } from 'lucide-react';
+import { Home as HomeIcon, Inbox, CalendarClock, FolderKanban, FileText, Receipt, Wallet, TrendingDown, BarChart3, Contact, FileSignature, HardHat, ListChecks, Users as UsersIcon, Landmark, Settings as SettingsIcon, LogOut, Menu, Languages, Banknote } from 'lucide-react';
 import { PERMISSIONS, applyLists } from '@shared/model.js';
 import { MetaContext, type Meta } from './meta';
 import { Treasury } from './pages/Treasury';
@@ -17,6 +17,7 @@ import { Reports } from './pages/Reports';
 import { Customer } from './pages/Customer';
 import { Users } from './pages/Users';
 import { DocPrint } from './pages/DocPrint';
+import { Payroll } from './pages/Payroll';
 
 
 type NavItem = { route: string; perm: string; Icon: any; label: Key | null };
@@ -38,6 +39,7 @@ const NAV: { group: Key | null; items: NavItem[] }[] = [
   { group: 'nav_finance', items: [
     { route: 'payments', perm: 'finance', Icon: Wallet, label: 'payments' },
     { route: 't/expenses', perm: 'finance', Icon: TrendingDown, label: 'expenses' },
+    { route: 'payroll', perm: 'finance', Icon: Banknote, label: 'payroll' },
     { route: 'treasury', perm: 'finance', Icon: Landmark, label: 'treasury' },
     { route: 'reports', perm: 'reports', Icon: BarChart3, label: 'reports' },
   ] },
@@ -128,6 +130,7 @@ function Shell({ user, meta, onLogout, onMeta }: { user: User; meta: Meta | null
   else if (parts[0] === 'payments' && has('finance')) page = <Payments />;
   else if (parts[0] === 'reports' && has('reports')) page = <Reports />;
   else if (parts[0] === 'treasury' && has('finance')) page = <Treasury />;
+  else if (parts[0] === 'payroll' && has('finance')) page = <Payroll key={parts[1] || 'list'} runId={parts[1]} />;
   else if (parts[0] === 'settings' && has('settings')) page = <Settings onSaved={(company) => { applyLists(company); if (meta) onMeta({ ...meta, company }); }} />;
   else if (parts[0] === 'print' && parts[1] === 'receipt' && has('finance')) page = <DocPrint paymentId={parts[2]} />;
   else if (parts[0] === 'users' && has('users')) page = <Users me={user} meta={meta} />;
@@ -166,6 +169,8 @@ function Shell({ user, meta, onLogout, onMeta }: { user: User; meta: Meta | null
       {moreOpen && (
         <div className="overlay" onClick={() => setMoreOpen(false)}>
           <div className="sheet" onClick={(e) => e.stopPropagation()}>
+            {/* Home is always one tap away, also from this menu. */}
+            <a href="#/" className={route === '' ? 'on' : ''} onClick={() => setMoreOpen(false)}><HomeIcon size={20} />{t('home')}</a>
             {rest.map((n) => <a key={n.route} href={`#/${n.route}`}><n.Icon size={20} />{label(n)}</a>)}
             {!meta?.open_access && <button onClick={logout}><LogOut size={20} />{t('logout')}</button>}
           </div>

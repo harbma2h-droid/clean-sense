@@ -1,8 +1,9 @@
 // Accounting rules for Clean Sense, as pure functions over the stored records.
 //
-// Single source of truth: invoices, payments and expenses are the only financial
-// records. Balances, payment states, journal entries and every report are derived
-// from them on the fly, so nothing is entered twice and nothing can drift apart.
+// Single source of truth: invoices, payments, expenses, payroll runs and worker advances
+// are the only financial records. Balances, payment states, journal entries and every
+// report are derived from them on the fly, so nothing is entered twice and nothing can
+// drift apart.
 //
 // Basis: an issued invoice is revenue (accrual). An accepted quotation is a customer
 // commitment only: it creates no revenue and no receivable. Money is "collected"
@@ -18,6 +19,8 @@ export const ACCOUNTS = {
   1040: { ar: 'STC Pay', en: 'STC Pay', kind: 'asset' },
   1090: { ar: 'طرق دفع أخرى', en: 'Other payment methods', kind: 'asset' },
   1200: { ar: 'ذمم العملاء (مستحقات)', en: 'Accounts receivable', kind: 'asset' },
+  1300: { ar: 'سلف وذمم العمال', en: 'Worker advances & debts', kind: 'asset' },
+  2100: { ar: 'رواتب مستحقة', en: 'Salaries payable', kind: 'liability' },
   2200: { ar: 'دفعات عملاء غير مخصصة', en: 'Unallocated customer payments', kind: 'liability' },
   3100: { ar: 'رأس مال الشركاء', en: "Partners' capital", kind: 'equity' },
   3200: { ar: 'مسحوبات الشركاء', en: "Partners' drawings", kind: 'equity' },
@@ -36,8 +39,44 @@ export const ACCOUNTS = {
 // Card (POS) receipts settle into the bank account and card purchases are paid from it, so both use the bank.
 export const METHOD_ACCOUNT = { cash: 1010, bank_transfer: 1020, card: 1020, stc_pay: 1040, other: 1090 };
 export const TREASURY_ACCOUNT = { cash: 1010, bank: 1020, stc_pay: 1040 };
-const expenseAccount = (cat) => Number(Object.keys(ACCOUNTS).find((k) => ACCOUNTS[k].cat === cat) || 5090);
+// Categories the owners add themselves post to "Other expenses" but keep their own name in reports.
+export const expenseAccount = (cat) => Number(Object.keys(ACCOUNTS).find((k) => ACCOUNTS[k].cat === cat) || 5090);
 const cashAccount = (method) => METHOD_ACCOUNT[method] || 1090;
+const lastDay = (month) => new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0)).toISOString().slice(0, 10);
+
+/* ---------- Payroll ---------- */
+
+/** Gross pay and net (after advance recovery) of one payroll line. */
+export function payrollLineTotals(l) {
+  const gross = r2((Number(l.basic) || 0) + (Number(l.allowances) || 0) + (Number(l.overtime) || 0) + (Number(l.bonus) || 0) - (Number(l.deductions) || 0));
+  return { gross, net: r2(gross - (Number(l.advance_recovery) || 0)) };
+}
+
+/** Lines of the runs that count: approved (or paid), not void, not deleted. */
+function postedPayrollLines(runs, lines) {
+  const ok = new Set(live(runs).filter((r) => r.status === 'approved').map((r) => r.id));
+  return live(lines).filter((l) => ok.has(l.run_id));
+}
+
+/**
+ * Per worker: what they owe the company (advances and charges, less repayments and payroll
+ * recoveries) and salary approved but not yet paid to them.
+ */
+export function workerBalances({ payroll_runs = [], payroll_lines = [], worker_advances = [] }) {
+  const out = {};
+  const w = (id, name) => (out[id] ??= { worker_id: id, worker_name: name || '', debt: 0, salary_due: 0 });
+  for (const a of live(worker_advances)) {
+    if (a.status === 'void') continue;
+    const row = w(a.worker_id, a.worker_name);
+    row.debt = r2(row.debt + (a.kind === 'repayment' ? -1 : 1) * Number(a.amount));
+  }
+  for (const l of postedPayrollLines(payroll_runs, payroll_lines)) {
+    const row = w(l.worker_id, l.worker_name);
+    row.debt = r2(row.debt - (Number(l.advance_recovery) || 0));
+    if (!l.paid_at) row.salary_due = r2(row.salary_due + payrollLineTotals(l).net);
+  }
+  return out;
+}
 
 /* ---------- Documents ---------- */
 
@@ -104,9 +143,11 @@ export function enrichDocuments(docs, payments, today) {
  * Double-entry journal generated from invoices, payments and expenses.
  * Voiding creates a reversing entry on the void date, so closed months never change.
  */
-export function journal({ documents = [], payments = [], expenses = [], treasury = [] }) {
+export function journal({ documents = [], payments = [], expenses = [], treasury = [], payroll_runs = [], payroll_lines = [], worker_advances = [] }) {
   const entries = [];
-  const push = (date, ref, memo, source, lines) => entries.push({ date: day(date), ref, memo, source, lines: lines.map(([account, debit, credit]) => ({ account, debit: r2(debit), credit: r2(credit) })) });
+  // A line may carry the expense category, so owner-added categories keep their own name in reports.
+  const push = (date, ref, memo, source, lines) => entries.push({ date: day(date), ref, memo, source, lines: lines.filter((l) => r2(l[1]) || r2(l[2])).map(([account, debit, credit, cat]) => ({ account, debit: r2(debit), credit: r2(credit), ...(cat ? { cat } : {}) })) });
+  const reverse = (lines) => lines.map(([a, dr, cr, cat]) => [a, cr, dr, cat]);
 
   for (const d of live(documents)) {
     if (d.type !== 'invoice' || d.status === 'draft') continue;
@@ -126,7 +167,44 @@ export function journal({ documents = [], payments = [], expenses = [], treasury
   for (const x of live(expenses)) {
     const amt = r2(x.amount);
     if (!amt) continue;
-    push(x.date, x.reference || 'EXP', x.notes || x.category, { table: 'expenses', id: x.id }, [[expenseAccount(x.category), amt, 0], [cashAccount(x.method), 0, amt]]);
+    push(x.date, x.reference || 'EXP', x.notes || x.category, { table: 'expenses', id: x.id }, [[expenseAccount(x.category), amt, 0, x.category], [cashAccount(x.method), 0, amt]]);
+  }
+  // Payroll: an approved run is the month's wage cost (accrual, dated the month's last day):
+  // wages expense, less advances recovered, the rest owed to the workers until each line is paid.
+  const linesByRun = {};
+  for (const l of live(payroll_lines)) (linesByRun[l.run_id] ??= []).push(l);
+  for (const run of live(payroll_runs)) {
+    if (!run.approved_at || !/^\d{4}-\d{2}$/.test(run.month || '')) continue;
+    const lines = linesByRun[run.id] || [];
+    const gross = r2(lines.reduce((s, l) => s + payrollLineTotals(l).gross, 0));
+    const recovered = r2(lines.reduce((s, l) => s + (Number(l.advance_recovery) || 0), 0));
+    const src = { table: 'payroll_runs', id: run.id };
+    const accrual = [[5070, gross, 0, 'wages'], [1300, 0, recovered], [2100, 0, r2(gross - recovered)]];
+    push(lastDay(run.month), `PR-${run.month}`, `مسير رواتب / payroll ${run.month}`, src, accrual);
+    const paid = [];
+    for (const l of lines) {
+      if (!l.paid_at) continue;
+      const net = payrollLineTotals(l).net;
+      const pay = [[2100, net, 0], [cashAccount(l.method), 0, net]];
+      paid.push([l, pay]);
+      push(l.paid_at, `PR-${run.month}`, l.worker_name, { table: 'payroll_lines', id: l.id }, pay);
+    }
+    if (run.status === 'void') {
+      push(run.voided_at || lastDay(run.month), `PR-${run.month}`, `إلغاء / void: ${run.void_reason || ''}`, src, reverse(accrual));
+      for (const [l, pay] of paid) push(run.voided_at || l.paid_at, `PR-${run.month}`, `إلغاء / void: ${l.worker_name}`, { table: 'payroll_lines', id: l.id }, reverse(pay));
+    }
+  }
+  // Worker advances (money handed over), repayments (money back) and charges (a cost the
+  // company bore on the worker's behalf, recharged to them: it reduces that expense).
+  for (const a of live(worker_advances)) {
+    const amt = r2(a.amount);
+    if (!amt) continue;
+    const src = { table: 'worker_advances', id: a.id };
+    const lines = a.kind === 'repayment' ? [[cashAccount(a.method), amt, 0], [1300, 0, amt]]
+      : a.kind === 'charge' ? [[1300, amt, 0], [expenseAccount(a.category), 0, amt, a.category || 'other']]
+        : [[1300, amt, 0], [cashAccount(a.method), 0, amt]];
+    push(a.date, 'ADV', a.worker_name, src, lines);
+    if (a.status === 'void') push(a.voided_at || a.date, 'ADV', `إلغاء / void: ${a.void_reason || ''}`, src, reverse(lines));
   }
   for (const t of live(treasury)) {
     if (t.status === 'void') continue;
@@ -204,7 +282,8 @@ export function profitAndLoss(entries, from, to) {
       if (a.kind === 'expense') {
         const row = m(e.date.slice(0, 7));
         row.expenses = r2(row.expenses + l.debit - l.credit);
-        row.by_category[a.cat] = r2((row.by_category[a.cat] || 0) + l.debit - l.credit);
+        const cat = l.cat || a.cat;
+        row.by_category[cat] = r2((row.by_category[cat] || 0) + l.debit - l.credit);
       }
     }
   }
@@ -213,12 +292,21 @@ export function profitAndLoss(entries, from, to) {
   return { rows, total };
 }
 
-/** Money actually received / paid per method in a period (cash view). */
-export function cashByMethod({ payments = [], expenses = [] }, from, to) {
+/**
+ * Money actually received / paid per method in a period (cash view). "Received" is from
+ * customers; "paid out" is expenses, salaries paid and worker advances, less repayments.
+ */
+export function cashByMethod({ payments = [], expenses = [], payroll_runs = [], payroll_lines = [], worker_advances = [] }, from, to) {
   const out = {};
   const row = (m) => (out[m] ??= { method: m, received: 0, paid_out: 0 });
+  const out_ = (m, amt) => { row(m || 'other').paid_out = r2(row(m || 'other').paid_out + amt); };
   for (const p of live(payments)) if (p.status !== 'void' && inRange(day(p.date), from, to)) row(p.method || 'other').received = r2(row(p.method || 'other').received + Number(p.amount));
-  for (const x of live(expenses)) if (inRange(day(x.date), from, to)) row(x.method || 'other').paid_out = r2(row(x.method || 'other').paid_out + Number(x.amount));
+  for (const x of live(expenses)) if (inRange(day(x.date), from, to)) out_(x.method, Number(x.amount));
+  for (const l of postedPayrollLines(payroll_runs, payroll_lines)) if (l.paid_at && inRange(day(l.paid_at), from, to)) out_(l.method, payrollLineTotals(l).net);
+  for (const a of live(worker_advances)) {
+    if (a.status === 'void' || a.kind === 'charge' || !inRange(day(a.date), from, to)) continue;
+    out_(a.method, a.kind === 'repayment' ? -Number(a.amount) : Number(a.amount));
+  }
   const rows = Object.values(out).map((r) => ({ ...r, net: r2(r.received - r.paid_out) }));
   return { rows, received: r2(rows.reduce((s, r) => s + r.received, 0)), paid_out: r2(rows.reduce((s, r) => s + r.paid_out, 0)) };
 }

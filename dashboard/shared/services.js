@@ -5,7 +5,7 @@
 // store = { list(table, {includeDeleted}), get(table, id), insert(table, row), patch(table, id, data) }
 
 import { TABLES, ENUMS, ROLES, SETTINGS_SPEC, DEFAULT_MESSAGES, OLD_DEFAULT_MESSAGES, EDITABLE_LISTS, applyLists, enumLabel } from './model.js';
-import { computeTotals, docTotal, enrichDocuments, invoiceState, paidByInvoice, journal, trialBalance, profitAndLoss, cashByMethod, receivablesAging, revenueByService, projectProfitability, customerStatement, accountBalance, treasuryBalances, partnersEquity, TREASURY_ACCOUNT, r2 } from './finance.js';
+import { computeTotals, docTotal, enrichDocuments, invoiceState, paidByInvoice, journal, trialBalance, profitAndLoss, cashByMethod, receivablesAging, revenueByService, projectProfitability, customerStatement, accountBalance, treasuryBalances, partnersEquity, workerBalances, payrollLineTotals, TREASURY_ACCOUNT, METHOD_ACCOUNT, r2 } from './finance.js';
 
 export class ServiceError extends Error {
   constructor(status, code, extra = {}) {
@@ -146,6 +146,7 @@ export async function deleteRecord(ctx, table, id) {
   if (!existing || existing.deleted_at) fail(404, 'not_found');
   if (existing.legacy === 'yes') fail(409, 'legacy_locked');
   if (table === 'customers' && ctx.store.list('documents').some((d) => d.customer_id === id)) fail(409, 'in_use');
+  if (table === 'workers' && (ctx.store.list('payroll_lines').some((l) => l.worker_id === id) || ctx.store.list('worker_advances').some((a) => a.worker_id === id))) fail(409, 'in_use');
   if (table === 'projects' && (ctx.store.list('documents').some((d) => d.project_id === id) || ctx.store.list('expenses').some((x) => x.project_id === id))) fail(409, 'in_use');
   await ctx.store.patch(table, id, { deleted_at: nowIso() });
   await ctx.audit('delete', table, id);
@@ -520,7 +521,28 @@ export async function bookingToInvoice(ctx, id) {
 /* ================= Summary and reports ================= */
 
 function financeData(ctx) {
-  return { documents: ctx.store.list('documents'), payments: ctx.store.list('payments'), expenses: ctx.store.list('expenses'), projects: ctx.store.list('projects'), treasury: ctx.store.list('treasury') };
+  const all = (t) => ctx.store.list(t, { includeDeleted: false });
+  return {
+    documents: all('documents'), payments: all('payments'), expenses: all('expenses'), projects: all('projects'), treasury: all('treasury'),
+    payroll_runs: all('payroll_runs'), payroll_lines: all('payroll_lines'), worker_advances: all('worker_advances'),
+  };
+}
+
+/* ---------- Periods (dashboard and reports) ---------- */
+
+const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(String(s || ''));
+const monthEnd = (month) => new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0)).toISOString().slice(0, 10);
+const daysBetween = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5) + 1;
+
+/** The period before [from, to]: the same number of whole months when the period is whole months, else the same number of days. */
+export function previousPeriod(from, to) {
+  if (from.endsWith('-01') && to === monthEnd(to.slice(0, 7))) {
+    const n = (Number(to.slice(0, 4)) - Number(from.slice(0, 4))) * 12 + Number(to.slice(5, 7)) - Number(from.slice(5, 7)) + 1;
+    return { from: `${shiftMonth(from.slice(0, 7), n)}-01`, to: monthEnd(shiftMonth(to.slice(0, 7), n)) };
+  }
+  const len = daysBetween(from, to);
+  const pTo = addDays(from, -1);
+  return { from: addDays(pTo, -(len - 1)), to: pTo };
 }
 
 /** Month key `n` months before `month` (YYYY-MM). */
@@ -534,32 +556,53 @@ const shiftMonth = (month, n) => {
  * Owner's financial snapshot for the home page: cash on hand, this month against last month,
  * the last six months (invoiced, collected, spent), receivables and where the money went.
  */
-export function financeBrief(data, today) {
+/**
+ * Home-page money picture for any period (default: this month), compared with the period before.
+ * The monthly trend covers the period, or the last six months when the period is shorter.
+ */
+export function financeBrief(data, today, { from = '', to = '' } = {}) {
   const entries = journal(data);
   const month = today.slice(0, 7);
-  const keys = Array.from({ length: 6 }, (_, i) => shiftMonth(month, 5 - i));
-  const pnl = Object.fromEntries(profitAndLoss(entries, `${keys[0]}-01`, `${month}-31`).rows.map((r) => [r.month, r]));
-  const months = keys.map((k) => {
-    const p = pnl[k] || { revenue: 0, expenses: 0, profit: 0, by_category: {} };
-    const c = cashByMethod(data, `${k}-01`, `${k}-31`);
-    return { month: k, revenue: p.revenue, expenses: p.expenses, profit: p.profit, collected: c.received, by_category: p.by_category };
+  if (!isDate(from) || !isDate(to) || from > to) { from = `${month}-01`; to = monthEnd(month); }
+  const prevP = previousPeriod(from, to);
+  const totals = (f, t) => {
+    const p = profitAndLoss(entries, f, t);
+    const byCat = {};
+    for (const r of p.rows) for (const [k, v] of Object.entries(r.by_category)) byCat[k] = r2((byCat[k] || 0) + v);
+    return { from: f, to: t, revenue: p.total.revenue, expenses: p.total.expenses, profit: p.total.profit, collected: cashByMethod(data, f, t).received, by_category: byCat };
+  };
+  const cur = totals(from, to);
+  const prev = totals(prevP.from, prevP.to);
+  const endM = to.slice(0, 7);
+  let startM = from.slice(0, 7);
+  const span = (Number(endM.slice(0, 4)) - Number(startM.slice(0, 4))) * 12 + Number(endM.slice(5, 7)) - Number(startM.slice(5, 7)) + 1;
+  if (span < 6) startM = shiftMonth(endM, 5);
+  else if (span > 24) startM = shiftMonth(endM, 23);
+  const keys = [];
+  for (let k = startM; k <= endM; k = shiftMonth(k, -1)) keys.push(k);
+  const pnl = Object.fromEntries(profitAndLoss(entries, `${keys[0]}-01`, monthEnd(endM)).rows.map((r) => [r.month, r]));
+  const trend = keys.map((k) => {
+    const p = pnl[k] || { revenue: 0, expenses: 0, profit: 0 };
+    return { month: k, revenue: p.revenue, expenses: p.expenses, profit: p.profit, collected: cashByMethod(data, `${k}-01`, monthEnd(k)).received };
   });
-  const cur = months[5];
-  const prev = months[4];
   const accounts = treasuryBalances(entries, today);
   const ar = receivablesAging(data.documents, data.payments, today);
+  const workers = Object.values(workerBalances(data));
   return {
     cash_total: r2(accounts.reduce((s, a) => s + a.balance, 0)),
     accounts: accounts.map(({ code, balance }) => ({ code, balance })),
-    month: { ...cur, by_category: undefined },
+    period: { ...cur, by_category: undefined },
     prev: { ...prev, by_category: undefined },
-    trend: months.map(({ by_category, ...m }) => m),
+    // Kept for older screens: the current period under its previous name.
+    month: { ...cur, month: from.slice(0, 7), by_category: undefined },
+    trend,
     receivable: { confirmed: ar.confirmed, unverified: ar.unverified, overdue: ar.rows.filter((r) => r.state === 'overdue').length },
-    top_expenses: Object.entries(cur.by_category).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([category, amount]) => ({ category, amount })),
+    payroll: { salary_due: r2(workers.reduce((s, w) => s + w.salary_due, 0)), worker_debts: r2(workers.reduce((s, w) => s + Math.max(0, w.debt), 0)) },
+    top_expenses: Object.entries(cur.by_category).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([category, amount]) => ({ category, amount })),
   };
 }
 
-export function summary(ctx) {
+export function summary(ctx, query = {}) {
   const today = todayOf(ctx);
   const month = today.slice(0, 7);
   const out = {};
@@ -582,7 +625,7 @@ export function summary(ctx) {
     const cash = cashByMethod(data, `${month}-01`, `${month}-31`);
     const ar = receivablesAging(data.documents, data.payments, today);
     Object.assign(out, { invoiced_month: pnl.revenue, expenses_month: pnl.expenses, profit_month: pnl.profit, collected_month: cash.received, receivable_confirmed: ar.confirmed, receivable_unverified: ar.unverified, overdue_count: ar.rows.filter((r) => r.state === 'overdue').length });
-    out.finance = financeBrief(data, today);
+    out.finance = financeBrief(data, today, { from: query.from, to: query.to });
   }
   if (can(ctx, 'projects')) out.projects_active = ctx.store.list('projects').filter((p) => p.status === 'active').length;
   if (can(ctx, 'tasks')) {
@@ -782,6 +825,223 @@ export async function publicDocument(ctx, token) {
   const company = Object.fromEntries(Object.entries(settings).filter(([k]) => PUBLIC_SETTINGS.test(k)));
   if (d.type === 'invoice' && settings['docs.show_bank'] === 'yes') for (const k of ['bank.name', 'bank.account_name', 'bank.iban']) company[k] = settings[k] || '';
   return { doc: Object.fromEntries(PUBLIC_DOC_FIELDS.map((k) => [k, d[k] ?? ''])), company };
+}
+
+/* ================= Payroll, advances and worker debts ================= */
+//
+// A run is one month's payroll: draft (editable) → approved (locked: posts the wage cost and
+// what is owed to each worker) → each line is paid (cash or bank). Advances and charges build
+// a worker's debt; recoveries in an approved run and repayments bring it down. All of it goes
+// through the journal, so the treasury, profit and loss and reports follow automatically.
+
+const PAYROLL_NUM = ['days', 'basic', 'allowances', 'overtime', 'bonus', 'deductions', 'advance_recovery'];
+
+function payrollRunView(ctx, run) {
+  const lines = ctx.store.list('payroll_lines').filter((l) => l.run_id === run.id).map((l) => {
+    const w = ctx.store.get('workers', l.worker_id) || {};
+    return { ...l, ...payrollLineTotals(l), employment_type: w.employment_type || '', iban: w.iban || '', bank_name: w.bank_name || '', id_number: w.id_number || '' };
+  });
+  const sum = (k) => r2(lines.reduce((s, l) => s + (Number(l[k]) || 0), 0));
+  const paidCount = lines.filter((l) => l.paid_at).length;
+  const state = run.status === 'void' ? 'void' : run.status === 'draft' ? 'draft' : !lines.length || paidCount === lines.length ? 'paid' : paidCount ? 'partial' : 'unpaid';
+  const unpaid = r2(lines.filter((l) => !l.paid_at).reduce((s, l) => s + l.net, 0));
+  return { ...run, state, lines, totals: { gross: sum('gross'), advance_recovery: sum('advance_recovery'), net: sum('net'), deductions: sum('deductions'), unpaid, workers: lines.length } };
+}
+
+const getRun = (ctx, id) => {
+  const run = ctx.store.get('payroll_runs', id);
+  if (!run || run.deleted_at) fail(404, 'not_found');
+  return run;
+};
+
+export function payrollOverview(ctx) {
+  const data = financeData(ctx);
+  const balances = workerBalances(data);
+  const workers = ctx.store.list('workers').map((w) => ({ id: w.id, name: w.name, role: w.role, status: w.status, employment_type: w.employment_type, wage: w.wage, allowances: w.allowances, ...(balances[w.id] || { debt: 0, salary_due: 0 }) }));
+  return {
+    runs: ctx.store.list('payroll_runs').map((r) => payrollRunView(ctx, r)).map(({ lines, ...r }) => r).sort((a, b) => b.month.localeCompare(a.month)),
+    advances: ctx.store.list('worker_advances').sort((a, b) => String(b.date).localeCompare(String(a.date))),
+    workers,
+    totals: { salary_due: r2(workers.reduce((s, w) => s + w.salary_due, 0)), worker_debts: r2(workers.reduce((s, w) => s + Math.max(0, w.debt), 0)) },
+  };
+}
+
+export function getPayrollRun(ctx, id) {
+  return payrollRunView(ctx, getRun(ctx, id));
+}
+
+/** Suggested monthly recovery: the instalments of the worker's advances, never more than the debt. */
+function suggestedRecovery(ctx, workerId, debt) {
+  if (!(debt > 0)) return 0;
+  const inst = ctx.store.list('worker_advances').filter((a) => a.worker_id === workerId && a.status !== 'void' && a.kind !== 'repayment').reduce((s, a) => s + (Number(a.installment) || 0), 0);
+  return r2(Math.min(debt, inst || 0));
+}
+
+function newLineFor(ctx, run, w, balances) {
+  const daily = w.employment_type === 'daily';
+  const debt = balances[w.id]?.debt || 0;
+  return {
+    id: newId('pl'), run_id: run.id, worker_id: w.id, worker_name: w.name, days: daily ? 0 : '',
+    basic: daily ? 0 : r2(w.wage), allowances: daily ? 0 : r2(w.allowances), overtime: 0, bonus: 0, deductions: 0,
+    advance_recovery: suggestedRecovery(ctx, w.id, debt), paid_at: '', method: '', reference: '', notes: '',
+    created_by: ctx.user?.username || '', created_at: nowIso(), updated_at: nowIso(),
+  };
+}
+
+/** New monthly run, filled with every active worker (salary, allowances, suggested advance recovery). */
+export async function createPayrollRun(ctx, body = {}) {
+  const month = String(body.month || '');
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) fail(400, 'validation', { fields: ['month:invalid'] });
+  if (ctx.store.list('payroll_runs').some((r) => r.month === month && r.status !== 'void')) fail(409, 'payroll_exists', { month });
+  const run = await ctx.store.insert('payroll_runs', { id: newId('pr'), month, status: 'draft', notes: String(body.notes || '').slice(0, 500), created_by: ctx.user?.username || '', created_at: nowIso(), updated_at: nowIso() });
+  const balances = workerBalances(financeData(ctx));
+  for (const w of ctx.store.list('workers').filter((x) => (x.status || 'active') === 'active')) await ctx.store.insert('payroll_lines', newLineFor(ctx, run, w, balances));
+  await ctx.audit('payroll.create', 'payroll_runs', run.id, { month });
+  return getPayrollRun(ctx, run.id);
+}
+
+const draftOnly = (run) => { if (run.status !== 'draft') fail(409, 'payroll_locked', { status: run.status }); };
+
+export async function addPayrollLine(ctx, runId, body = {}) {
+  const run = getRun(ctx, runId);
+  draftOnly(run);
+  const w = ctx.store.get('workers', body.worker_id);
+  if (!w || w.deleted_at) fail(400, 'validation', { fields: ['worker_id:not_found'] });
+  if (ctx.store.list('payroll_lines').some((l) => l.run_id === runId && l.worker_id === w.id)) fail(409, 'already_in_run');
+  await ctx.store.insert('payroll_lines', newLineFor(ctx, run, w, workerBalances(financeData(ctx))));
+  return getPayrollRun(ctx, runId);
+}
+
+export async function updatePayrollLine(ctx, runId, lineId, body = {}) {
+  const run = getRun(ctx, runId);
+  draftOnly(run);
+  const line = ctx.store.get('payroll_lines', lineId);
+  if (!line || line.deleted_at || line.run_id !== runId) fail(404, 'not_found');
+  const patch = {};
+  for (const k of PAYROLL_NUM) {
+    if (body[k] === undefined) continue;
+    const n = Number(body[k]);
+    if (!Number.isFinite(n) || n < 0) fail(400, 'validation', { fields: [`${k}:invalid`] });
+    patch[k] = r2(n);
+  }
+  // Daily workers: the basic follows the days worked unless it was typed directly.
+  const w = ctx.store.get('workers', line.worker_id);
+  if (patch.days !== undefined && body.basic === undefined && w?.employment_type === 'daily') patch.basic = r2(patch.days * (Number(w.wage) || 0));
+  if (body.notes !== undefined) patch.notes = String(body.notes).slice(0, 500);
+  const next = { ...line, ...patch };
+  if (payrollLineTotals(next).net < 0) fail(400, 'validation', { fields: ['advance_recovery:exceeds_pay'] });
+  await ctx.store.patch('payroll_lines', lineId, { ...patch, updated_at: nowIso() });
+  return getPayrollRun(ctx, runId);
+}
+
+export async function removePayrollLine(ctx, runId, lineId) {
+  const run = getRun(ctx, runId);
+  draftOnly(run);
+  const line = ctx.store.get('payroll_lines', lineId);
+  if (!line || line.deleted_at || line.run_id !== runId) fail(404, 'not_found');
+  await ctx.store.patch('payroll_lines', lineId, { deleted_at: nowIso() });
+  return getPayrollRun(ctx, runId);
+}
+
+export async function payrollAction(ctx, runId, action, body = {}) {
+  const run = getRun(ctx, runId);
+  const view = payrollRunView(ctx, run);
+  const now = nowIso();
+  if (action === 'approve') {
+    draftOnly(run);
+    if (!view.lines.length) fail(400, 'validation', { fields: ['lines:required'] });
+    // Recoveries cannot exceed what each worker owes (other approved runs already counted).
+    const balances = workerBalances(financeData(ctx));
+    for (const l of view.lines) {
+      if (l.net < 0) fail(400, 'validation', { fields: [`${l.worker_name}:net_negative`] });
+      if ((Number(l.advance_recovery) || 0) > r2(Math.max(0, balances[l.worker_id]?.debt || 0)) + 0.001) fail(409, 'recovery_exceeds_debt', { worker: l.worker_name, debt: balances[l.worker_id]?.debt || 0 });
+    }
+    await ctx.store.patch('payroll_runs', runId, { status: 'approved', approved_by: ctx.user?.username || '', approved_at: now, updated_at: now });
+    await ctx.audit('payroll.approve', 'payroll_runs', runId, { month: run.month, net: view.totals.net });
+  } else if (action === 'return') {
+    if (run.status !== 'approved') fail(409, 'invalid_transition', { status: run.status });
+    if (view.lines.some((l) => l.paid_at)) fail(409, 'payroll_has_payments');
+    await ctx.store.patch('payroll_runs', runId, { status: 'draft', approved_by: '', approved_at: '', updated_at: now });
+    await ctx.audit('payroll.return', 'payroll_runs', runId);
+  } else if (action === 'pay') {
+    if (run.status !== 'approved') fail(409, 'payroll_not_approved');
+    const method = String(body.method || '');
+    if (!METHOD_ACCOUNT[method]) fail(400, 'validation', { fields: ['method:invalid'] });
+    const date = isDate(body.date) ? body.date : todayOf(ctx);
+    const ids = Array.isArray(body.line_ids) && body.line_ids.length ? new Set(body.line_ids) : null;
+    const toPay = view.lines.filter((l) => !l.paid_at && (!ids || ids.has(l.id)));
+    if (!toPay.length) fail(409, 'nothing_to_pay');
+    for (const l of toPay) await ctx.store.patch('payroll_lines', l.id, { paid_at: date, method, reference: String(body.reference || '').slice(0, 80), updated_at: now });
+    await ctx.audit('payroll.pay', 'payroll_runs', runId, { lines: toPay.length, method, date, net: r2(toPay.reduce((s, l) => s + l.net, 0)) });
+  } else if (action === 'unpay') {
+    // Correct a payment recorded by mistake; the correction is in the audit log.
+    const line = view.lines.find((l) => l.id === body.line_id);
+    if (!line || !line.paid_at) fail(404, 'not_found');
+    await ctx.store.patch('payroll_lines', line.id, { paid_at: '', method: '', reference: '', updated_at: now });
+    await ctx.audit('payroll.unpay', 'payroll_runs', runId, { line: line.id, worker: line.worker_name, was: line.paid_at });
+  } else if (action === 'void') {
+    if (run.status === 'void') fail(409, 'invalid_transition', { status: run.status });
+    const reason = String(body.reason || '').trim();
+    if (!reason) fail(400, 'validation', { fields: ['reason:required'] });
+    if (view.lines.some((l) => l.paid_at)) fail(409, 'payroll_has_payments');
+    await ctx.store.patch('payroll_runs', runId, { status: 'void', voided_at: todayOf(ctx), void_reason: reason.slice(0, 300), updated_at: now });
+    await ctx.audit('payroll.void', 'payroll_runs', runId, { reason });
+  } else fail(404, 'not_found');
+  return getPayrollRun(ctx, runId);
+}
+
+/** Record an advance, a charge to the worker or a repayment. */
+export async function createAdvance(ctx, body = {}) {
+  const w = ctx.store.get('workers', body.worker_id);
+  if (!w || w.deleted_at) fail(400, 'validation', { fields: ['worker_id:not_found'] });
+  const kind = ENUMS.advance_kind[body.kind] ? body.kind : 'advance';
+  const amount = r2(body.amount);
+  if (!(amount > 0)) fail(400, 'validation', { fields: ['amount:positive'] });
+  const method = String(body.method || '');
+  if (kind !== 'charge' && !METHOD_ACCOUNT[method]) fail(400, 'validation', { fields: ['method:required'] });
+  if (kind === 'charge' && !ENUMS.expense_category[body.category]) fail(400, 'validation', { fields: ['category:required'] });
+  if (kind === 'repayment') {
+    const debt = workerBalances(financeData(ctx))[w.id]?.debt || 0;
+    if (amount > debt + 0.001) fail(409, 'repayment_exceeds_debt', { debt });
+  }
+  const row = await ctx.store.insert('worker_advances', {
+    id: newId('wa'), worker_id: w.id, worker_name: w.name, kind, date: isDate(body.date) ? body.date : todayOf(ctx), amount,
+    method: kind === 'charge' ? '' : method, category: kind === 'charge' ? body.category : '', installment: kind === 'repayment' ? 0 : r2(body.installment),
+    notes: String(body.notes || '').slice(0, 500), status: 'posted', created_by: ctx.user?.username || '', created_at: nowIso(), updated_at: nowIso(),
+  });
+  await ctx.audit(`advance.${kind}`, 'worker_advances', row.id, { worker: w.name, amount });
+  return row;
+}
+
+export async function voidAdvance(ctx, id, body = {}) {
+  const a = ctx.store.get('worker_advances', id);
+  if (!a || a.deleted_at) fail(404, 'not_found');
+  if (a.status === 'void') fail(409, 'invalid_transition');
+  const reason = String(body.reason || '').trim();
+  if (!reason) fail(400, 'validation', { fields: ['reason:required'] });
+  await ctx.store.patch('worker_advances', id, { status: 'void', voided_at: todayOf(ctx), void_reason: reason.slice(0, 300), updated_at: nowIso() });
+  await ctx.audit('advance.void', 'worker_advances', id, { reason });
+  return ctx.store.get('worker_advances', id);
+}
+
+/** One worker's account: every pay line, advance, charge and repayment, with running totals. */
+export function workerStatement(ctx, workerId) {
+  const w = ctx.store.get('workers', workerId);
+  if (!w || w.deleted_at) fail(404, 'not_found');
+  const runs = Object.fromEntries(ctx.store.list('payroll_runs').map((r) => [r.id, r]));
+  const lines = ctx.store.list('payroll_lines').filter((l) => l.worker_id === workerId && runs[l.run_id] && runs[l.run_id].status !== 'void')
+    .map((l) => ({ ...l, ...payrollLineTotals(l), month: runs[l.run_id].month, run_status: runs[l.run_id].status })).sort((a, b) => a.month.localeCompare(b.month));
+  const advances = ctx.store.list('worker_advances').filter((a) => a.worker_id === workerId).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  const bal = workerBalances(financeData(ctx))[workerId] || { debt: 0, salary_due: 0 };
+  const approved = lines.filter((l) => l.run_status === 'approved');
+  return {
+    worker: { id: w.id, name: w.name, role: w.role, employment_type: w.employment_type, wage: w.wage, allowances: w.allowances, bank_name: w.bank_name, iban: w.iban },
+    lines, advances,
+    totals: {
+      earned: r2(approved.reduce((s, l) => s + l.gross, 0)), paid: r2(approved.filter((l) => l.paid_at).reduce((s, l) => s + l.net, 0)),
+      recovered: r2(approved.reduce((s, l) => s + (Number(l.advance_recovery) || 0), 0)), salary_due: bal.salary_due, debt: bal.debt,
+    },
+  };
 }
 
 /* ================= Calendar subscription (iPhone, Google, Outlook) ================= */

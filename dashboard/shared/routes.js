@@ -5,7 +5,7 @@ import { TABLES } from './model.js';
 import * as S from './services.js';
 
 export const ROUTES = [
-  ['GET', '/summary', 'dashboard', (ctx) => S.summary(ctx)],
+  ['GET', '/summary', 'dashboard', (ctx, p, b, q) => S.summary(ctx, { from: q.from || '', to: q.to || '' })],
 
   ...Object.entries(TABLES).flatMap(([table, def]) => [
     ['GET', `/data/${table}`, def.perm, (ctx) => S.listRecords(ctx, table)],
@@ -44,7 +44,19 @@ export const ROUTES = [
   ['POST', '/admin/upgrade-legacy', 'settings', (ctx) => S.upgradeLegacy(ctx)],
   ['GET', '/history/:entity/:id', ['sales', 'finance', 'customers'], (ctx, p) => S.historyOf(ctx, p.entity, p.id)],
 
-  ['GET', '/reports', 'reports', (ctx, p, b, q) => S.reports(ctx, { from: q.from || '', to: q.to || '' })],
+  // Payroll, advances and worker debts (finance permission: salaries are sensitive).
+  ['GET', '/payroll', 'finance', (ctx) => S.payrollOverview(ctx)],
+  ['POST', '/payroll/runs', 'finance', (ctx, p, body) => S.createPayrollRun(ctx, body)],
+  ['GET', '/payroll/runs/:id', 'finance', (ctx, p) => S.getPayrollRun(ctx, p.id)],
+  ['POST', '/payroll/runs/:id/lines', 'finance', (ctx, p, body) => S.addPayrollLine(ctx, p.id, body)],
+  ['PATCH', '/payroll/runs/:id/lines/:line', 'finance', (ctx, p, body) => S.updatePayrollLine(ctx, p.id, p.line, body)],
+  ['DELETE', '/payroll/runs/:id/lines/:line', 'finance', (ctx, p) => S.removePayrollLine(ctx, p.id, p.line)],
+  ['POST', '/payroll/runs/:id/:action', 'finance', (ctx, p, body) => S.payrollAction(ctx, p.id, p.action, body)],
+  ['POST', '/payroll/advances', 'finance', (ctx, p, body) => S.createAdvance(ctx, body)],
+  ['POST', '/payroll/advances/:id/void', 'finance', (ctx, p, body) => S.voidAdvance(ctx, p.id, body)],
+  ['GET', '/payroll/workers/:id', 'finance', (ctx, p) => S.workerStatement(ctx, p.id)],
+
+  ['GET', '/reports', 'reports',(ctx, p, b, q) => S.reports(ctx, { from: q.from || '', to: q.to || '' })],
   ['GET', '/ledger', 'reports', (ctx, p, b, q) => S.ledger(ctx, { from: q.from || '', to: q.to || '' })],
 ];
 

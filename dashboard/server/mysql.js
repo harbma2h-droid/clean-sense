@@ -17,6 +17,7 @@ export const NUMERIC = new Set([
   'amount', 'price', 'paid_amount', 'subtotal', 'discount', 'total', 'wage',
   'estimate_min', 'estimate_max', 'contract_value', 'budget_cost',
   'book_balance', 'actual_balance', 'price_min', 'price_max',
+  'allowances', 'basic', 'overtime', 'bonus', 'deductions', 'advance_recovery', 'installment', 'days',
 ]);
 const LONG = new Set(['items', 'json', 'details', 'scope', 'terms', 'notes', 'permissions', 'value', 'password_hash']);
 

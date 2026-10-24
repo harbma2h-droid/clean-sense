@@ -8,16 +8,15 @@ import { useT, type Key } from '../i18n';
 import { money, useLang } from '../ui';
 import { MetaContext } from '../meta';
 import { ReportSheet } from '../components/ReportSheet';
+import { PeriodPicker, usePeriod } from '../components/PeriodPicker';
 import { downloadFile, sharePdf, sheetToPdf } from '../pdf';
 
-const ym = () => new Date().toISOString().slice(0, 7);
-const lastDay = (m: string) => new Date(Number(m.slice(0, 4)), Number(m.slice(5, 7)), 0).toISOString().slice(0, 10);
 
 export function Reports() {
   const t = useT();
   const lang = useLang();
-  const [from, setFrom] = useState(`${new Date().getFullYear()}-01-01`);
-  const [to, setTo] = useState(new Date().toISOString().slice(0, 10));
+  const [period, setPeriod] = usePeriod('cs_reports_period', 'this_year');
+  const { from, to } = period;
   const [r, setR] = useState<Row | null>(null);
   useEffect(() => { setR(null); api<Row>(`/reports?from=${from}&to=${to}`).then(setR).catch(() => setR({})); }, [from, to]);
   const M = (n: number) => money(n, lang);
@@ -47,12 +46,7 @@ export function Reports() {
             <button className="btn" disabled={!!busy} onClick={() => exportPdf(false)}><Download size={16} />{busy === 'pdf' ? t('preparing_pdf') : t('download_pdf')}</button>
           </div>
         )}
-        <div className="range">
-          <label>{t('from')} <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label>
-          <label>{t('to')} <input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label>
-          <button className="ghost small" onClick={() => { setFrom(`${ym()}-01`); setTo(lastDay(ym())); }}>{t('this_month')}</button>
-          <button className="ghost small" onClick={() => { setFrom(`${new Date().getFullYear()}-01-01`); setTo(`${new Date().getFullYear()}-12-31`); }}>{t('this_year')}</button>
-        </div>
+        <PeriodPicker value={period} onChange={setPeriod} />
       </div>
       <p className="small muted">{t('accrual_note')}</p>
       {!r ? <p className="muted pad">{t('loading')}</p> : !r.pnl ? <p className="empty">{t('error')}</p> : <>
