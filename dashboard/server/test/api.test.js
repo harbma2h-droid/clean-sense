@@ -141,6 +141,18 @@ test('website booking form: preflight from cleansense.co, lead saved, every serv
   for (const c of codes) assert.ok(ENUMS.service[c], `unknown service code ${c}`);
 });
 
+test('home financial snapshot: six months, cash equals the sum of accounts, owner only', async () => {
+  const s = await req('o', 'GET', '/summary');
+  assert.equal(s.status, 200);
+  const f = s.body.finance;
+  assert.ok(f, 'owner sees the snapshot');
+  assert.equal(f.trend.length, 6);
+  assert.equal(f.trend[5].month, new Date().toISOString().slice(0, 7));
+  assert.equal(f.cash_total, Math.round(f.accounts.reduce((x, a) => x + a.balance, 0) * 100) / 100);
+  assert.equal(f.month.profit, Math.round((f.month.revenue - f.month.expenses) * 100) / 100);
+  assert.ok(f.top_expenses.length <= 4);
+});
+
 test('restart: everything written so far reloads from storage unchanged', async () => {
   await store.queue;
   const fresh = new Store(process.env.TEST_MYSQL_URL ? { kind: 'mysql', url: process.env.TEST_MYSQL_URL } : { kind: 'file', file: store.backend.file });

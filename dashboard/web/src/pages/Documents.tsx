@@ -44,9 +44,10 @@ export function Documents({ kind }: { kind: DocKind }) {
     </span>
   );
 
+  // Receipts sit on the invoices page with their own statuses, so each chip keeps the list its label comes from.
   const counts = useMemo(() => {
-    const c: Record<string, number> = {};
-    for (const d of rows || []) { const [s] = docStatus(d); c[s] = (c[s] || 0) + 1; }
+    const c: Record<string, { n: number; list: string }> = {};
+    for (const d of rows || []) { const [s, list] = docStatus(d); c[s] = { n: (c[s]?.n || 0) + 1, list }; }
     return c;
   }, [rows]);
 
@@ -60,7 +61,6 @@ export function Documents({ kind }: { kind: DocKind }) {
 
   const total = shown.reduce((s, d) => s + (d.state === 'void' || d.status === 'void' ? 0 : Number(d.total_value) || 0), 0);
   const balance = shown.reduce((s, d) => s + (d.type === 'invoice' && d.balance > 0 && !['void', 'draft'].includes(d.state) ? d.balance : 0), 0);
-  const enumName = kind === 'invoice' ? 'payment_state' : kind === 'quote' ? 'quote_status' : 'contract_status';
 
   return (
     <div className="page">
@@ -74,8 +74,8 @@ export function Documents({ kind }: { kind: DocKind }) {
       {Object.keys(counts).length > 1 && (
         <div className="chips filter">
           <button className={!status ? 'chip on' : 'chip'} onClick={() => setStatus('')}>{t('all')} <span className="num">{rows?.length}</span></button>
-          {Object.entries(counts).map(([c, n]) => (
-            <button key={c} className={status === c ? 'chip on' : 'chip'} onClick={() => setStatus(c)}>{enumLabel(enumName, c, lang)} <span className="num">{n}</span></button>
+          {Object.entries(counts).map(([c, { n, list }]) => (
+            <button key={c} className={status === c ? 'chip on' : 'chip'} onClick={() => setStatus(c)}>{enumLabel(list, c, lang)} <span className="num">{n}</span></button>
           ))}
         </div>
       )}
@@ -85,7 +85,7 @@ export function Documents({ kind }: { kind: DocKind }) {
           {kind === 'invoice' && <span>{t('balance')}: <b className="num">{money(balance, lang)}</b></span>}
         </div>
       )}
-      {kind === 'invoice' && (counts.unverified || 0) > 0 && <p className="note warn">{t('review_note').replace('{n}', String(counts.unverified))}</p>}
+      {kind === 'invoice' && (counts.unverified?.n || 0) > 0 && <p className="note warn">{t('review_note').replace('{n}', String(counts.unverified.n))}</p>}
       {msg && <p className="note">{msg}</p>}
       {!rows ? <p className="muted pad">{t('loading')}</p> : shown.length === 0 ? <p className="empty">{t('empty')}</p> : (
         <>

@@ -505,6 +505,42 @@ function financeData(ctx) {
   return { documents: ctx.store.list('documents'), payments: ctx.store.list('payments'), expenses: ctx.store.list('expenses'), projects: ctx.store.list('projects'), treasury: ctx.store.list('treasury') };
 }
 
+/** Month key `n` months before `month` (YYYY-MM). */
+const shiftMonth = (month, n) => {
+  const [y, m] = month.split('-').map(Number);
+  const d = new Date(Date.UTC(y, m - 1 - n, 1));
+  return d.toISOString().slice(0, 7);
+};
+
+/**
+ * Owner's financial snapshot for the home page: cash on hand, this month against last month,
+ * the last six months (invoiced, collected, spent), receivables and where the money went.
+ */
+export function financeBrief(data, today) {
+  const entries = journal(data);
+  const month = today.slice(0, 7);
+  const keys = Array.from({ length: 6 }, (_, i) => shiftMonth(month, 5 - i));
+  const pnl = Object.fromEntries(profitAndLoss(entries, `${keys[0]}-01`, `${month}-31`).rows.map((r) => [r.month, r]));
+  const months = keys.map((k) => {
+    const p = pnl[k] || { revenue: 0, expenses: 0, profit: 0, by_category: {} };
+    const c = cashByMethod(data, `${k}-01`, `${k}-31`);
+    return { month: k, revenue: p.revenue, expenses: p.expenses, profit: p.profit, collected: c.received, by_category: p.by_category };
+  });
+  const cur = months[5];
+  const prev = months[4];
+  const accounts = treasuryBalances(entries, today);
+  const ar = receivablesAging(data.documents, data.payments, today);
+  return {
+    cash_total: r2(accounts.reduce((s, a) => s + a.balance, 0)),
+    accounts: accounts.map(({ code, balance }) => ({ code, balance })),
+    month: { ...cur, by_category: undefined },
+    prev: { ...prev, by_category: undefined },
+    trend: months.map(({ by_category, ...m }) => m),
+    receivable: { confirmed: ar.confirmed, unverified: ar.unverified, overdue: ar.rows.filter((r) => r.state === 'overdue').length },
+    top_expenses: Object.entries(cur.by_category).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([category, amount]) => ({ category, amount })),
+  };
+}
+
 export function summary(ctx) {
   const today = todayOf(ctx);
   const month = today.slice(0, 7);
@@ -528,6 +564,7 @@ export function summary(ctx) {
     const cash = cashByMethod(data, `${month}-01`, `${month}-31`);
     const ar = receivablesAging(data.documents, data.payments, today);
     Object.assign(out, { invoiced_month: pnl.revenue, expenses_month: pnl.expenses, profit_month: pnl.profit, collected_month: cash.received, receivable_confirmed: ar.confirmed, receivable_unverified: ar.unverified, overdue_count: ar.rows.filter((r) => r.state === 'overdue').length });
+    out.finance = financeBrief(data, today);
   }
   if (can(ctx, 'projects')) out.projects_active = ctx.store.list('projects').filter((p) => p.status === 'active').length;
   if (can(ctx, 'tasks')) {
