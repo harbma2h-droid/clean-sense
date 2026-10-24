@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-24 18:27 — approved light look on every device (backup first, verified after)
+- The system and its reports stay on the off-white background (#F7F3E9) even when the phone is in dark mode. That mode used to switch everything to navy.
+- Backup taken first: `D:\CleanSense-Backup\cs_system-before-light-theme-2026-10-24.sql` (19 tables).
+- Checked after deploy: data unchanged (44 customers, 55 documents, 9 payments, 172 expenses, ledger balanced).
+
 ## 2026-10-24 17:13 — payroll, periods, menu (backup first, verified after)
 - **Backup taken first:** `D:\CleanSense-Backup\cs_system-before-payroll-release-2026-10-24.sql` (16 tables).
 - **Checked after deploy:** counts and totals unchanged (43 customers, 54 documents, 9 payments, 172 expenses, revenue 36,990, collected 8,715, cash 8,600, ledger balanced at 91,567.62).
