@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-24 16:27 — approved navy logo on customer links (backup first, verified after)
+- The customer document page shows the approved logo: gold on navy, with rounded corners.
+- WhatsApp link previews use `og-logo.png`, a 600×600 image made from `logo-navy.svg`.
+- Backup taken first: `D:\CleanSense-Backup\cs_system-before-logo-change-2026-10-24.sql`.
+- Checked after deploy: data unchanged (43 customers, 54 documents, 9 payments, 172 expenses, revenue 36,990, ledger balanced), and the preview tags and image are served.
+
 ## 2026-10-24 16:06 — simpler customer messages (backup first, verified after)
 - WhatsApp messages no longer show the document number or the system's name. `{link}` places the link inside the message.
 - Customer links use `cleansense.co/d/<code>`. The main site's `.htaccess` redirects them to the system; the previous file is kept in `archive-2026-10-24/site.htaccess.before-d-links`.
