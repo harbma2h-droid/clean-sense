@@ -2,7 +2,19 @@
 
 **Updated 2026-10-24.** Live: `cleansense.co` (website) and `system.cleansense.co` (internal system, MySQL on Hostinger). The old dashboard redirects to the new system.
 
-## Release waiting for the owner's approval (built and tested, not deployed)
+## Release deployed 2026-10-24 15:40 (owner approved)
+- **Backup taken first:** a full phpMyAdmin export, `D:\CleanSense-Backup\cs_system-before-release-2026-10-24.sql`, with all 16 tables. The daily backups also continue on the server.
+- **Package:** `clean-sense-system-202610241208.zip`.
+- **Verified after deploy:** every count and total equals the pre-deploy baseline.
+  - 43 customers, 54 documents, 9 payments, 172 expenses.
+  - Revenue 36,990, collected 8,715, ledger balanced at 91,567.62.
+- The new features answer:
+  - Customer number filled in automatically, link tokens hidden from staff screens.
+  - Calendar button and report PDF.
+  - Unknown document or calendar links return 404.
+- The Sheets copy refreshed after the restart (340 rows).
+
+## The release
 
 | Area | Change | Tested |
 |---|---|---|

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased (waiting for approval)
+## 2026-10-24 15:40 — released (backup first, verified after)
 - **WhatsApp:** the customer's saved number is used automatically and goes straight to their chat, with a private document link in the message. Arabic-digit numbers are understood.
 - **Customer document page:** `/d/<link>` gives a phone-friendly quote or invoice with a PDF download. The link can be reset and stops when the document is cancelled.
 - **Calendar subscription:** bookings and open tasks with reminders, for Apple, Google and Outlook calendars.
