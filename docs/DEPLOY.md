@@ -1,5 +1,11 @@
 # Deploying the new system to Hostinger
 
+**Status 2026-10-24:**
+- Phase A is done: `https://system.cleansense.co` runs on MySQL.
+- The one-time import from the Sheet passed (`IMPORT OK`, all row counts and totals match), and the owner account `moath` was created.
+- Not set yet: `BACKUP_DIR` and `MIRROR_SPREADSHEET_ID`.
+- The old dashboard and the website are untouched.
+
 Plan prepared on 2026-10-23. Nothing below has been done yet: every phase starts only with the owner's approval.
 Secrets (passwords, keys) are typed by the owner directly into Hostinger. They never go into chat, files or git.
 
@@ -56,9 +62,14 @@ Secrets (passwords, keys) are typed by the owner directly into Hostinger. They n
 - **Entry file must be `server/start.cjs`.** Hostinger's runner `require()`s the entry, and `server/index.js` is an ES module with top-level await, which `require()` cannot load.
 - **Upload the zip from `node scripts/package-system.mjs`.** Its `build` script does nothing: Hostinger runs `npm run build`, and the UI build tools are dev-only. The UI ships prebuilt.
 - **Always upload the zip again** ("تحميل ملفات جديدة"). "Use previous files" and the env page's automatic redeploy fail with `package.json file not found`.
-- **Environment variables:**
-  - Edit them on the **متغيرات بيئة** page. The settings page shows them as empty fields.
-  - Importing a `.env` there adds missing keys but **does not overwrite existing ones**. To change a value, edit that row, or delete it and import again.
+- **Secrets live in a file, not in hPanel's variables:** `clean-sense-config/system.env` in the site folder.
+  - In File Manager it sits at the top level, next to `hbuilds/` and `public_html/`.
+  - It is outside `public_html`, so it is never served, and it survives redeploys.
+  - The app loads it first and it wins over hPanel's variables.
+  - Why: hPanel kept restoring an old `DATABASE_URL` from a hidden copy, even after the value was edited, deleted or re-imported.
+  - To change a secret: upload a new `system.env` over the old one, then restart or redeploy.
+- On start the log shows `NOTICE settings loaded from …` and `NOTICE DB target … password_length=… password_fp=…`. This is a short fingerprint, never the password.
+  - Compare it locally to find which copy of a password is used.
 - **Logs:** the runtime log page shows stderr only, so milestones are printed as `NOTICE …` on stderr.
 - **DNS:** add `A system → 46.202.156.107` at Namecheap. **Never** switch the nameservers as hPanel suggests: that would move email (Google Workspace) and the main site.
 - **DB password:** letters and digits only (it goes inside `DATABASE_URL`), with at least one capital letter (Hostinger rule). Change it in hPanel and in `DATABASE_URL` from the same clipboard value.

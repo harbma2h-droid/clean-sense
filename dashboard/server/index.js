@@ -1,4 +1,5 @@
-// Entry point. Configuration comes from environment variables (Hostinger → Node.js app → Environment):
+// Entry point. Configuration comes from environment variables (Hostinger → Node.js app → Environment),
+// or from a private clean-sense-config/system.env on the server (see below), which takes precedence:
 //   SESSION_SECRET                 required, 32+ random characters
 //   STORE=mysql                    main store (recommended): MySQL on Hostinger
 //   DATABASE_URL                   mysql://user:password@host:3306/database (for STORE=mysql)
@@ -23,24 +24,53 @@ import { writeBackup, readBackup } from './backup.js';
 import { SheetsBackend } from './sheets.js';
 import { importIntoMysql } from './migrate.js';
 import bcrypt from 'bcryptjs';
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { parseEnv } from 'node:util';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const env = process.env;
-const openAccess = env.OPEN_ACCESS === '1';
 // Hostinger's runtime log page only shows stderr, so milestones go there too.
 const notice = (...args) => console.error('NOTICE', ...args);
 
+// Optional private settings file outside the app folder (not web-reachable, survives redeploys).
+// Its values win over the hosting panel's variables, which proved unreliable to update.
+// Looked for in: CONFIG_FILE, ~/clean-sense-config/, then the site folder above hbuilds/ (where
+// Hostinger's File Manager opens; outside public_html, so never served).
+const siteDir = here.includes('/hbuilds/') ? here.split('/hbuilds/')[0] : '';
+const configFile = [env.CONFIG_FILE, join(homedir(), 'clean-sense-config', 'system.env'), siteDir && join(siteDir, 'clean-sense-config', 'system.env')]
+  .filter(Boolean).find((f) => existsSync(f));
+if (configFile) {
+  Object.assign(env, parseEnv(readFileSync(configFile, 'utf8').replace(/^﻿/, '')));
+  notice('settings loaded from', configFile);
+}
+const openAccess = env.OPEN_ACCESS === '1';
+
 if (env.STORE === 'mysql' && !env.DATABASE_URL) throw new Error('STORE=mysql needs DATABASE_URL (mysql://user:password@127.0.0.1:3306/database)');
+// Values pasted or imported into hosting panels can carry quotes, spaces or a trailing \r.
+const databaseUrl = String(env.DATABASE_URL || '').trim().replace(/^(['"])([\s\S]*)\1$/, '$2').trim();
+if (env.STORE === 'mysql') {
+  // Safe fingerprint for "Access denied" debugging: never the password, only its length and a short hash.
+  try {
+    const u = new URL(databaseUrl);
+    const pw = decodeURIComponent(u.password);
+    const fp = createHash('sha256').update(pw).digest('hex').slice(0, 8);
+    notice(`DB target user=${decodeURIComponent(u.username)} host=${u.hostname}:${u.port || 3306} db=${u.pathname.slice(1)} password_length=${pw.length} password_fp=${fp}`);
+  } catch {
+    notice('DATABASE_URL is not a valid URL');
+  }
+}
 
 function serviceAccount() {
-  const raw = env.GOOGLE_SERVICE_ACCOUNT_JSON || '';
+  const raw = (env.GOOGLE_SERVICE_ACCOUNT_JSON || '').trim();
   const text = raw.trim().startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8');
   return JSON.parse(text);
 }
 
 const store = new Store(
   env.STORE === 'mysql'
-    ? { kind: 'mysql', url: env.DATABASE_URL }
+    ? { kind: 'mysql', url: databaseUrl }
     : env.STORE === 'sheets'
       ? { kind: 'sheets', spreadsheetId: env.SPREADSHEET_ID, credentials: serviceAccount() }
       : { kind: 'file', file: env.DATA_FILE || join(here, '..', 'data', 'db.json') },
