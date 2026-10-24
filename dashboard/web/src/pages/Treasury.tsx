@@ -3,11 +3,11 @@ import { ArrowLeftRight, Landmark, MinusCircle, PlusCircle, Scale } from 'lucide
 import { ENUMS, enumLabel } from '@shared/model.js';
 import { api, type Row } from '../api';
 import { useT, type Key } from '../i18n';
-import { Badge, Modal, errText, money, useLang } from '../ui';
+import { Badge, Modal, errText, localDate, money, useLang } from '../ui';
 import { ReasonDialog } from './Doc';
 
 type Form = null | { kind: 'balance' | 'capital_in' | 'drawing' | 'transfer' };
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => localDate();
 
 /** Bank, cash box and STC Pay balances, partner contributions/drawings, transfers and reconciliation. */
 export function Treasury() {

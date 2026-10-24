@@ -3,14 +3,15 @@ import { Plus, Wallet, Check, Undo2, Ban, Download, ArrowRight, Trash2 } from 'l
 import { enumLabel } from '@shared/model.js';
 import { api, type Row } from '../api';
 import { useT } from '../i18n';
-import { Badge, Modal, errText, money, options, useLang } from '../ui';
+import { Badge, Modal, errText, localDate, money, options, useLang } from '../ui';
 import { ReasonDialog } from './Doc';
+import { downloadFile } from '../pdf';
 
 // Payroll: monthly runs, advances and debts, and each worker's account.
 // Everything here posts to the books automatically (see shared/finance.js → journal).
 
-const ym = () => new Date().toISOString().slice(0, 7);
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => localDate();
+const ym = () => today().slice(0, 7);
 const STATE_TONE: Record<string, string> = { draft: 'gold', unpaid: 'blue', partial: 'navy', paid: 'green', void: 'grey' };
 
 function StateBadge({ state }: { state: string }) {
@@ -206,10 +207,7 @@ function RunDetail({ id }: { id: string }) {
   const exportCsv = () => {
     const rows = [['name', 'id_number', 'bank', 'iban', 'net', 'month'], ...run!.lines.map((l: Row) => [l.worker_name, l.id_number, l.bank_name, l.iban, l.net.toFixed(2), run!.month])];
     const csv = '﻿' + rows.map((r) => r.map((v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-    a.download = `payroll-${run!.month}.csv`;
-    a.click();
+    downloadFile(new File([csv], `payroll-${run!.month}.csv`, { type: 'text/csv;charset=utf-8' }));
   };
 
   if (!run) return <p className="muted pad">{err || t('loading')}</p>;

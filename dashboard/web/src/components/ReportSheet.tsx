@@ -3,6 +3,7 @@ import { ACCOUNTS } from '@shared/finance.js';
 import { MONEY_FMT, enumLabel } from '@shared/model.js';
 import logo from '../assets/brand/logo-transparent.svg';
 import type { Row } from '../api';
+import { localDate } from '../ui';
 
 // Printable financial report (A4), same brand frame as quotes and invoices.
 const L = {
@@ -54,7 +55,7 @@ export const ReportSheet = forwardRef<HTMLDivElement, Props>(function ReportShee
         <div className="ds-title">
           <h1>{l.title}</h1>
           <span className="num">{from} → {to}</span>
-          <small className="ds-small">{l.made}: <bdi className="num">{new Date().toISOString().slice(0, 10)}</bdi></small>
+          <small className="ds-small">{l.made}: <bdi className="num">{localDate()}</bdi></small>
         </div>
       </header>
 

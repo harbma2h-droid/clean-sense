@@ -140,6 +140,9 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
   );
 }
 
+/** Today's date on this phone or computer (YYYY-MM-DD), not UTC: right after midnight in Riyadh UTC is still yesterday. */
+export const localDate = (d = new Date()) => new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+
 /** WhatsApp chat link: Saudi mobiles (05…, 5…, +966…, ٠٥…) become 9665…; other numbers stay international. */
 export const waLink = (phone: string, text = '') => {
   let p = normPhone(phone);

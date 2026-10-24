@@ -19,7 +19,10 @@ const fail = (status, code, extra) => { throw new ServiceError(status, code, ext
 
 const nowIso = () => new Date().toISOString();
 const addDays = (date, n) => new Date(Date.parse(`${date}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
-const todayOf = (ctx) => ctx.today || new Date().toISOString().slice(0, 10);
+// The business runs on Riyadh time (UTC+3, no daylight saving): after midnight there it is
+// already the next day, even though UTC is still on the previous one.
+export const riyadhToday = () => new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10);
+const todayOf = (ctx) => ctx.today || riyadhToday();
 const rand = () => Math.random().toString(36).slice(2, 6);
 export const newId = (p) => `${p}-${Date.now().toString(36)}${rand()}`.toUpperCase();
 const can = (ctx, perm) => ctx.perms.includes(perm);
@@ -1019,6 +1022,11 @@ export async function voidAdvance(ctx, id, body = {}) {
   if (a.status === 'void') fail(409, 'invalid_transition');
   const reason = String(body.reason || '').trim();
   if (!reason) fail(400, 'validation', { fields: ['reason:required'] });
+  // An advance already partly recovered from salary cannot simply disappear: the debt would go negative.
+  if (a.kind !== 'repayment') {
+    const debt = workerBalances(financeData(ctx))[a.worker_id]?.debt || 0;
+    if (Number(a.amount) > debt + 0.001) fail(409, 'advance_already_recovered', { debt });
+  }
   await ctx.store.patch('worker_advances', id, { status: 'void', voided_at: todayOf(ctx), void_reason: reason.slice(0, 300), updated_at: nowIso() });
   await ctx.audit('advance.void', 'worker_advances', id, { reason });
   return ctx.store.get('worker_advances', id);

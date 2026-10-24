@@ -102,6 +102,8 @@ test('approve: wages expense, debt recovered, salaries owed; paying moves money 
 
   const st = await req('acc', 'GET', '/payroll/workers/W1');
   assert.equal(st.body.totals.debt, 700);
+  const adv = store.list('worker_advances').find((x) => x.worker_id === 'W1');
+  assert.equal((await req('acc', 'POST', `/payroll/advances/${adv.id}/void`, { reason: 'x' })).status, 409, 'a partly recovered advance cannot be voided');
   assert.equal(st.body.totals.salary_due, 0);
   assert.equal(st.body.totals.paid, 3200);
   const ov = await req('acc', 'GET', '/payroll');

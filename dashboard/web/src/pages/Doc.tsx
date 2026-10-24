@@ -6,12 +6,12 @@ import { ENUMS, enumLabel } from '@shared/model.js';
 import { computeTotals } from '@shared/finance.js';
 import { api, type Row, type User } from '../api';
 import { useT, type Key } from '../i18n';
-import { Badge, Input, Modal, errText, money, options, refreshLookup, useLang, useLookup, type FieldDef } from '../ui';
+import { Badge, Input, Modal, errText, localDate, money, options, refreshLookup, useLang, useLookup, type FieldDef } from '../ui';
 import { docStatus, type DocKind } from './Documents';
 
 type Item = { description: string; service: string; qty: number | string; unit_price: number | string };
 const blankItem = (): Item => ({ description: '', service: '', qty: 1, unit_price: '' });
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => localDate();
 const TYPE_TITLE: Record<string, Key> = { quote: 'quotes', invoice: 'invoices', contract: 'contracts', receipt: 'invoices' };
 
 const f = (key: string, ar: string, en: string, type = 'text', extra: Partial<FieldDef> = {}): FieldDef => ({ key, label: { ar, en }, type, ...extra });
