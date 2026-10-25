@@ -16,6 +16,8 @@ const PRICED: Record<string, keyof typeof PRICING.base.apartment> = {
   'deep-cleaning': 'deep',
   'post-construction-cleaning': 'post-construction',
 };
+// Add-ons that only make sense in a furnished home: switched off when "unfurnished" is chosen.
+const FURNITURE_ADDONS = ['sofa', 'carpet'];
 
 const data = {
   lang,
@@ -114,12 +116,13 @@ const today = new Date().toISOString().slice(0, 10);
               <div class="bk__row bk__row--4">
                 {Object.entries(b.addonNames).map(([k, v]) => (
                   <label class="chip chip--check">
-                    <input type="checkbox" name="addon" value={k} />
+                    <input type="checkbox" name="addon" value={k} data-furniture={FURNITURE_ADDONS.includes(k) ? '' : undefined} />
                     <span>{v}</span>
                     <small dir="ltr">+{PRICING.addons[k as keyof typeof PRICING.addons]}</small>
                   </label>
                 ))}
               </div>
+              <p class="bk__hint" data-furniture-hint>{b.furnitureHint}</p>
             </div>
           </fieldset>
 
@@ -369,6 +372,19 @@ const today = new Date().toISOString().slice(0, 10);
   .chip:has(input:checked) :global(.icon),
   .chip:has(input:checked) small {
     color: var(--gold-hl);
+  }
+  .chip:has(input:disabled) {
+    opacity: 0.4;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+  .bk__hint {
+    margin-top: 8px;
+    font-size: 0.8125rem;
+    color: var(--muted);
+  }
+  .bk__hint[hidden] {
+    display: none;
   }
   .chip:has(input:focus-visible) {
     outline: 3px solid var(--gold);

@@ -71,6 +71,7 @@ export function initBooking() {
   const send = form.querySelector<HTMLAnchorElement>('[data-send]')!;
   const residential = form.querySelector<HTMLElement>('[data-residential]')!;
   const addonsBox = form.querySelector<HTMLElement>('[data-addons]')!;
+  const furnitureHint = form.querySelector<HTMLElement>('[data-furniture-hint]')!;
   const sumService = form.querySelector<HTMLElement>('[data-sum-service]')!;
   const priceWrap = form.querySelector<HTMLElement>('[data-price-wrap]')!;
   const priceEl = form.querySelector<HTMLElement>('[data-price]')!;
@@ -116,6 +117,12 @@ export function initBooking() {
     const rooms = num('rooms');
     const baths = num('baths');
     const furnished = val('furnished') === 'yes';
+    // No furniture, nothing to clean: switch off (and clear) the sofa / carpet add-ons.
+    form.querySelectorAll<HTMLInputElement>('input[data-furniture]').forEach((i) => {
+      i.disabled = !furnished;
+      if (!furnished) i.checked = false;
+    });
+    furnitureHint.hidden = furnished;
     const addons = addonsBox.hidden
       ? []
       : [...form.querySelectorAll<HTMLInputElement>('input[name="addon"]:checked')].map((i) => i.value);

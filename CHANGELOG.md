@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-10-25 (2) — website: service-page note, calculator furniture options (backup first, verified after)
+- On the building service page, the "expanding" note no longer touches the title on phones. It is now a rounded box with space above it.
+- Calculator:
+  - "Unfurnished" switches off and clears the sofa and carpet/curtains add-ons.
+  - A short hint explains that they come back when you choose "Furnished".
+  - Windows and outdoor yard stay available.
+- Backup taken first on the server: `/site-backup-before-2026-10-25-b`.
+- Checked live:
+  - The add-ons switch off and on correctly.
+  - There is 20 px between the title and the note at phone width.
+  - 28 pages, no broken links.
+
 ## 2026-10-25 — website cleansense.co: deep cleaning first, new look (backup first, verified after)
 - Deep cleaning is featured right under the hero. Prices start at 800 SAR (apartment) and 1,500 SAR (villa), and the calculator opens on deep cleaning.
 - The team photo is in the hero, and there is a new "Our team" section.
