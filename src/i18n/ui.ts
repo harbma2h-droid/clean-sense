@@ -55,6 +55,14 @@ export const ui = {
         steps: ['اختر الخدمة', 'حدد الموعد', 'نأكد لك على واتساب'],
         replies: 'رد سريع على واتساب',
       },
+      photoAlt: 'فريق كلين سنس',
+    },
+    team: {
+      eyebrow: 'فريقنا',
+      title: 'ناس حقيقيين، يجونك بكل اللي يحتاجه المكان',
+      text: 'فريق كلين سنس مدرّب ومنظّم، يوصلك بسيارة الشركة ومعه المواد والمعدات كاملة. نفس الفريق يتابع الشغل لين التسليم، والضمان الذهبي يغطيك بعده.',
+      points: ['فريق مدرّب بزي موحّد', 'المواد والمعدات علينا', 'مشرف يتابع الجودة في كل زيارة'],
+      alt: 'فريق كلين سنس بزيه الرسمي بجانب سيارة الشركة',
     },
     services: {
       eyebrow: 'خدماتنا',
@@ -277,6 +285,14 @@ export const ui = {
         steps: ['Choose a service', 'Pick a time', 'We confirm on WhatsApp'],
         replies: 'Fast replies on WhatsApp',
       },
+      photoAlt: 'The Clean Sense team',
+    },
+    team: {
+      eyebrow: 'Our team',
+      title: 'Real people, arriving with everything the job needs',
+      text: 'The Clean Sense team is trained and organised. They arrive in the company vehicle with all the products and equipment, the same team follows the job through to handover, and the Golden Guarantee covers you after it.',
+      points: ['Trained team in uniform', 'Supplies & equipment included', 'A supervisor checks quality on every visit'],
+      alt: 'The Clean Sense team in uniform next to the company vehicle',
     },
     services: {
       eyebrow: 'Our services',

@@ -42,6 +42,8 @@ ErrorDocument 404 /404.html
   <If "%{REQUEST_URI} =~ m#^/(brand/|favicon|apple-touch|icon-|og-)#">
     Header set Cache-Control "public, max-age=604800"
   </If>
+  # Browsers always use HTTPS for this site from the first visit on (HTTPS works on both names).
+  Header always set Strict-Transport-Security "max-age=31536000"
   Header always set X-Content-Type-Options "nosniff"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
   Header always set X-Frame-Options "SAMEORIGIN"

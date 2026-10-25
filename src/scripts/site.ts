@@ -38,7 +38,8 @@ if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: re
         }
       }
     },
-    { rootMargin: '0px 0px -8% 0px', threshold: 0.05 },
+    // Start a little before the section enters the screen, so fast scrolling never shows empty space.
+    { rootMargin: '0px 0px 12% 0px', threshold: 0 },
   );
   reveals.forEach((el) => io.observe(el));
 } else {

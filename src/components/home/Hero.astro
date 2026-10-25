@@ -2,6 +2,7 @@
 import { Image } from 'astro:assets';
 import Icon from '../Icon.astro';
 import villa from '../../assets/images/villa.jpg';
+import { teamPhoto } from '../../lib/photos';
 import { STATS } from '../../data/site';
 import { ui, waLink } from '../../i18n/ui';
 import type { Lang } from '../../data/services';
@@ -11,6 +12,9 @@ interface Props {
 }
 const { lang } = Astro.props;
 const t = ui[lang];
+// The real team photo when it is in the project; the interior photo until then.
+const photo = teamPhoto ?? villa;
+const photoAlt = teamPhoto ? t.team.alt : '';
 ---
 
 <section class="hero">
@@ -43,11 +47,17 @@ const t = ui[lang];
           <li><Icon name="circle-check" size={18} />{p}</li>
         ))}
       </ul>
+
+      {/* Phones: the photo under the buttons, so the first screen is not text only. */}
+      <figure class="hero__mobile-photo">
+        <Image src={photo} alt={photoAlt} width={720} widths={[400, 600, 720]} sizes="92vw" loading="eager" />
+        <figcaption class="hero__mobile-chip"><Icon name="shield-check" size={18} />{t.why.guarantee.title}</figcaption>
+      </figure>
     </div>
 
     <div class="hero__visual" aria-hidden="true">
       <div class="hero__photo">
-        <Image src={villa} alt="" width={960} widths={[480, 720, 960]} sizes="(min-width: 1024px) 520px, 90vw" loading="eager" fetchpriority="high" />
+        <Image src={photo} alt="" width={960} widths={[480, 720, 960]} sizes="(min-width: 1024px) 520px, 90vw" loading="eager" fetchpriority="high" />
       </div>
       <div class="hero__card">
         <p class="hero__card-title">{t.hero.card.title}</p>
@@ -158,6 +168,35 @@ const t = ui[lang];
   .hero__visual {
     position: relative;
     display: none;
+  }
+  .hero__mobile-photo {
+    position: relative;
+    margin: 28px 0 0;
+    border-radius: 22px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: var(--shadow-lg);
+    aspect-ratio: 16 / 11;
+  }
+  .hero__mobile-photo :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .hero__mobile-chip {
+    position: absolute;
+    inset-inline-start: 12px;
+    bottom: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: var(--gold-grad);
+    color: var(--navy);
+    font-weight: 700;
+    font-size: 0.875rem;
+    box-shadow: var(--shadow-gold);
   }
   .hero__photo {
     border-radius: 28px;
@@ -305,6 +344,9 @@ const t = ui[lang];
     }
     .hero__visual {
       display: block;
+    }
+    .hero__mobile-photo {
+      display: none;
     }
     .stats {
       margin-top: 72px;
