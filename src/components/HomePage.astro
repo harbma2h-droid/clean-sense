@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import Hero from './home/Hero.astro';
+import DeepClean from './home/DeepClean.astro';
 import Services from './home/Services.astro';
 import Segments from './home/Segments.astro';
 import HowItWorks from './home/HowItWorks.astro';
@@ -31,6 +32,7 @@ const t = ui[lang];
   schema={[businessSchema(lang), websiteSchema(lang), faqSchema(t.faq.items)]}
 >
   <Hero lang={lang} />
+  <DeepClean lang={lang} />
   <Services lang={lang} />
   <HowItWorks lang={lang} />
   <Booking lang={lang} />

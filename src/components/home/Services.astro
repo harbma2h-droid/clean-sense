@@ -10,7 +10,7 @@ interface Props {
 const { lang } = Astro.props;
 const t = ui[lang];
 const order: Category[] = ['home', 'specialised', 'property'];
-// Building management, operation & maintenance is a service line of its own, shown apart from cleaning.
+// Building management, maintenance & operation (cleaning included) is a service line of its own, shown as one block.
 const facility = SERVICES.filter((s) => s.category === 'facility');
 ---
 
@@ -36,11 +36,11 @@ const facility = SERVICES.filter((s) => s.category === 'facility');
     {facility.length > 0 && (
       <div class="svc-facility reveal">
         <div class="svc-facility__head">
-          <span class="svc-facility__tag">{lang === 'ar' ? 'خدمة مستقلة عن التنظيف' : 'A separate service from cleaning'}</span>
+          <span class="svc-facility__tag">{lang === 'ar' ? 'حل متكامل للمباني' : 'A complete solution for buildings'}</span>
           <h3>{CATEGORIES.facility[lang]}</h3>
           <p>{lang === 'ar'
-            ? 'لملاك العمائر واتحادات الملاك ومدراء الأملاك: نتولى إدارة المبنى وتشغيله وصيانته. تطلبها لوحدها، أو مع خدمة تنظيف العمائر بعقد واحد.'
-            : 'For building owners, owners’ associations and property managers: we manage, run and maintain the building. Order it on its own, or with building cleaning in one contract.'}</p>
+            ? 'لملاك العمائر واتحادات الملاك ومدراء الأملاك: إدارة، وصيانة وقائية وطارئة، وتشغيل يومي، ونظافة المرافق المشتركة — بعقد واحد ونقطة تواصل واحدة.'
+            : 'For building owners, owners’ associations and property managers: management, preventive and reactive maintenance, daily operation and cleaning of shared areas — in one contract, with one point of contact.'}</p>
         </div>
         <div class="svc-grid svc-grid--facility">
           {facility.map((s) => <ServiceCard service={s} lang={lang} />)}

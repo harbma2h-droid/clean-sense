@@ -5,7 +5,7 @@ import kitchen from '../assets/images/kitchen.jpg';
 import carpet from '../assets/images/carpet.jpg';
 
 export type Lang = 'ar' | 'en';
-// Cleaning lines (home, specialised, property) and, separately, facility management.
+// Cleaning lines (home, specialised, property) and the integrated building-management line (facility).
 export type Category = 'home' | 'specialised' | 'property' | 'facility';
 
 interface Copy {
@@ -33,8 +33,8 @@ export const CATEGORIES: Record<Category, Record<Lang, string>> = {
   home: { ar: 'تنظيف المنازل', en: 'Home cleaning' },
   specialised: { ar: 'تنظيف متخصص', en: 'Specialised cleaning' },
   property: { ar: 'تنظيف المباني والمشاريع', en: 'Building & project cleaning' },
-  // A separate service line from cleaning: managing, operating and maintaining the building.
-  facility: { ar: 'إدارة وتشغيل وصيانة المباني', en: 'Building management, operation & maintenance' },
+  // Its own service line: managing, maintaining and running the whole building (cleaning included).
+  facility: { ar: 'إدارة وصيانة وتشغيل المباني', en: 'Building management, maintenance & operation' },
 };
 
 export const SERVICES: Service[] = [
@@ -59,7 +59,7 @@ export const SERVICES: Service[] = [
       ],
       ideal: ['قبل السكن أو بعد الخروج', 'قبل المناسبات ورمضان والأعياد', 'بيوت ما تنظّفت تنظيف كامل من فترة'],
       faqs: [
-        { q: 'كم يستغرق التنظيف العميق؟', a: 'حسب المساحة والحالة. الشقة عادةً تنتهي في نفس اليوم، والفيلا في المتوسط ٦–٨ ساعات بفريق متكامل.' },
+        { q: 'كم يستغرق التنظيف العميق؟', a: 'حسب المساحة والحالة. الشقة عادةً تنتهي في نفس اليوم، والفيلا في المتوسط 6–8 ساعات بفريق متكامل.' },
         { q: 'هل تجيبون المواد والمعدات؟', a: 'نعم، نوصل بكامل المعدات والمواد الاحترافية الآمنة. ما تحتاج تجهّز شي.' },
       ],
     },
@@ -553,42 +553,44 @@ export const SERVICES: Service[] = [
     category: 'facility',
     expanding: true,
     ar: {
-      name: 'إدارة وتشغيل وصيانة المباني',
-      short: 'نتولى إدارة مبناك وتشغيله اليومي وصيانته الوقائية والطارئة — خدمة مستقلة عن التنظيف.',
+      name: 'إدارة وصيانة وتشغيل المباني',
+      short: 'نتولى مبناك كامل: الإدارة، والصيانة الوقائية والطارئة، والتشغيل اليومي، والنظافة — بعقد واحد.',
       intro:
-        'خدمة مستقلة عن خدمات التنظيف: نتولى إدارة المبنى وتشغيله يوميًا، ومتابعة مرافقه المشتركة، وتنفيذ وتنسيق الصيانة الوقائية والطارئة — بعقد واضح وتقارير دورية لمالك المبنى أو اتحاد الملاك. وإذا تحتاج تنظيف دوري للمبنى، تقدر تضيفه كخدمة منفصلة.',
+        'حل متكامل لملاك المباني: نتولى إدارة المبنى وصيانته وتشغيله يوميًا، ومعها النظافة الدورية للمرافق المشتركة، ومتابعة الأعطال لين تنحل — بعقد واضح ونقطة تواصل واحدة وتقارير دورية لمالك المبنى أو اتحاد الملاك.',
       includes: [
-        'إدارة المبنى وتشغيله اليومي',
-        'جولات تفقدية وتقارير دورية للمالك',
+        'إدارة المبنى ومتابعة مرافقه المشتركة',
         'صيانة وقائية للمرافق الأساسية (كهرباء، سباكة، تكييف، مضخات)',
         'استقبال الأعطال وتنسيق الصيانة الطارئة',
+        'التشغيل اليومي للمبنى وجولات تفقدية منتظمة',
+        'نظافة دورية للمداخل والممرات والمرافق المشتركة',
         'متابعة خزانات المياه والمضخات والمساحات الخارجية',
-        'نقطة تواصل واحدة للمالك والسكان',
+        'تقارير دورية للمالك ونقطة تواصل واحدة للسكان',
       ],
       ideal: ['العمائر السكنية', 'المجمعات السكنية', 'اتحادات الملاك', 'المباني التجارية الصغيرة والمتوسطة'],
       faqs: [
-        { q: 'وش الفرق بينها وبين خدمة تنظيف العمائر؟', a: 'تنظيف العمائر خدمة تنظيف دوري للمرافق المشتركة. أما إدارة وتشغيل وصيانة المباني فهي خدمة مستقلة تهتم بتشغيل المبنى وصيانته ومتابعته. تقدر تطلب وحدة منهم أو الثنتين مع بعض.' },
-        { q: 'وش يشمل العقد؟', a: 'نحدد النطاق معك بعد معاينة المبنى: من المتابعة والصيانة الوقائية فقط، إلى تشغيل كامل مع الصيانة الطارئة.' },
+        { q: 'هل تشمل الخدمة النظافة؟', a: 'نعم، النظافة الدورية للمرافق المشتركة جزء من الخدمة، مع الإدارة والصيانة والتشغيل. وإذا تحتاج تنظيف فقط بدون صيانة، عندنا خدمة تنظيف العمائر والمجمعات السكنية.' },
+        { q: 'وش يشمل العقد؟', a: 'نحدد النطاق معك بعد معاينة المبنى، من المتابعة والصيانة الوقائية إلى إدارة وتشغيل كامل مع الصيانة الطارئة والنظافة.' },
         { q: 'هل الخدمة متاحة الحين؟', a: 'الخدمة قيد التوسع، ونستقبل الطلبات ونرتب معاينة للمبنى حسب النطاق والموقع.' },
       ],
     },
     en: {
-      name: 'Building Management, Operation & Maintenance',
-      short: 'We manage, run and maintain your building day to day — a service separate from cleaning.',
+      name: 'Building Management, Maintenance & Operation',
+      short: 'We take care of the whole building: management, preventive and reactive maintenance, daily operation and cleaning — in one contract.',
       intro:
-        'A separate service from our cleaning: we manage the building and run it day to day, look after its shared facilities and carry out and coordinate preventive and reactive maintenance — under a clear contract with regular reports for the owner or owners’ association. If the building also needs scheduled cleaning, you can add it as a separate service.',
+        'A complete solution for building owners: we manage, maintain and run the building day to day, together with scheduled cleaning of the shared areas and follow-up on every fault until it is fixed — under a clear contract, with one point of contact and regular reports for the owner or owners’ association.',
       includes: [
-        'Building management and day-to-day operation',
-        'Routine inspections and reports for the owner',
+        'Building management and care of shared facilities',
         'Preventive maintenance of core systems (electrical, plumbing, AC, pumps)',
         'Fault reporting and coordination of urgent repairs',
+        'Daily operation and regular inspection rounds',
+        'Scheduled cleaning of entrances, corridors and shared areas',
         'Water tanks, pumps and outdoor areas looked after',
-        'One point of contact for owners and residents',
+        'Regular reports for the owner, one point of contact for residents',
       ],
       ideal: ['Residential buildings', 'Residential compounds', "Owners' associations (HOA)", 'Small and mid-size commercial buildings'],
       faqs: [
-        { q: 'How is this different from building cleaning?', a: 'Building cleaning is scheduled cleaning of shared areas. Management, operation and maintenance is a separate service that runs, maintains and looks after the building. You can order either one, or both together.' },
-        { q: 'What does the contract include?', a: 'We define the scope with you after a site visit — from inspections and preventive maintenance only, to full operation with reactive maintenance.' },
+        { q: 'Does the service include cleaning?', a: 'Yes. Scheduled cleaning of the shared areas is part of the service, alongside management, maintenance and operation. If you only need cleaning, see our residential building cleaning service.' },
+        { q: 'What does the contract include?', a: 'We define the scope with you after a site visit — from inspections and preventive maintenance to full management and operation with reactive maintenance and cleaning.' },
         { q: 'Is the service available now?', a: 'The service is expanding; we take requests and arrange a site visit depending on scope and location.' },
       ],
     },

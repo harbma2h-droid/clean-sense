@@ -63,7 +63,7 @@ const today = new Date().toISOString().slice(0, 10);
             <div class="bk__services">
               {SERVICES.map((s) => (
                 <label class="chip chip--svc">
-                  <input type="radio" name="service" value={s.slug} />
+                  <input type="radio" name="service" value={s.slug} checked={s.slug === 'deep-cleaning'} />
                   <Icon name={s.icon} size={20} />
                   <span>{s[lang].name}</span>
                 </label>

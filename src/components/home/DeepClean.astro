@@ -1,0 +1,147 @@
+---
+import { Image } from 'astro:assets';
+import Icon from '../Icon.astro';
+// A bright, spotless open-plan home: the result a deep clean leaves behind.
+import deep from '../../assets/images/kitchen.jpg';
+import { PRICING } from '../../data/site';
+import { serviceBySlug, type Lang } from '../../data/services';
+import { ui, waLink, servicePath } from '../../i18n/ui';
+
+// Deep cleaning is the core business: a spotlight right under the hero, with what is
+// included, the starting estimate (same numbers as the calculator) and a direct booking button.
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = ui[lang];
+const d = t.deep;
+const service = serviceBySlug('deep-cleaning')!;
+const fmt = (n: number) => n.toLocaleString('en-US');
+---
+
+<section class="section deep" id="deep-cleaning">
+  <div class="container deep__grid">
+    <figure class="deep__photo reveal">
+      <Image src={deep} alt={d.imgAlt} width={1100} widths={[480, 800, 1100]} sizes="(min-width: 1024px) 560px, 92vw" loading="lazy" />
+      <figcaption class="deep__price" aria-label={d.note}>
+        <span>{d.from}</span>
+        <b><bdi>{fmt(PRICING.base.apartment.deep)}</bdi> <small>{t.booking.sar}</small></b>
+        <span>{d.apartment}</span>
+        <i aria-hidden="true"></i>
+        <b><bdi>{fmt(PRICING.base.villa.deep)}</bdi> <small>{t.booking.sar}</small></b>
+        <span>{d.villa}</span>
+      </figcaption>
+    </figure>
+
+    <div class="deep__copy reveal">
+      <p class="eyebrow">{d.eyebrow}</p>
+      <h2 class="h2">{d.title}</h2>
+      <p class="lead">{d.text}</p>
+      <ul class="deep__points">
+        {d.points.map((p) => <li><Icon name="circle-check" size={20} />{p}</li>)}
+      </ul>
+      <div class="deep__ctas">
+        <a class="btn btn--gold btn--lg" href={waLink(t.wa.service(service[lang].name))} target="_blank" rel="noopener" data-wa="deep-spotlight" data-service="deep-cleaning">
+          <Icon name="whatsapp" size={22} />
+          {d.cta}
+        </a>
+        <a class="btn btn--outline btn--lg" href={servicePath(lang, 'deep-cleaning')}>{d.details}</a>
+      </div>
+      <p class="deep__note">{d.note}</p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .deep {
+    background: linear-gradient(180deg, var(--surface), var(--bg));
+  }
+  .deep__grid {
+    display: grid;
+    gap: 32px;
+    align-items: center;
+  }
+  .deep__photo {
+    position: relative;
+    margin: 0;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    aspect-ratio: 4 / 3;
+  }
+  .deep__photo :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .deep__price {
+    position: absolute;
+    inset-inline: 12px;
+    bottom: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: center;
+    gap: 4px 8px;
+    padding: 10px 14px;
+    border-radius: 16px;
+    background: rgba(11, 31, 65, 0.88);
+    backdrop-filter: blur(6px);
+    color: var(--on-dark-muted);
+    font-size: 0.875rem;
+  }
+  .deep__price b {
+    color: var(--gold-hl);
+    font-size: 1.25rem;
+    font-weight: 800;
+  }
+  .deep__price small {
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .deep__price i {
+    width: 1px;
+    height: 18px;
+    margin-inline: 4px;
+    background: rgba(255, 255, 255, 0.25);
+  }
+  .deep__points {
+    display: grid;
+    gap: 10px;
+    margin: 22px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .deep__points li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .deep__points :global(.icon) {
+    flex-shrink: 0;
+    margin-top: 3px;
+    color: var(--gold-deep);
+  }
+  .deep__ctas {
+    display: grid;
+    gap: 12px;
+    margin-top: 26px;
+  }
+  .deep__note {
+    margin-top: 10px;
+    font-size: 0.8125rem;
+    color: var(--muted);
+  }
+  @media (min-width: 560px) {
+    .deep__ctas {
+      display: flex;
+      flex-wrap: wrap;
+    }
+  }
+  @media (min-width: 1024px) {
+    .deep__grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+    }
+  }
+</style>

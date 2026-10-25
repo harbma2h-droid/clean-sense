@@ -11,9 +11,9 @@ export const servicePath = (lang: Lang, slug: string) => `${prefix(lang)}/servic
 export const ui = {
   ar: {
     meta: {
-      title: 'كلين سنس | شركة تنظيف احترافية في الخبر والدمام والظهران',
+      title: 'كلين سنس | تنظيف عميق للفلل والشقق في الخبر والدمام والظهران',
       description:
-        'كلين سنس — تنظيف عميق للمنازل والفلل، ما بعد البناء، الكنب والموكيت، الخزانات، وتنظيف العمائر، وخدمة مستقلة لإدارة وتشغيل وصيانة المباني في المنطقة الشرقية.',
+        'كلين سنس — تنظيف عميق للفلل والشقق، تنظيف ما بعد البناء، الكنب والموكيت، الخزانات، وإدارة وصيانة وتشغيل المباني في الخبر والدمام والظهران. احجز عبر واتساب.',
     },
     nav: {
       services: 'الخدمات',
@@ -39,20 +39,20 @@ export const ui = {
     wa: {
       general: 'مرحبًا كلين سنس، أبغى أحجز خدمة تنظيف.',
       service: (name: string) => `مرحبًا كلين سنس، أبغى أحجز خدمة: ${name}`,
-      business: 'مرحبًا كلين سنس، أبغى عرض سعر لتنظيف مبنى أو إدارة وتشغيل وصيانة مبنى.',
+      business: 'مرحبًا كلين سنس، أبغى عرض سعر لمبنى (تنظيف أو إدارة وصيانة وتشغيل).',
       visit: 'مرحبًا كلين سنس، أبغى أطلب معاينة مجانية.',
     },
     hero: {
       badge: 'نخدم الخبر • الدمام • الظهران',
       title1: 'نظافة فندقية لبيتك،',
       title2: 'تحسّها من أول زيارة.',
-      sub: 'فريق مدرّب، مواد آمنة، والضمان الذهبي — للمنازل والفلل والعمائر في المنطقة الشرقية.',
+      sub: 'متخصصين في التنظيف العميق للفلل والشقق: فريق مدرّب، مواد آمنة، والضمان الذهبي.',
       primary: 'احجز عبر واتساب',
       secondary: 'احسب السعر التقديري',
       points: ['المواد والمعدات علينا', 'الضمان الذهبي', 'فريق مدرّب وموثوق'],
       card: {
         title: 'احجز في أقل من دقيقة',
-        steps: ['اختر الخدمة', 'حدد الموعد', 'نأكد لك على واتساب'],
+        steps: ['اختر الخدمة', 'حدد الموعد', 'نؤكد لك على واتساب'],
         replies: 'رد سريع على واتساب',
       },
       photoAlt: 'فريق كلين سنس',
@@ -64,10 +64,23 @@ export const ui = {
       points: ['فريق مدرّب بزي موحّد', 'المواد والمعدات علينا', 'مشرف يتابع الجودة في كل زيارة'],
       alt: 'فريق كلين سنس بزيه الرسمي بجانب سيارة الشركة',
     },
+    deep: {
+      eyebrow: 'تخصصنا الأول',
+      title: 'التنظيف العميق للفلل والشقق',
+      text: 'خدمتنا الأساسية: تنظيف شامل يوصل لكل زاوية — من الأسقف والإضاءات إلى الأرضيات، والمطبخ والحمامات بالتفصيل. فريق مدرّب، خطة واضحة لكل غرفة، والضمان الذهبي بعد التسليم.',
+      points: ['الأسقف والجدران والإضاءات بدون غبار', 'مطبخ كامل: خزائن وأسطح وأجهزة', 'حمامات بدون كلس وترسبات', 'غسيل وتلميع الأرضيات حسب نوعها', 'تعقيم نقاط اللمس والأسطح', 'المواد والمعدات علينا'],
+      from: 'يبدأ من',
+      apartment: 'للشقة',
+      villa: 'للفيلا',
+      note: 'سعر تقديري — السعر النهائي نؤكده بعد الصور أو المعاينة.',
+      cta: 'احجز التنظيف العميق',
+      details: 'وش يشمل بالتفصيل',
+      imgAlt: 'تنظيف عميق لمساحات البيت',
+    },
     services: {
       eyebrow: 'خدماتنا',
       title: 'كل اللي يحتاجه بيتك أو مبناك — من جهة وحدة',
-      sub: 'خدمات تنظيف للبيوت والمباني، وخدمة مستقلة لإدارة وتشغيل وصيانة المباني. اختر الخدمة وشوف وش تشمل بالتفصيل.',
+      sub: 'من التنظيف العميق للفلل والشقق إلى إدارة وصيانة وتشغيل المباني. اختر الخدمة وشوف وش تشمل بالتفصيل.',
       popular: 'الأكثر طلبًا',
     },
     segments: {
@@ -121,11 +134,11 @@ export const ui = {
       estimate: 'السعر التقديري',
       from: 'يبدأ من',
       sar: 'ر.س',
-      estimateNote: 'سعر تقديري — السعر النهائي نأكده بعد الصور أو المعاينة.',
+      estimateNote: 'سعر تقديري — السعر النهائي نؤكده بعد الصور أو المعاينة.',
       noEstimate: 'السعر حسب المساحة والحالة',
       noEstimateNote: 'أرسل لنا صور المكان على واتساب ونعطيك سعر دقيق بسرعة.',
       send: 'أرسل الطلب على واتساب',
-      noCommit: 'إرسال الطلب ما يلزمك بشي — نأكد معك التفاصيل والسعر على واتساب.',
+      noCommit: 'إرسال الطلب ما يلزمك بشي — نؤكد معك التفاصيل والسعر على واتساب.',
       pickService: 'اختر الخدمة أولًا',
       summary: 'ملخص طلبك',
       msgIntro: 'مرحبًا كلين سنس، أبغى أحجز:',
@@ -165,7 +178,7 @@ export const ui = {
     business: {
       eyebrow: 'للعمائر والشركات',
       title: 'شريك موثوق لمبناك',
-      sub: 'لملاك العمائر ومدراء الأملاك واتحادات الملاك والمجمعات السكنية، عندنا خدمتين منفصلتين: تنظيف المباني، وإدارة وتشغيل وصيانة المباني. تختار وحدة منهم أو تجمعهم بعقد واحد.',
+      sub: 'لملاك العمائر ومدراء الأملاك واتحادات الملاك والمجمعات السكنية: تنظيف دوري للمبنى، أو إدارة وصيانة وتشغيل متكاملة تشمل النظافة — حسب احتياج مبناك.',
       points: [
         'جدول زيارات ثابت وقائمة مهام مكتوبة',
         'تقرير مصوّر بعد كل زيارة',
@@ -173,7 +186,7 @@ export const ui = {
         'عقود شهرية أو سنوية بسعر ثابت',
       ],
       cta: 'اطلب عرض سعر لمبناك',
-      cta2: 'إدارة وتشغيل وصيانة المباني',
+      cta2: 'إدارة وصيانة وتشغيل المباني',
     },
     reviews: {
       eyebrow: 'من الميدان',
@@ -192,12 +205,12 @@ export const ui = {
       items: [
         { q: 'كيف أحجز؟', a: 'أسرع طريقة: اضغط زر واتساب، أو استخدم حاسبة السعر في الموقع وبتطلع لك رسالة جاهزة بكل التفاصيل. نرد عليك ونثبت الموعد.' },
         { q: 'هل توفرون المواد والمعدات؟', a: 'نعم، نوصل بكامل المعدات والمواد الاحترافية الآمنة. ما تحتاج تجهز أي شي.' },
-        { q: 'كم يستغرق التنظيف العميق للفيلا؟', a: 'حسب المساحة والحالة. في المتوسط ٦–٨ ساعات بفريق متكامل.' },
-        { q: 'هل السعر في الحاسبة نهائي؟', a: 'السعر تقديري ويعطيك فكرة واضحة. السعر النهائي نأكده بعد الصور أو المعاينة وقبل البدء — بدون مفاجآت.' },
+        { q: 'كم يستغرق التنظيف العميق للفيلا؟', a: 'حسب المساحة والحالة. في المتوسط 6–8 ساعات بفريق متكامل.' },
+        { q: 'هل السعر في الحاسبة نهائي؟', a: 'السعر تقديري ويعطيك فكرة واضحة. السعر النهائي نؤكده بعد الصور أو المعاينة وقبل البدء — بدون مفاجآت.' },
         { q: 'هل لازم أكون موجود في البيت؟', a: 'لا. كثير من عملائنا يسلموننا المفتاح ويرجعون لبيت نظيف.' },
         { q: 'هل عمالتكم مدربة وموثوقة؟', a: 'نعم، كل فرد في الفريق يمر بتدريب على معايير النظافة والضيافة، ويعمل تحت إشراف.' },
         { q: 'وش هو الضمان الذهبي؟', a: 'لا نعتبر العمل منتهياً إلا بعد رضاك. أي ملاحظة ضمن نطاق العمل المتفق عليه نعالجها مباشرة دون أي تكلفة إضافية، خلال 24 ساعة من تاريخ التسليم.' },
-        { q: 'هل عندكم عقود للعمائر والمجمعات؟', a: 'نعم، عقود شهرية وسنوية للتنظيف والتشغيل والصيانة، مع معاينة مجانية وعرض سعر مفصل.' },
+        { q: 'هل عندكم عقود للعمائر والمجمعات؟', a: 'نعم، عقود شهرية وسنوية لتنظيف المباني، أو لإدارة وصيانة وتشغيل المبنى كامل، مع معاينة مجانية وعرض سعر مفصل.' },
       ],
     },
     final: {
@@ -213,7 +226,7 @@ export const ui = {
       area: 'مناطق الخدمة',
     },
     footer: {
-      about: 'شركة تنظيف احترافية وتشغيل مباني في المنطقة الشرقية. نظافة تحسّها من أول زيارة.',
+      about: 'شركة تنظيف احترافية وإدارة وصيانة وتشغيل مباني في المنطقة الشرقية. نظافة تحسّها من أول زيارة.',
       services: 'الخدمات',
       company: 'الشركة',
       contact: 'تواصل',
@@ -241,9 +254,9 @@ export const ui = {
 
   en: {
     meta: {
-      title: 'Clean Sense | Professional Cleaning in Al Khobar, Dammam & Dhahran',
+      title: 'Clean Sense | Deep Cleaning for Villas & Apartments in Al Khobar',
       description:
-        'Clean Sense — deep cleaning for homes and villas, post-construction, sofas, carpets, water tanks and building cleaning, plus a separate building management, operation & maintenance service in the Eastern Province.',
+        'Clean Sense — deep cleaning for villas and apartments, post-construction cleaning, sofas, carpets, water tanks, and building management, maintenance & operation in Al Khobar, Dammam and Dhahran. Book on WhatsApp.',
     },
     nav: {
       services: 'Services',
@@ -269,14 +282,14 @@ export const ui = {
     wa: {
       general: 'Hello Clean Sense, I would like to book a cleaning service.',
       service: (name: string) => `Hello Clean Sense, I would like to book: ${name}`,
-      business: 'Hello Clean Sense, I would like a quote for building cleaning or building management & maintenance.',
+      business: 'Hello Clean Sense, I would like a quote for a building (cleaning, or management, maintenance & operation).',
       visit: 'Hello Clean Sense, I would like to request a free site visit.',
     },
     hero: {
       badge: 'Serving Al Khobar • Dammam • Dhahran',
       title1: 'Hotel-standard cleaning',
       title2: 'you can feel.',
-      sub: 'Trained teams, safe products and the Golden Guarantee — for homes, villas and buildings across the Eastern Province.',
+      sub: 'Deep cleaning specialists for villas and apartments: trained teams, safe products and the Golden Guarantee.',
       primary: 'Book on WhatsApp',
       secondary: 'Get an instant estimate',
       points: ['Supplies & equipment included', 'Golden Guarantee', 'Trained, vetted team'],
@@ -294,10 +307,23 @@ export const ui = {
       points: ['Trained team in uniform', 'Supplies & equipment included', 'A supervisor checks quality on every visit'],
       alt: 'The Clean Sense team in uniform next to the company vehicle',
     },
+    deep: {
+      eyebrow: 'What we do best',
+      title: 'Deep cleaning for villas and apartments',
+      text: 'Our core service: a thorough clean that reaches every corner — from ceilings and light fittings down to the floors, with the kitchen and bathrooms done in detail. A trained team, a clear plan for every room, and the Golden Guarantee after handover.',
+      points: ['Ceilings, walls and light fittings dust-free', 'Full kitchen: cabinets, counters and appliances', 'Bathrooms free of limescale and residue', 'Floors washed and finished to suit the material', 'High-touch points and surfaces sanitised', 'Supplies and equipment included'],
+      from: 'From',
+      apartment: 'apartment',
+      villa: 'villa',
+      note: 'Estimate — we confirm the final price after photos or a visit.',
+      cta: 'Book a deep clean',
+      details: 'See everything included',
+      imgAlt: 'Deep cleaning of a home',
+    },
     services: {
       eyebrow: 'Our services',
       title: 'Everything your home or building needs — one team',
-      sub: 'Cleaning for homes and buildings, and a separate building management, operation & maintenance service. Choose a service to see exactly what is included.',
+      sub: 'From deep cleaning for villas and apartments to building management, maintenance and operation. Choose a service to see exactly what is included.',
       popular: 'Most requested',
     },
     segments: {
@@ -395,7 +421,7 @@ export const ui = {
     business: {
       eyebrow: 'For buildings & businesses',
       title: 'A reliable partner for your building',
-      sub: 'For building owners, property managers, owners’ associations and compounds we offer two separate services: building cleaning, and building management, operation & maintenance. Choose one, or combine both in one contract.',
+      sub: 'For building owners, property managers, owners’ associations and compounds: scheduled building cleaning, or complete management, maintenance and operation that includes cleaning — whatever your building needs.',
       points: [
         'Fixed visit schedule and written checklist',
         'Photo report after every visit',
@@ -403,7 +429,7 @@ export const ui = {
         'Monthly or annual contracts at a fixed price',
       ],
       cta: 'Get a quote for your building',
-      cta2: 'Building management, operation & maintenance',
+      cta2: 'Building management, maintenance & operation',
     },
     reviews: {
       eyebrow: 'From the field',
@@ -427,7 +453,7 @@ export const ui = {
         { q: 'Do I need to be at home?', a: 'No. Many clients hand us the key and come back to a clean home.' },
         { q: 'Is your team trained and trustworthy?', a: 'Yes. Every team member is trained in cleaning and hospitality standards and works under supervision.' },
         { q: 'What is the Golden Guarantee?', a: "We don't consider the job finished until you're satisfied. Any note within the agreed scope of work is fixed right away at no extra cost, within 24 hours of handover." },
-        { q: 'Do you offer contracts for buildings and compounds?', a: 'Yes — monthly and annual cleaning, operation and maintenance contracts, with a free site visit and detailed quotation.' },
+        { q: 'Do you offer contracts for buildings and compounds?', a: 'Yes — monthly and annual contracts for building cleaning, or for managing, maintaining and running the whole building, with a free site visit and detailed quotation.' },
       ],
     },
     final: {
