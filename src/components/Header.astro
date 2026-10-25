@@ -114,8 +114,8 @@ const links = [
     transition: color 0.2s, background-color 0.2s;
   }
   .site-nav a:hover {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.07);
+    color: var(--gold-hl);
+    background: rgba(234, 213, 125, 0.1);
   }
 
   .site-header__actions {
@@ -196,18 +196,53 @@ const links = [
   .mobile-menu nav {
     padding-block: 12px 24px;
   }
+  .mobile-menu ul {
+    display: grid;
+    gap: 4px;
+  }
   .mobile-menu li a {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 4px;
+    padding: 15px 16px;
+    border-radius: 14px;
     color: #fff;
     font-size: 1.0625rem;
     font-weight: 600;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color 0.2s, color 0.2s, box-shadow 0.2s;
   }
   .mobile-menu li a :global(.icon) {
     color: var(--gold);
+    transition: transform 0.2s;
+  }
+  /* Soft gold highlight on the item under the finger or cursor, and on the section you are in. */
+  .mobile-menu li a:hover,
+  .mobile-menu li a:focus-visible,
+  .mobile-menu li a:active,
+  .mobile-menu li a.is-active {
+    background: rgba(234, 213, 125, 0.12);
+    color: var(--gold-hl);
+    box-shadow: inset 3px 0 0 var(--gold);
+  }
+  :global([dir='rtl']) .mobile-menu li a:hover,
+  :global([dir='rtl']) .mobile-menu li a:focus-visible,
+  :global([dir='rtl']) .mobile-menu li a:active,
+  :global([dir='rtl']) .mobile-menu li a.is-active {
+    box-shadow: inset -3px 0 0 var(--gold);
+  }
+  .mobile-menu li a:hover :global(.icon),
+  .mobile-menu li a:focus-visible :global(.icon) {
+    transform: translateX(3px);
+  }
+  :global([dir='rtl']) .mobile-menu li a:hover :global(.icon),
+  :global([dir='rtl']) .mobile-menu li a:focus-visible :global(.icon) {
+    transform: translateX(-3px) scaleX(-1);
+  }
+  .site-nav a.is-active {
+    color: var(--gold-hl);
+    background: rgba(234, 213, 125, 0.1);
   }
   .mobile-menu__ctas {
     display: grid;

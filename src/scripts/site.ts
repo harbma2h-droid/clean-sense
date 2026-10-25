@@ -46,6 +46,22 @@ if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: re
   reveals.forEach((el) => el.classList.add('is-in'));
 }
 
+// Highlight the menu item of the section on screen (desktop nav and the phone menu).
+const navLinks = [...document.querySelectorAll<HTMLAnchorElement>('.site-nav a[href*="#"], .mobile-menu a[href*="#"][data-menu-link]')];
+const sectionIds = [...new Set(navLinks.map((a) => a.hash.slice(1)).filter(Boolean))];
+const sections = sectionIds.map((id) => document.getElementById(id)).filter((s): s is HTMLElement => !!s);
+if (sections.length && 'IntersectionObserver' in window) {
+  const mark = (id: string | null) => navLinks.forEach((a) => a.classList.toggle('is-active', !!id && a.hash === `#${id}`));
+  const spy = new IntersectionObserver(
+    (entries) => {
+      const visible = entries.filter((e) => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (visible) mark(visible.target.id);
+    },
+    { rootMargin: '-35% 0px -55% 0px' },
+  );
+  sections.forEach((s) => spy.observe(s));
+}
+
 // Conversion tracking hooks: fire into GA4 / GTM / Meta Pixel if they are installed.
 declare global {
   interface Window {
