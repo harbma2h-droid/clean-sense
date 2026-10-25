@@ -58,7 +58,8 @@ export const STATS = [
   { value: '24h', ar: 'الضمان الذهبي بعد التسليم', en: 'Golden Guarantee after handover' },
   { value: '6', ar: 'مدن في الشرقية', en: 'Cities in the Eastern Province' },
   { value: '8–10', ar: 'من 8 ص إلى 10 م', en: '8 am to 10 pm' },
-  { value: '0%', ar: 'بدون ضريبة مضافة', en: 'No VAT added' },
+  // No VAT claim here: the business may register for VAT.
+  { value: '100%', ar: 'المواد والمعدات علينا', en: 'Supplies & equipment included' },
 ] as const;
 
 // Estimate calculator — same numbers and formula as the previous live site.

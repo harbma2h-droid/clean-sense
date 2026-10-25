@@ -45,9 +45,13 @@ const { lang, size = 'md' } = Astro.props;
     letter-spacing: 0.08em;
     direction: ltr;
   }
+  /* Arabic letters (ن، س) reach below the line; the gold gradient only paints inside the box,
+     so this line needs room underneath or the bottom of the letters is cut off. */
   .logo__ar {
     font-weight: 700;
     font-size: 0.95rem;
+    line-height: 1.55;
+    margin-top: -2px;
   }
   @media (max-width: 379px) {
     .logo {
