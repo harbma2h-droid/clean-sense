@@ -64,8 +64,9 @@ export const STATS = [
 // Estimate calculator — same numbers and formula as the previous live site.
 export const PRICING = {
   base: {
-    apartment: { deep: 500, 'post-construction': 800 },
-    villa: { deep: 1200, 'post-construction': 1800 },
+    // Deep cleaning starts at 800 (apartment) / 1,500 (villa) — owner's prices, 2026-10-25.
+    apartment: { deep: 800, 'post-construction': 800 },
+    villa: { deep: 1500, 'post-construction': 1800 },
   },
   perExtraRoom: 50, // each room above 2
   perExtraBath: 75, // each bathroom above 1
