@@ -10,6 +10,8 @@ interface Props {
 const { lang } = Astro.props;
 const t = ui[lang];
 const order: Category[] = ['home', 'specialised', 'property'];
+// Building management, operation & maintenance is a service line of its own, shown apart from cleaning.
+const facility = SERVICES.filter((s) => s.category === 'facility');
 ---
 
 <section class="section" id="services">
@@ -30,6 +32,21 @@ const order: Category[] = ['home', 'specialised', 'property'];
         </div>
       </div>
     ))}
+
+    {facility.length > 0 && (
+      <div class="svc-facility reveal">
+        <div class="svc-facility__head">
+          <span class="svc-facility__tag">{lang === 'ar' ? 'خدمة مستقلة عن التنظيف' : 'A separate service from cleaning'}</span>
+          <h3>{CATEGORIES.facility[lang]}</h3>
+          <p>{lang === 'ar'
+            ? 'لملاك العمائر واتحادات الملاك ومدراء الأملاك: نتولى إدارة المبنى وتشغيله وصيانته. تطلبها لوحدها، أو مع خدمة تنظيف العمائر بعقد واحد.'
+            : 'For building owners, owners’ associations and property managers: we manage, run and maintain the building. Order it on its own, or with building cleaning in one contract.'}</p>
+        </div>
+        <div class="svc-grid svc-grid--facility">
+          {facility.map((s) => <ServiceCard service={s} lang={lang} />)}
+        </div>
+      </div>
+    )}
 
     <div class="svc-cta reveal">
       <a class="btn btn--gold btn--lg" href={waLink(t.wa.general)} target="_blank" rel="noopener" data-wa="services">
@@ -64,6 +81,45 @@ const order: Category[] = ['home', 'specialised', 'property'];
   .svc-grid {
     display: grid;
     gap: 12px;
+  }
+  .svc-facility {
+    display: grid;
+    gap: 18px;
+    margin-top: 44px;
+    padding: 24px;
+    border-radius: var(--radius-lg);
+    background:
+      radial-gradient(500px 260px at 100% 0%, rgba(209, 173, 69, 0.16), transparent 60%),
+      var(--navy);
+    color: var(--on-dark-muted);
+  }
+  .svc-facility__tag {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(234, 213, 125, 0.4);
+    color: var(--gold-hl);
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+  .svc-facility__head h3 {
+    margin-top: 10px;
+    color: #fff;
+    font-size: clamp(1.25rem, 1rem + 1vw, 1.6rem);
+  }
+  .svc-facility__head p {
+    margin-top: 6px;
+  }
+  @media (min-width: 900px) {
+    .svc-facility {
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      padding: 36px;
+      gap: 36px;
+    }
+    .svc-grid--facility {
+      grid-template-columns: 1fr !important;
+    }
   }
   .svc-cta {
     display: grid;

@@ -13,7 +13,7 @@ export const ui = {
     meta: {
       title: 'كلين سنس | شركة تنظيف احترافية في الخبر والدمام والظهران',
       description:
-        'كلين سنس — تنظيف عميق للمنازل والفلل، تنظيف ما بعد البناء، الكنب والموكيت، الخزانات، وعقود تنظيف وتشغيل العمائر في المنطقة الشرقية. احجز عبر واتساب.',
+        'كلين سنس — تنظيف عميق للمنازل والفلل، ما بعد البناء، الكنب والموكيت، الخزانات، وتنظيف العمائر، وخدمة مستقلة لإدارة وتشغيل وصيانة المباني في المنطقة الشرقية.',
     },
     nav: {
       services: 'الخدمات',
@@ -39,7 +39,7 @@ export const ui = {
     wa: {
       general: 'مرحبًا كلين سنس، أبغى أحجز خدمة تنظيف.',
       service: (name: string) => `مرحبًا كلين سنس، أبغى أحجز خدمة: ${name}`,
-      business: 'مرحبًا كلين سنس، أبغى عرض سعر لعقد تنظيف / تشغيل مبنى.',
+      business: 'مرحبًا كلين سنس، أبغى عرض سعر لتنظيف مبنى أو إدارة وتشغيل وصيانة مبنى.',
       visit: 'مرحبًا كلين سنس، أبغى أطلب معاينة مجانية.',
     },
     hero: {
@@ -67,7 +67,7 @@ export const ui = {
     services: {
       eyebrow: 'خدماتنا',
       title: 'كل اللي يحتاجه بيتك أو مبناك — من جهة وحدة',
-      sub: 'من التنظيف العميق للفلل إلى عقود تشغيل العمائر. اختر الخدمة وشوف وش تشمل بالتفصيل.',
+      sub: 'خدمات تنظيف للبيوت والمباني، وخدمة مستقلة لإدارة وتشغيل وصيانة المباني. اختر الخدمة وشوف وش تشمل بالتفصيل.',
       popular: 'الأكثر طلبًا',
     },
     segments: {
@@ -164,8 +164,8 @@ export const ui = {
     },
     business: {
       eyebrow: 'للعمائر والشركات',
-      title: 'شريك تشغيل موثوق لمبناك',
-      sub: 'لملاك العمائر ومدراء الأملاك واتحادات الملاك والمجمعات السكنية: عقد واحد يغطي النظافة والمتابعة والصيانة الدورية.',
+      title: 'شريك موثوق لمبناك',
+      sub: 'لملاك العمائر ومدراء الأملاك واتحادات الملاك والمجمعات السكنية، عندنا خدمتين منفصلتين: تنظيف المباني، وإدارة وتشغيل وصيانة المباني. تختار وحدة منهم أو تجمعهم بعقد واحد.',
       points: [
         'جدول زيارات ثابت وقائمة مهام مكتوبة',
         'تقرير مصوّر بعد كل زيارة',
@@ -173,7 +173,7 @@ export const ui = {
         'عقود شهرية أو سنوية بسعر ثابت',
       ],
       cta: 'اطلب عرض سعر لمبناك',
-      cta2: 'تفاصيل التشغيل والصيانة',
+      cta2: 'إدارة وتشغيل وصيانة المباني',
     },
     reviews: {
       eyebrow: 'من الميدان',
@@ -243,7 +243,7 @@ export const ui = {
     meta: {
       title: 'Clean Sense | Professional Cleaning in Al Khobar, Dammam & Dhahran',
       description:
-        'Clean Sense — deep cleaning for homes and villas, post-construction cleaning, sofa and carpet cleaning, water tanks and building cleaning & O&M contracts across the Eastern Province. Book on WhatsApp.',
+        'Clean Sense — deep cleaning for homes and villas, post-construction, sofas, carpets, water tanks and building cleaning, plus a separate building management, operation & maintenance service in the Eastern Province.',
     },
     nav: {
       services: 'Services',
@@ -269,7 +269,7 @@ export const ui = {
     wa: {
       general: 'Hello Clean Sense, I would like to book a cleaning service.',
       service: (name: string) => `Hello Clean Sense, I would like to book: ${name}`,
-      business: 'Hello Clean Sense, I would like a quote for a building cleaning / O&M contract.',
+      business: 'Hello Clean Sense, I would like a quote for building cleaning or building management & maintenance.',
       visit: 'Hello Clean Sense, I would like to request a free site visit.',
     },
     hero: {
@@ -297,7 +297,7 @@ export const ui = {
     services: {
       eyebrow: 'Our services',
       title: 'Everything your home or building needs — one team',
-      sub: 'From villa deep cleans to building operation contracts. Choose a service to see exactly what is included.',
+      sub: 'Cleaning for homes and buildings, and a separate building management, operation & maintenance service. Choose a service to see exactly what is included.',
       popular: 'Most requested',
     },
     segments: {
@@ -394,8 +394,8 @@ export const ui = {
     },
     business: {
       eyebrow: 'For buildings & businesses',
-      title: 'A reliable operating partner for your building',
-      sub: 'For building owners, property managers, owners’ associations and compounds: one contract covering cleaning, follow-up and routine maintenance.',
+      title: 'A reliable partner for your building',
+      sub: 'For building owners, property managers, owners’ associations and compounds we offer two separate services: building cleaning, and building management, operation & maintenance. Choose one, or combine both in one contract.',
       points: [
         'Fixed visit schedule and written checklist',
         'Photo report after every visit',
@@ -403,7 +403,7 @@ export const ui = {
         'Monthly or annual contracts at a fixed price',
       ],
       cta: 'Get a quote for your building',
-      cta2: 'Operation & maintenance details',
+      cta2: 'Building management, operation & maintenance',
     },
     reviews: {
       eyebrow: 'From the field',

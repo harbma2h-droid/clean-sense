@@ -1,6 +1,10 @@
 import type { ImageMetadata } from 'astro';
 
-// Optional real photos. Drop src/assets/images/team.jpg (or .jpeg/.png/.webp) into the project and
-// the site uses it: in the hero and in the "Our team" section. Without it, those fall back or hide.
-const found = import.meta.glob<{ default: ImageMetadata }>('../assets/images/team.{jpg,jpeg,png,webp}', { eager: true });
-export const teamPhoto: ImageMetadata | undefined = Object.values(found)[0]?.default;
+// Optional real photos in src/assets/images (jpg/jpeg/png/webp):
+//   team.*      the team in front of the company vehicle → hero photo
+//   team-van.*  a second team shot → "Our team" section (falls back to team.*)
+// Without them, the hero keeps the interior photo and the team section stays hidden.
+const pick = (found: Record<string, { default: ImageMetadata }>) => Object.values(found)[0]?.default;
+export const teamPhoto: ImageMetadata | undefined = pick(import.meta.glob('../assets/images/team.{jpg,jpeg,png,webp}', { eager: true }));
+export const teamSectionPhoto: ImageMetadata | undefined =
+  pick(import.meta.glob('../assets/images/team-van.{jpg,jpeg,png,webp}', { eager: true })) ?? teamPhoto;

@@ -56,7 +56,7 @@ const photoAlt = teamPhoto ? t.team.alt : '';
     </div>
 
     <div class="hero__visual" aria-hidden="true">
-      <div class="hero__photo">
+      <div class={`hero__photo ${teamPhoto ? 'hero__photo--wide' : ''}`}>
         <Image src={photo} alt="" width={960} widths={[480, 720, 960]} sizes="(min-width: 1024px) 520px, 90vw" loading="eager" fetchpriority="high" />
       </div>
       <div class="hero__card">
@@ -186,7 +186,7 @@ const photoAlt = teamPhoto ? t.team.alt : '';
   .hero__mobile-chip {
     position: absolute;
     inset-inline-start: 12px;
-    bottom: 12px;
+    top: 12px;
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -209,6 +209,10 @@ const photoAlt = teamPhoto ? t.team.alt : '';
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+  /* The team stands in a wide row: a wider frame keeps everyone in the picture. */
+  .hero__photo--wide {
+    aspect-ratio: 5 / 4;
   }
   .hero__card {
     position: absolute;

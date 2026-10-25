@@ -5,7 +5,8 @@ import kitchen from '../assets/images/kitchen.jpg';
 import carpet from '../assets/images/carpet.jpg';
 
 export type Lang = 'ar' | 'en';
-export type Category = 'home' | 'specialised' | 'property';
+// Cleaning lines (home, specialised, property) and, separately, facility management.
+export type Category = 'home' | 'specialised' | 'property' | 'facility';
 
 interface Copy {
   name: string;
@@ -31,7 +32,9 @@ export interface Service {
 export const CATEGORIES: Record<Category, Record<Lang, string>> = {
   home: { ar: 'تنظيف المنازل', en: 'Home cleaning' },
   specialised: { ar: 'تنظيف متخصص', en: 'Specialised cleaning' },
-  property: { ar: 'المباني والمشاريع', en: 'Buildings & projects' },
+  property: { ar: 'تنظيف المباني والمشاريع', en: 'Building & project cleaning' },
+  // A separate service line from cleaning: managing, operating and maintaining the building.
+  facility: { ar: 'إدارة وتشغيل وصيانة المباني', en: 'Building management, operation & maintenance' },
 };
 
 export const SERVICES: Service[] = [
@@ -547,43 +550,45 @@ export const SERVICES: Service[] = [
   {
     slug: 'building-operation-maintenance',
     icon: 'wrench',
-    category: 'property',
+    category: 'facility',
     expanding: true,
     ar: {
-      name: 'تشغيل وصيانة المباني',
-      short: 'إدارة تشغيلية متكاملة للمبنى: نظافة، متابعة، وصيانة دورية بعقد واحد.',
+      name: 'إدارة وتشغيل وصيانة المباني',
+      short: 'نتولى إدارة مبناك وتشغيله اليومي وصيانته الوقائية والطارئة — خدمة مستقلة عن التنظيف.',
       intro:
-        'بدل ما تتعامل مع أكثر من جهة، نتولى تشغيل المبنى يوميًا: النظافة الدورية، ومتابعة المرافق المشتركة، وتنسيق أعمال الصيانة الوقائية والطارئة — بعقد واحد وتقارير واضحة لمالك المبنى أو اتحاد الملاك.',
+        'خدمة مستقلة عن خدمات التنظيف: نتولى إدارة المبنى وتشغيله يوميًا، ومتابعة مرافقه المشتركة، وتنفيذ وتنسيق الصيانة الوقائية والطارئة — بعقد واضح وتقارير دورية لمالك المبنى أو اتحاد الملاك. وإذا تحتاج تنظيف دوري للمبنى، تقدر تضيفه كخدمة منفصلة.',
       includes: [
-        'نظافة دورية للمرافق المشتركة',
-        'جولات تفقدية وتقارير دورية',
-        'صيانة وقائية للمرافق الأساسية',
-        'تنسيق الأعطال والصيانة الطارئة',
-        'متابعة خزانات المياه والمساحات الخارجية',
+        'إدارة المبنى وتشغيله اليومي',
+        'جولات تفقدية وتقارير دورية للمالك',
+        'صيانة وقائية للمرافق الأساسية (كهرباء، سباكة، تكييف، مضخات)',
+        'استقبال الأعطال وتنسيق الصيانة الطارئة',
+        'متابعة خزانات المياه والمضخات والمساحات الخارجية',
         'نقطة تواصل واحدة للمالك والسكان',
       ],
       ideal: ['العمائر السكنية', 'المجمعات السكنية', 'اتحادات الملاك', 'المباني التجارية الصغيرة والمتوسطة'],
       faqs: [
-        { q: 'وش يشمل عقد التشغيل والصيانة؟', a: 'نحدد النطاق معك بعد معاينة المبنى — من النظافة فقط إلى تشغيل كامل مع صيانة وقائية.' },
+        { q: 'وش الفرق بينها وبين خدمة تنظيف العمائر؟', a: 'تنظيف العمائر خدمة تنظيف دوري للمرافق المشتركة. أما إدارة وتشغيل وصيانة المباني فهي خدمة مستقلة تهتم بتشغيل المبنى وصيانته ومتابعته. تقدر تطلب وحدة منهم أو الثنتين مع بعض.' },
+        { q: 'وش يشمل العقد؟', a: 'نحدد النطاق معك بعد معاينة المبنى: من المتابعة والصيانة الوقائية فقط، إلى تشغيل كامل مع الصيانة الطارئة.' },
         { q: 'هل الخدمة متاحة الحين؟', a: 'الخدمة قيد التوسع، ونستقبل الطلبات ونرتب معاينة للمبنى حسب النطاق والموقع.' },
       ],
     },
     en: {
-      name: 'Building Operation & Maintenance',
-      short: 'One contract for day-to-day building operation: cleaning, inspections and maintenance.',
+      name: 'Building Management, Operation & Maintenance',
+      short: 'We manage, run and maintain your building day to day — a service separate from cleaning.',
       intro:
-        'Instead of managing several vendors, we run the building day to day: scheduled cleaning, monitoring of shared facilities and coordination of preventive and reactive maintenance — under one contract with clear reporting for the owner or owners’ association.',
+        'A separate service from our cleaning: we manage the building and run it day to day, look after its shared facilities and carry out and coordinate preventive and reactive maintenance — under a clear contract with regular reports for the owner or owners’ association. If the building also needs scheduled cleaning, you can add it as a separate service.',
       includes: [
-        'Scheduled cleaning of shared areas',
-        'Routine inspections and reports',
-        'Preventive maintenance of core facilities',
-        'Coordination of breakdowns and urgent repairs',
-        'Water tanks and outdoor areas looked after',
+        'Building management and day-to-day operation',
+        'Routine inspections and reports for the owner',
+        'Preventive maintenance of core systems (electrical, plumbing, AC, pumps)',
+        'Fault reporting and coordination of urgent repairs',
+        'Water tanks, pumps and outdoor areas looked after',
         'One point of contact for owners and residents',
       ],
       ideal: ['Residential buildings', 'Residential compounds', "Owners' associations (HOA)", 'Small and mid-size commercial buildings'],
       faqs: [
-        { q: 'What does an O&M contract include?', a: 'We define the scope with you after a site visit — from cleaning only to full operation with preventive maintenance.' },
+        { q: 'How is this different from building cleaning?', a: 'Building cleaning is scheduled cleaning of shared areas. Management, operation and maintenance is a separate service that runs, maintains and looks after the building. You can order either one, or both together.' },
+        { q: 'What does the contract include?', a: 'We define the scope with you after a site visit — from inspections and preventive maintenance only, to full operation with reactive maintenance.' },
         { q: 'Is the service available now?', a: 'The service is expanding; we take requests and arrange a site visit depending on scope and location.' },
       ],
     },
