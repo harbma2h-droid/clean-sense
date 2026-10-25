@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-10-25 — website cleansense.co: deep cleaning first, new look (backup first, verified after)
+- Deep cleaning is featured right under the hero. Prices start at 800 SAR (apartment) and 1,500 SAR (villa), and the calculator opens on deep cleaning.
+- The team photo is in the hero, and there is a new "Our team" section.
+- The building service is renamed "إدارة وصيانة وتشغيل المباني" (cleaning included) and has its own block.
+- There is a new navy preview image for shared links.
+- The "no VAT" claim is removed.
+- The Arabic logo text is no longer cut off at the bottom.
+- Menu items get a gold highlight, and the menu marks the section you are in.
+- HSTS has been added.
+- Backup taken first on the server: `/site-backup-before-2026-10-25` (full copy of public_html).
+- Checked after publishing:
+  - 28 pages, no broken links.
+  - New sections and prices are live.
+  - The new preview image is served.
+  - `/d/<code>` still redirects to the system.
+  - The booking form's API accepts the site.
+
 ## 2026-10-24 18:27 — approved light look on every device (backup first, verified after)
 - The system and its reports stay on the off-white background (#F7F3E9) even when the phone is in dark mode. That mode used to switch everything to navy.
 - Backup taken first: `D:\CleanSense-Backup\cs_system-before-light-theme-2026-10-24.sql` (19 tables).
