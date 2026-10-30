@@ -355,6 +355,8 @@ export const TYPE_A = {
     ['YARD-1', 'الفناء 1', 'Yard 1', 'yard', 0],
     ['YARD-2', 'الفناء 2', 'Yard 2', 'yard', 0],
     ['PUMPS', 'غرفة مضخات الحريق والبوسترات', 'Fire pump & booster room', 'plant', 0],
+    // All Ajyal water tanks are ground tanks (owner, 2026-10-30).
+    ['TANKS', 'الخزانات الأرضية', 'Ground water tanks', 'plant', 0],
     ['FACP', 'لوحة إنذار الحريق', 'Fire alarm panel', 'plant', 0],
     ['ELEC', 'غرفة الكهرباء', 'Electrical room', 'plant', 0],
     ['METERS', 'غرفة العدادات', 'Meter room', 'plant', 0],
@@ -369,7 +371,7 @@ export const TYPE_A = {
   qr: [
     ['lobby', 'باركود اللوبي', 'LOBBY,ELEV,STAIRS-1,STAIRS-2,CORR-1,CORR-2,CORR-3,CORR-4,CORR-5,CORR-6,CHUTE,WASTE-G,PARKING,YARD-1,YARD-2,ROOF,GUARD,LAUNDRY,DRIVERS'],
     ['elevators', 'باركود المصاعد (TKE)', 'ELEV,ELEV-ROOM'],
-    ['fire_pumps', 'باركود أنظمة الحريق والمضخات (رماد)', 'PUMPS,FACP'],
+    ['fire_pumps', 'باركود أنظمة الحريق والمضخات (رماد)', 'PUMPS,FACP,TANKS'],
   ],
 };
 

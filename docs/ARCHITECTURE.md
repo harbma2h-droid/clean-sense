@@ -107,7 +107,7 @@ Tests: `cd dashboard && npm test`. With `TEST_MYSQL_URL=mysql://…/cleansense_t
   - resident
   - contractor
 - **Approving residents:** only the building representative approves residents. While a building has no active representative, staff with the `buildings` permission can approve.
-- **Type A template:** `POST /api/buildings/from-template` creates a building with 26 units, 26 common areas and 3 QR points. Adding buildings 2, 8 and 11 is data entry, not programming.
+- **Type A template:** `POST /api/buildings/from-template` creates a building with 26 units, 27 common areas (ground water tanks included) and 3 QR points. Adding buildings 2, 8 and 11 is data entry, not programming.
 - **Ajyal site:** 12 buildings, from the site key plan HA-031692.
   - Type A: 2, 5, 8, 11.
   - Type B: 3, 6, 9, 12.
