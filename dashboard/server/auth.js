@@ -15,8 +15,11 @@ export function createAuth({ store, secret, secureCookies, openAccess = false })
   if (!secret || secret.length < 32) throw new Error('SESSION_SECRET must be at least 32 characters');
 
   const sign = (body) => createHmac('sha256', secret).update(body).digest('base64url');
+  // Session version: changing the password (or, for phone-only accounts, the approved phone)
+  // makes older sessions invalid.
+  const versionOf = (u) => (u.password_hash ? u.password_hash.slice(-8) : `L${u.login_version || ''}`);
   const issue = (user) => {
-    const body = Buffer.from(JSON.stringify({ uid: user.id, exp: Date.now() + TTL_MS, v: user.password_hash?.slice(-8) })).toString('base64url');
+    const body = Buffer.from(JSON.stringify({ uid: user.id, exp: Date.now() + TTL_MS, v: versionOf(user) })).toString('base64url');
     return `${body}.${sign(body)}`;
   };
   const verify = (token) => {
@@ -38,7 +41,7 @@ export function createAuth({ store, secret, secureCookies, openAccess = false })
     return custom.length ? custom : ROLES[user.role]?.perms ?? [];
   };
   const publicUser = (u) => ({
-    id: u.id, name: u.name, username: u.username, job_title: u.job_title, role: u.role,
+    id: u.id, name: u.name, username: u.username, job_title: u.job_title, role: u.role, kind: u.kind || 'staff',
     language: u.language || 'ar', permissions: permsOf(u), must_change_password: u.must_change_password === 'yes',
   });
 
@@ -92,6 +95,16 @@ export function createAuth({ store, secret, secureCookies, openAccess = false })
       res.json(publicUser(user));
     },
 
+    /** Signs in through a one-time link (phone-only accounts). consume(token) returns the user or null. */
+    async loginWithLink(req, res, consume) {
+      if (tooMany(req.ip)) return res.status(429).json({ error: 'too_many_attempts' });
+      const user = await consume(String(req.body?.token || ''));
+      if (!user) return res.status(410).json({ error: 'link_invalid' });
+      await store.patch('users', user.id, { last_login_at: new Date().toISOString() });
+      res.cookie(COOKIE, issue(user), cookieOpts);
+      res.json(publicUser(user));
+    },
+
     logout(req, res) {
       res.clearCookie(COOKIE, { path: '/' });
       res.status(204).end();
@@ -102,8 +115,7 @@ export function createAuth({ store, secret, secureCookies, openAccess = false })
       const p = verify(req.cookies?.[COOKIE]);
       if (p) {
         const u = store.get('users', p.uid);
-        // Changing the password invalidates older sessions (v = hash suffix).
-        if (u && u.active !== 'no' && u.password_hash?.slice(-8) === p.v) req.user = u;
+        if (u && u.active !== 'no' && versionOf(u) === p.v) req.user = u;
       }
       if (!req.user && openAccess) {
         const owner = store.list('users').find((u) => u.role === 'owner' && u.active !== 'no');

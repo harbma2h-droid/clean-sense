@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-10-30 — app phase 0: building management foundations (not deployed; test environment only)
+- The owner approved the plan:
+  - Stay on Hostinger.
+  - The app goes on portal.cleansense.co.
+  - Phone-only accounts sign in with a one-time WhatsApp link.
+- New tables, added beside the existing ones; nothing changed or removed:
+  - buildings, units, common areas, QR points
+  - roles per building
+  - report types
+  - sign-in links
+  - Four new columns on users: kind, customer_id, worker_id, login_version.
+- New "إدارة المباني" section in the system: buildings, units and common areas. Staff need the new `buildings` permission. Owners have it automatically, and operations managers get it too.
+- Type A template: one call creates a building with 26 units (001–604), 26 common areas and 3 QR points (lobby, lifts for TKE, fire systems and pumps for Rmad).
+- 27 report types from the reference document, with automatic priority and time limits.
+  - The "inside my unit" type leads to a paid service.
+  - Bengali names are included; they still need a review.
+- People per building:
+  - Residents and the representative are linked to the customers table.
+  - Field staff are linked to the workers table.
+  - The representative approves residents.
+  - Contractors' approved phone can be changed, which signs the old phone out.
+- Backups: a weekly copy is kept for 12 weeks. It can also be copied to a Google Workspace shared drive (`DRIVE_BACKUP_FOLDER_ID`).
+- Test environment on this PC: a separate MariaDB with fake data, plus seed and start scripts. See `system/staging/README.md`.
+- Tested: 50 automated tests pass on both the file store and MySQL. The sign-in link was tried at phone size.
+
 ## 2026-10-25 (2) — website: service-page note, calculator furniture options (backup first, verified after)
 - On the building service page, the "expanding" note no longer touches the title on phones. It is now a rounded box with space above it.
 - Calculator:

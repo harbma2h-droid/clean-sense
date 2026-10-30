@@ -80,6 +80,39 @@ Tests: `cd dashboard && npm test`. With `TEST_MYSQL_URL=mysql://…/cleansense_t
 5. ⚠️ Run the legacy upgrade and opening balances (`system/README.md`) in the new system.
 6. The old Sheet stays untouched as the pre-migration record.
 
+## Decision 3 — one app for cleaning and building management (approved by the owner on 2026-10-30)
+
+- **Hosting:** stay on Hostinger with one server, one MySQL database and one codebase. No Supabase or Vercel.
+- **Data:** building management is added as new tables, next to the existing ones:
+  - `sites`, `units`, `zones`, `qr_points`
+  - `site_members` (roles per building)
+  - `ticket_types`
+  - `login_links`
+- **Shared tables:** one customers table (a resident is a customer) and one staff table (field staff link to `workers`).
+- **Addresses:**
+  - The app for residents, field staff and contractors will be served at `portal.cleansense.co`. That needs one DNS record at Namecheap, with approval.
+  - The back office stays at `system.cleansense.co`.
+- **Phone-only accounts** (residents, contractors, field staff):
+  - The manager sends a one-time sign-in link on WhatsApp. It works once and expires after 72 hours.
+  - Only its SHA-256 fingerprint is stored.
+  - Opening the page does not use the link; the person taps "دخول". This way WhatsApp link previews cannot spend it.
+  - Changing the approved phone signs the old phone out.
+- **Roles per building:**
+  - manager
+  - maintenance supervisor
+  - cleaning supervisor
+  - technician
+  - cleaner
+  - representative
+  - resident
+  - contractor
+- **Approving residents:** only the building representative approves residents. While a building has no active representative, staff with the `buildings` permission can approve.
+- **Type A template:** `POST /api/buildings/from-template` creates a building with 26 units, 26 common areas and 3 QR points. Adding buildings 2, 8 and 11 is data entry, not programming.
+- **Backups:**
+  - The first daily backup of each week is also kept for 12 weeks in `BACKUP_DIR/weekly`.
+  - With `DRIVE_BACKUP_FOLDER_ID` set, that weekly file is uploaded to a Google Workspace shared-drive folder where the service account is a member.
+- **Test environment:** see `system/staging/README.md`.
+
 ## Decision 2 — Google Cloud
 
 - Project `clean-sense-system` (organization cleansense.co).

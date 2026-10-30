@@ -9,14 +9,43 @@ import { ROLES, PERMISSIONS } from '../shared/model.js';
 import { ROUTES, allowed } from '../shared/routes.js';
 import { ServiceError, createRecord, companyInfo, settingsMap, publicDocument, calendarLink, calendarFeed } from '../shared/services.js';
 import { applyLists } from '../shared/model.js';
+import { consumeLoginLink } from '../shared/buildings.js';
 import { createAuth } from './auth.js';
 
 const PUBLIC_ORIGINS = ['https://cleansense.co', 'https://www.cleansense.co'];
 
 const newId = (p) => `${p}-${Date.now().toString(36)}${randomBytes(2).toString('hex')}`.toUpperCase();
+
+// Page behind a sign-in link. Self-contained (no outside files), Arabic, Clean Sense colours.
+const ROLE_AR = { manager: 'المدير', maint_supervisor: 'مشرف الصيانة', clean_supervisor: 'مشرف النظافة', technician: 'فني', cleaner: 'عامل نظافة', rep: 'ممثل العمارة', resident: 'ساكن', vendor: 'شركة متعاقدة' };
+const LINK_PAGE = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>كلين سنس | Clean Sense</title><meta property="og:title" content="كلين سنس | Clean Sense"><meta property="og:description" content="رابط دخولك لتطبيق كلين سنس">
+<meta name="robots" content="noindex"><meta name="theme-color" content="#0B1F41">
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0B1F41;color:#F7F3E9;font-family:Tajawal,"Segoe UI",Tahoma,sans-serif}
+main{width:min(420px,calc(100% - 32px));background:#fff;color:#0B1F41;border-radius:18px;padding:28px 22px;text-align:center}
+h1{font-size:22px;margin:0 0 6px}p{color:#56607A;margin:6px 0 18px;line-height:1.8}
+button{width:100%;border:0;border-radius:12px;padding:14px;font-family:inherit;font-weight:700;font-size:17px;background:#D1AD45;color:#0B1F41;cursor:pointer}
+button:disabled{opacity:.6}ul{list-style:none;padding:0;margin:12px 0 0;text-align:start}li{border:1px solid #E4DDCB;border-radius:10px;padding:10px 12px;margin-top:8px}
+.err{color:#B42318}</style></head><body><main>
+<h1>أهلاً بك في كلين سنس</h1><p id="msg">اضغط الزر للدخول. الرابط يشتغل مرة وحدة.</p>
+<button id="go">دخول</button><ul id="list"></ul></main>
+<script>
+const R=${JSON.stringify(ROLE_AR)};
+const msg=document.getElementById('msg'),go=document.getElementById('go'),list=document.getElementById('list');
+go.onclick=async()=>{go.disabled=true;
+  const token=location.pathname.split('/').pop();
+  const r=await fetch('/api/auth/link',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})});
+  if(!r.ok){msg.textContent=r.status===429?'محاولات كثيرة. جرّب بعد ربع ساعة.':'الرابط منتهي أو مستخدم. اطلب رابط جديد من مدير العمارة.';msg.className='err';go.hidden=true;return;}
+  const me=await r.json();const b=await (await fetch('/api/portal/me')).json();
+  msg.textContent='تم الدخول، '+me.name+'. أدوارك:';go.hidden=true;
+  for(const x of b){const li=document.createElement('li');li.textContent=(x.site?x.site.name:'')+' — '+(R[x.role]||x.role)+(x.unit?' — شقة '+x.unit.code:'')+(x.vendor?' — '+x.vendor:'');list.appendChild(li);}
+};
+</script></body></html>`;
 const nowIso = () => new Date().toISOString();
 
-export function createApp({ store, secret, secureCookies = true, webDist, extraOrigins = [], openAccess = false, mirror = null, onPasswordChanged = () => {} }) {
+// portalOrigin: address used in sign-in links sent to residents and contractors (PORTAL_ORIGIN);
+// by default the address the request came in on.
+export function createApp({ store, secret, secureCookies = true, webDist, extraOrigins = [], openAccess = false, mirror = null, portalOrigin = '', onPasswordChanged = () => {} }) {
   const app = express();
   const auth = createAuth({ store, secret, secureCookies, openAccess });
   applyLists(settingsMap({ store })); // owner-edited lists (services, cities, ...)
@@ -44,6 +73,8 @@ export function createApp({ store, secret, secureCookies = true, webDist, extraO
   /* ---------- Auth ---------- */
   api.post('/auth/login', (req, res) => auth.login(req, res));
   api.post('/auth/logout', (req, res) => auth.logout(req, res));
+  // One-time sign-in link (/l/<token>) for residents, contractors and field staff.
+  api.post('/auth/link', (req, res) => auth.loginWithLink(req, res, (token) => consumeLoginLink(store, token)));
   api.get('/auth/me', auth.require(), (req, res) => res.json(auth.publicUser(req.user)));
   api.patch('/auth/me', auth.require(), async (req, res) => {
     const language = req.body?.language;
@@ -75,7 +106,7 @@ export function createApp({ store, secret, secureCookies = true, webDist, extraO
   });
 
   /* ---------- Business routes (shared with the demo, see shared/routes.js) ---------- */
-  const ctxOf = (req) => ({ store, user: req.user, perms: auth.permsOf(req.user), audit: (...a) => audit(req, ...a) });
+  const ctxOf = (req) => ({ store, user: req.user, perms: auth.permsOf(req.user), audit: (...a) => audit(req, ...a), origin: portalOrigin || `${req.protocol}://${req.get('host')}` });
   for (const [method, path, perm, handler] of ROUTES) {
     api[method.toLowerCase()](path, auth.require(), async (req, res, next) => {
       const ctx = ctxOf(req);
@@ -93,7 +124,8 @@ export function createApp({ store, secret, secureCookies = true, webDist, extraO
 
   /* ---------- Users (owner / users permission) ---------- */
   const userOut = (u) => ({ ...auth.publicUser(u), active: u.active !== 'no', last_login_at: u.last_login_at });
-  api.get('/users', auth.require('users'), (req, res) => res.json(store.list('users').map(userOut)));
+  // Staff accounts only: residents and contractors are managed per building.
+  api.get('/users', auth.require('users'), (req, res) => res.json(store.list('users').filter((u) => !u.kind || u.kind === 'staff').map(userOut)));
   api.post('/users', auth.require('users'), async (req, res) => {
     const { name, username, job_title, role, language } = req.body || {};
     const uname = String(username || '').trim().toLowerCase();
@@ -223,6 +255,14 @@ export function createApp({ store, secret, secureCookies = true, webDist, extraO
 
   app.use('/api', api);
   app.use('/api', (req, res) => res.status(404).json({ error: 'not_found' }));
+
+  // Sign-in link page. Opening it does not use the link: the person taps the button, so
+  // WhatsApp's link preview (which also opens the address) can't spend the one-time link.
+  app.get('/l/:token', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.type('html').send(LINK_PAGE);
+  });
 
   if (webDist && existsSync(webDist)) {
     app.use(express.static(webDist, { index: false, maxAge: '1h' }));

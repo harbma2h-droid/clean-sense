@@ -6,7 +6,7 @@
 import { SheetsBackend } from './sheets.js';
 import { SCHEMA } from './store.js';
 
-const HIDDEN = new Set(['password_hash', 'share_token', 'calendar_token', 'iban', 'id_number']);
+const HIDDEN = new Set(['password_hash', 'share_token', 'calendar_token', 'iban', 'id_number', 'token', 'token_hash', 'login_version']);
 const INFO_TAB = 'معلومات النسخة | info';
 
 export class SheetsMirror {

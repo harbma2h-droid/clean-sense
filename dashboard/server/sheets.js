@@ -18,6 +18,21 @@ const colName = (n) => {
   return s;
 };
 
+/** Service-account access token for one Google API scope: { access_token, expires_in }. */
+export async function googleToken(creds, scope) {
+  const now = Math.floor(Date.now() / 1000);
+  const head = b64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+  const claim = b64url(JSON.stringify({ iss: creds.client_email, scope, aud: 'https://oauth2.googleapis.com/token', iat: now, exp: now + 3600 }));
+  const sig = createSign('RSA-SHA256').update(`${head}.${claim}`).sign(creds.private_key, 'base64url');
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: `${head}.${claim}.${sig}` }),
+  });
+  if (!res.ok) throw new Error(`Google auth failed: ${res.status} ${await res.text()}`);
+  return res.json();
+}
+
 export class SheetsBackend {
   /** readOnly: never add tabs or header columns (used when copying data out). */
   constructor({ spreadsheetId, credentials, readOnly = false }) {
@@ -31,23 +46,7 @@ export class SheetsBackend {
 
   async auth() {
     if (this.token && Date.now() < this.tokenExp - 60_000) return this.token;
-    const now = Math.floor(Date.now() / 1000);
-    const head = b64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
-    const claim = b64url(JSON.stringify({
-      iss: this.creds.client_email,
-      scope: 'https://www.googleapis.com/auth/spreadsheets',
-      aud: 'https://oauth2.googleapis.com/token',
-      iat: now,
-      exp: now + 3600,
-    }));
-    const sig = createSign('RSA-SHA256').update(`${head}.${claim}`).sign(this.creds.private_key, 'base64url');
-    const res = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: `${head}.${claim}.${sig}` }),
-    });
-    if (!res.ok) throw new Error(`Google auth failed: ${res.status} ${await res.text()}`);
-    const j = await res.json();
+    const j = await googleToken(this.creds, 'https://www.googleapis.com/auth/spreadsheets');
     this.token = j.access_token;
     this.tokenExp = Date.now() + j.expires_in * 1000;
     return this.token;

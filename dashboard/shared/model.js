@@ -16,11 +16,12 @@ export const PERMISSIONS = {
   tasks: { ar: 'المهام', en: 'Tasks' },
   users: { ar: 'المستخدمون والصلاحيات', en: 'Users & access' },
   settings: { ar: 'إعدادات النظام', en: 'System settings' },
+  buildings: { ar: 'إدارة المباني', en: 'Building management' },
 };
 
 export const ROLES = {
   owner: { ar: 'المالك', en: 'Owner', perms: Object.keys(PERMISSIONS) },
-  ops_manager: { ar: 'مدير تشغيل', en: 'Operations manager', perms: ['dashboard', 'leads', 'customers', 'sales', 'approve_quotes', 'bookings', 'projects', 'workers', 'tasks'] },
+  ops_manager: { ar: 'مدير تشغيل', en: 'Operations manager', perms: ['dashboard', 'leads', 'customers', 'sales', 'approve_quotes', 'bookings', 'projects', 'workers', 'tasks', 'buildings'] },
   booking_coordinator: { ar: 'منسق حجوزات', en: 'Booking coordinator', perms: ['dashboard', 'leads', 'customers', 'sales', 'bookings', 'tasks'] },
   accountant: { ar: 'محاسب', en: 'Accountant', perms: ['dashboard', 'customers', 'sales', 'finance', 'reports'] },
   supervisor: { ar: 'مشرف', en: 'Supervisor', perms: ['dashboard', 'bookings', 'projects', 'tasks'] },
@@ -69,6 +70,25 @@ export const ENUMS = {
   treasury_kind: e([['capital_in', 'إيداع من الشريك', 'Partner contribution'], ['drawing', 'سحب للشريك', 'Partner drawing'], ['transfer', 'تحويل بين الحسابات', 'Transfer between accounts'], ['balance_set', 'مطابقة رصيد', 'Balance reconciliation']]),
   treasury_account: e([['bank', 'البنك', 'Bank'], ['cash', 'الصندوق (كاش)', 'Cash box'], ['stc_pay', 'STC Pay', 'STC Pay']]),
   language: e([['ar', 'العربية', 'Arabic'], ['en', 'الإنجليزية', 'English']]),
+  // Building management (operation & maintenance of buildings, first one: Ajyal building 5).
+  site_status: e([['active', 'نشط', 'Active'], ['inactive', 'غير نشط', 'Inactive']]),
+  unit_occupancy: e([['occupied', 'مسكونة', 'Occupied'], ['vacant', 'فاضية', 'Vacant'], ['unknown', 'غير معروف', 'Unknown']]),
+  zone_kind: e([
+    ['lobby', 'لوبي ومدخل', 'Lobby & entrance'], ['elevator', 'مصاعد', 'Elevators'], ['stairs', 'درج', 'Stairs'], ['corridor', 'ممر', 'Corridor'],
+    ['waste', 'نفايات', 'Waste'], ['parking', 'مواقف', 'Parking'], ['roof', 'سطح', 'Roof'], ['plant', 'غرفة معدات', 'Plant room'],
+    ['service', 'خدمات', 'Services'], ['yard', 'فناء', 'Yard'], ['other', 'أخرى', 'Other'],
+  ]),
+  // Roles inside one building. The same person can hold a role in one building and none in another.
+  site_role: e([
+    ['manager', 'المدير', 'Manager'], ['maint_supervisor', 'مشرف الصيانة', 'Maintenance supervisor'], ['clean_supervisor', 'مشرف النظافة', 'Cleaning supervisor'],
+    ['technician', 'فني', 'Technician'], ['cleaner', 'عامل نظافة', 'Cleaner'], ['rep', 'ممثل العمارة', 'Building representative'],
+    ['resident', 'ساكن', 'Resident'], ['vendor', 'شركة متعاقدة', 'Contractor company'],
+  ]),
+  member_status: e([['pending', 'بانتظار الموافقة', 'Awaiting approval'], ['active', 'فعّال', 'Active'], ['rejected', 'مرفوض', 'Rejected'], ['inactive', 'موقوف', 'Stopped']]),
+  ticket_dept: e([['maint', 'صيانة', 'Maintenance'], ['clean', 'نظافة', 'Cleaning'], ['other', 'أخرى', 'Other']]),
+  ticket_priority: e([['critical', 'خطير جداً', 'Critical'], ['urgent', 'عاجل', 'Urgent'], ['normal', 'عادي', 'Normal']]),
+  qr_kind: e([['lobby', 'اللوبي', 'Lobby'], ['elevators', 'المصاعد', 'Elevators'], ['fire_pumps', 'أنظمة الحريق والمضخات', 'Fire systems & pumps']]),
+  user_kind: e([['staff', 'موظف بالنظام', 'System staff'], ['field', 'فريق ميداني', 'Field team'], ['resident', 'ساكن', 'Resident'], ['vendor', 'شركة متعاقدة', 'Contractor']]),
   yes_no: e([['yes', 'نعم', 'Yes'], ['no', 'لا', 'No']]),
 };
 
@@ -206,6 +226,51 @@ export const TABLES = {
       f('project', 'المشروع', 'Project'),
       f('due_date', 'تاريخ الاستحقاق', 'Due date', 'date', { list: true }),
       f('status', 'الحالة', 'Status', 'select', { enum: 'task_status', list: true, badge: true, default: 'open' }),
+      f('notes', 'ملاحظات', 'Notes', 'textarea'),
+    ],
+  },
+  sites: {
+    perm: 'buildings', label: { ar: 'المباني', en: 'Buildings' }, title: 'name', sub: ['code', 'district'], sort: 'code',
+    fields: [
+      f('code', 'رمز المبنى', 'Building code', 'text', { required: true, list: true, unique: true }),
+      f('name', 'الاسم', 'Name', 'text', { required: true, list: true }),
+      f('name_en', 'الاسم بالإنجليزي', 'Name (English)'),
+      f('building_type', 'نوع التصميم', 'Design type', 'text', { list: true }),
+      f('district', 'الحي', 'District', 'text', { list: true }),
+      f('city', 'المدينة', 'City', 'select', { enum: 'city' }),
+      f('floors', 'عدد الأدوار فوق الأرضي', 'Floors above ground', 'number'),
+      f('unit_count', 'عدد الشقق', 'Units', 'number', { list: true }),
+      f('customer_id', 'الجهة المتعاقدة', 'Contracting party', 'ref', { ref: 'customers' }),
+      f('contract_start', 'بداية العقد', 'Contract start', 'date'),
+      f('contract_end', 'نهاية العقد', 'Contract end', 'date', { list: true }),
+      f('response_hours', 'مهلة الاستجابة للطوارئ في العقد (ساعات)', 'Emergency response in contract (hours)', 'number'),
+      f('emergency_phone', 'رقم الطوارئ للسكان', 'Emergency phone for residents', 'tel'),
+      f('status', 'الحالة', 'Status', 'select', { enum: 'site_status', list: true, badge: true, default: 'active' }),
+      f('notes', 'ملاحظات', 'Notes', 'textarea'),
+    ],
+  },
+  units: {
+    perm: 'buildings', label: { ar: 'الشقق', en: 'Units' }, title: 'code', sub: ['site_id', 'floor'], sort: 'code',
+    fields: [
+      f('site_id', 'المبنى', 'Building', 'ref', { ref: 'sites', required: true, list: true }),
+      f('code', 'رقم الشقة', 'Unit no.', 'text', { required: true, list: true, unique: 'site_id' }),
+      f('floor', 'الدور (0 = الأرضي)', 'Floor (0 = ground)', 'number', { list: true }),
+      f('position', 'الموقع في الدور', 'Position on floor'),
+      f('area_net', 'المساحة الصافية م²', 'Net area m²', 'number'),
+      f('area_gross', 'المساحة الإجمالية م²', 'Gross area m²', 'number'),
+      f('occupancy', 'الإشغال', 'Occupancy', 'select', { enum: 'unit_occupancy', list: true, badge: true, default: 'unknown' }),
+      f('notes', 'ملاحظات', 'Notes', 'textarea'),
+    ],
+  },
+  zones: {
+    perm: 'buildings', label: { ar: 'المناطق المشتركة', en: 'Common areas' }, title: 'name', sub: ['site_id', 'kind'], sort: 'code',
+    fields: [
+      f('site_id', 'المبنى', 'Building', 'ref', { ref: 'sites', required: true, list: true }),
+      f('code', 'الرمز', 'Code', 'text', { required: true, unique: 'site_id' }),
+      f('name', 'الاسم', 'Name', 'text', { required: true, list: true }),
+      f('name_en', 'الاسم بالإنجليزي', 'Name (English)'),
+      f('kind', 'النوع', 'Kind', 'select', { enum: 'zone_kind', list: true }),
+      f('floor', 'الدور (0 = الأرضي، 7 = السطح)', 'Floor (0 = ground, 7 = roof)', 'number', { list: true }),
       f('notes', 'ملاحظات', 'Notes', 'textarea'),
     ],
   },

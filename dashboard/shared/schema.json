@@ -1300,6 +1300,26 @@
      "calendar_token",
      "رمز رابط التقويم",
      "Calendar link token"
+    ],
+    [
+     "kind",
+     "نوع الحساب",
+     "Account type"
+    ],
+    [
+     "customer_id",
+     "العميل المرتبط",
+     "Linked customer"
+    ],
+    [
+     "worker_id",
+     "العامل المرتبط",
+     "Linked worker"
+    ],
+    [
+     "login_version",
+     "إصدار الدخول",
+     "Sign-in version"
     ]
    ]
   },
@@ -1682,6 +1702,528 @@
      "void_reason",
      "سبب الإلغاء",
      "Void reason"
+    ],
+    [
+     "created_by",
+     "أنشأه",
+     "Created by"
+    ],
+    [
+     "created_at",
+     "تاريخ الإنشاء",
+     "Created at"
+    ],
+    [
+     "updated_at",
+     "آخر تعديل",
+     "Updated at"
+    ],
+    [
+     "deleted_at",
+     "تاريخ الحذف",
+     "Deleted at"
+    ]
+   ]
+  },
+  "sites": {
+   "ar": "المباني",
+   "en": "Buildings",
+   "cols": [
+    [
+     "id",
+     "المعرّف",
+     "ID"
+    ],
+    [
+     "code",
+     "رمز المبنى",
+     "Building code"
+    ],
+    [
+     "name",
+     "الاسم",
+     "Name"
+    ],
+    [
+     "name_en",
+     "الاسم بالإنجليزي",
+     "Name (English)"
+    ],
+    [
+     "building_type",
+     "النوع",
+     "Type"
+    ],
+    [
+     "district",
+     "الحي",
+     "District"
+    ],
+    [
+     "city",
+     "المدينة",
+     "City"
+    ],
+    [
+     "floors",
+     "عدد الأدوار فوق الأرضي",
+     "Floors above ground"
+    ],
+    [
+     "unit_count",
+     "عدد الشقق",
+     "Units"
+    ],
+    [
+     "customer_id",
+     "الجهة المتعاقدة",
+     "Contracting party"
+    ],
+    [
+     "contract_start",
+     "بداية العقد",
+     "Contract start"
+    ],
+    [
+     "contract_end",
+     "نهاية العقد",
+     "Contract end"
+    ],
+    [
+     "response_hours",
+     "مهلة الاستجابة للطوارئ (ساعات)",
+     "Emergency response (hours)"
+    ],
+    [
+     "emergency_phone",
+     "رقم الطوارئ",
+     "Emergency phone"
+    ],
+    [
+     "status",
+     "الحالة",
+     "Status"
+    ],
+    [
+     "notes",
+     "ملاحظات",
+     "Notes"
+    ],
+    [
+     "created_by",
+     "أنشأه",
+     "Created by"
+    ],
+    [
+     "created_at",
+     "تاريخ الإنشاء",
+     "Created at"
+    ],
+    [
+     "updated_at",
+     "آخر تعديل",
+     "Updated at"
+    ],
+    [
+     "deleted_at",
+     "تاريخ الحذف",
+     "Deleted at"
+    ]
+   ]
+  },
+  "units": {
+   "ar": "الوحدات",
+   "en": "Units",
+   "cols": [
+    [
+     "id",
+     "المعرّف",
+     "ID"
+    ],
+    [
+     "site_id",
+     "المبنى",
+     "Building"
+    ],
+    [
+     "code",
+     "رقم الشقة",
+     "Unit no."
+    ],
+    [
+     "floor",
+     "الدور",
+     "Floor"
+    ],
+    [
+     "position",
+     "الموقع في الدور",
+     "Position on floor"
+    ],
+    [
+     "area_net",
+     "المساحة الصافية م²",
+     "Net area m²"
+    ],
+    [
+     "area_gross",
+     "المساحة الإجمالية م²",
+     "Gross area m²"
+    ],
+    [
+     "occupancy",
+     "الإشغال",
+     "Occupancy"
+    ],
+    [
+     "notes",
+     "ملاحظات",
+     "Notes"
+    ],
+    [
+     "created_by",
+     "أنشأه",
+     "Created by"
+    ],
+    [
+     "created_at",
+     "تاريخ الإنشاء",
+     "Created at"
+    ],
+    [
+     "updated_at",
+     "آخر تعديل",
+     "Updated at"
+    ],
+    [
+     "deleted_at",
+     "تاريخ الحذف",
+     "Deleted at"
+    ]
+   ]
+  },
+  "zones": {
+   "ar": "المناطق المشتركة",
+   "en": "Common areas",
+   "cols": [
+    [
+     "id",
+     "المعرّف",
+     "ID"
+    ],
+    [
+     "site_id",
+     "المبنى",
+     "Building"
+    ],
+    [
+     "code",
+     "الرمز",
+     "Code"
+    ],
+    [
+     "name",
+     "الاسم",
+     "Name"
+    ],
+    [
+     "name_en",
+     "الاسم بالإنجليزي",
+     "Name (English)"
+    ],
+    [
+     "kind",
+     "النوع",
+     "Kind"
+    ],
+    [
+     "floor",
+     "الدور",
+     "Floor"
+    ],
+    [
+     "notes",
+     "ملاحظات",
+     "Notes"
+    ],
+    [
+     "created_by",
+     "أنشأه",
+     "Created by"
+    ],
+    [
+     "created_at",
+     "تاريخ الإنشاء",
+     "Created at"
+    ],
+    [
+     "updated_at",
+     "آخر تعديل",
+     "Updated at"
+    ],
+    [
+     "deleted_at",
+     "تاريخ الحذف",
+     "Deleted at"
+    ]
+   ]
+  },
+  "qr_points": {
+   "ar": "الباركودات",
+   "en": "QR points",
+   "cols": [
+    [
+     "id",
+     "المعرّف",
+     "ID"
+    ],
+    [
+     "site_id",
+     "المبنى",
+     "Building"
+    ],
+    [
+     "kind",
+     "النوع",
+     "Kind"
+    ],
+    [
+     "label",
+     "الاسم",
+     "Label"
+    ],
+    [
+     "token",
+     "رمز الباركود",
+     "QR code"
+    ],
+    [
+     "zone_codes",
+     "المناطق المربوطة",
+     "Linked areas"
+    ],
+    [
+     "active",
+     "فعّال",
+     "Active"
+    ],
+    [
+     "created_by",
+     "أنشأه",
+     "Created by"
+    ],
+    [
+     "created_at",
+     "تاريخ الإنشاء",
+     "Created at"
+    ],
+    [
+     "updated_at",
+     "آخر تعديل",
+     "Updated at"
+    ],
+    [
+     "deleted_at",
+     "تاريخ الحذف",
+     "Deleted at"
+    ]
+   ]
+  },
+  "site_members": {
+   "ar": "أدوار المباني",
+   "en": "Building roles",
+   "cols": [
+    [
+     "id",
+     "المعرّف",
+     "ID"
+    ],
+    [
+     "site_id",
+     "المبنى",
+     "Building"
+    ],
+    [
+     "user_id",
+     "المستخدم",
+     "User"
+    ],
+    [
+     "role",
+     "الدور",
+     "Role"
+    ],
+    [
+     "unit_id",
+     "الشقة",
+     "Unit"
+    ],
+    [
+     "vendor",
+     "الشركة",
+     "Company"
+    ],
+    [
+     "status",
+     "الحالة",
+     "Status"
+    ],
+    [
+     "requested_at",
+     "تاريخ الطلب",
+     "Requested at"
+    ],
+    [
+     "decided_by",
+     "اعتمده",
+     "Decided by"
+    ],
+    [
+     "decided_at",
+     "تاريخ الاعتماد",
+     "Decided at"
+    ],
+    [
+     "notes",
+     "ملاحظات",
+     "Notes"
+    ],
+    [
+     "created_by",
+     "أنشأه",
+     "Created by"
+    ],
+    [
+     "created_at",
+     "تاريخ الإنشاء",
+     "Created at"
+    ],
+    [
+     "updated_at",
+     "آخر تعديل",
+     "Updated at"
+    ],
+    [
+     "deleted_at",
+     "تاريخ الحذف",
+     "Deleted at"
+    ]
+   ]
+  },
+  "ticket_types": {
+   "ar": "أنواع البلاغات",
+   "en": "Report types",
+   "cols": [
+    [
+     "id",
+     "المعرّف",
+     "ID"
+    ],
+    [
+     "site_id",
+     "المبنى (فارغ = الكل)",
+     "Building (blank = all)"
+    ],
+    [
+     "dept",
+     "القسم",
+     "Department"
+    ],
+    [
+     "code",
+     "الرمز",
+     "Code"
+    ],
+    [
+     "name",
+     "الاسم",
+     "Name"
+    ],
+    [
+     "name_en",
+     "الاسم بالإنجليزي",
+     "Name (English)"
+    ],
+    [
+     "name_bn",
+     "الاسم بالبنغالي",
+     "Name (Bengali)"
+    ],
+    [
+     "priority",
+     "الأولوية",
+     "Priority"
+    ],
+    [
+     "ack_minutes",
+     "مهلة الاستلام (دقائق)",
+     "Pick-up limit (min)"
+    ],
+    [
+     "fix_minutes",
+     "مهلة الحل (دقائق)",
+     "Fix limit (min)"
+    ],
+    [
+     "in_unit",
+     "داخل الشقة",
+     "Inside a unit"
+    ],
+    [
+     "sort",
+     "الترتيب",
+     "Order"
+    ],
+    [
+     "active",
+     "فعّال",
+     "Active"
+    ],
+    [
+     "created_at",
+     "تاريخ الإنشاء",
+     "Created at"
+    ],
+    [
+     "updated_at",
+     "آخر تعديل",
+     "Updated at"
+    ],
+    [
+     "deleted_at",
+     "تاريخ الحذف",
+     "Deleted at"
+    ]
+   ]
+  },
+  "login_links": {
+   "ar": "روابط الدخول",
+   "en": "Sign-in links",
+   "cols": [
+    [
+     "id",
+     "المعرّف",
+     "ID"
+    ],
+    [
+     "user_id",
+     "المستخدم",
+     "User"
+    ],
+    [
+     "token_hash",
+     "بصمة الرابط",
+     "Link fingerprint"
+    ],
+    [
+     "expires_at",
+     "ينتهي",
+     "Expires"
+    ],
+    [
+     "used_at",
+     "استُخدم",
+     "Used at"
     ],
     [
      "created_by",

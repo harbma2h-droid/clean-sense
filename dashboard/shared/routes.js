@@ -3,6 +3,7 @@
 
 import { TABLES } from './model.js';
 import * as S from './services.js';
+import * as B from './buildings.js';
 
 export const ROUTES = [
   ['GET', '/summary', 'dashboard', (ctx, p, b, q) => S.summary(ctx, { from: q.from || '', to: q.to || '' })],
@@ -55,6 +56,20 @@ export const ROUTES = [
   ['POST', '/payroll/advances', 'finance', (ctx, p, body) => S.createAdvance(ctx, body)],
   ['POST', '/payroll/advances/:id/void', 'finance', (ctx, p, body) => S.voidAdvance(ctx, p.id, body)],
   ['GET', '/payroll/workers/:id', 'finance', (ctx, p) => S.workerStatement(ctx, p.id)],
+
+  // Building management. Routes without a permission check the person's role in that building
+  // inside buildings.js (a representative or a building manager may not hold system permissions).
+  ['GET', '/lookup/sites', ['buildings'], (ctx) => ctx.store.list('sites').map(({ id, code, name }) => ({ id, code, name }))],
+  ['GET', '/buildings', 'buildings', (ctx) => B.listSites(ctx)],
+  ['POST', '/buildings/from-template', 'buildings', (ctx, p, body) => B.createSiteFromTemplate(ctx, body)],
+  ['POST', '/buildings/ticket-types/seed', 'buildings', (ctx) => B.seedTicketTypes(ctx)],
+  ['GET', '/buildings/:id', null, (ctx, p) => B.getSite(ctx, p.id)],
+  ['POST', '/buildings/:id/members', null, (ctx, p, body) => B.addMember(ctx, p.id, body)],
+  ['POST', '/buildings/members/:id/decision', null, (ctx, p, body) => B.decideMember(ctx, p.id, body.decision)],
+  ['POST', '/buildings/members/:id/status', null, (ctx, p, body) => B.setMemberStatus(ctx, p.id, body.status)],
+  ['POST', '/buildings/members/:id/phone', null, (ctx, p, body) => B.changeMemberPhone(ctx, p.id, body)],
+  ['POST', '/buildings/members/:id/link', null, (ctx, p) => B.createLoginLink(ctx, p.id, { origin: ctx.origin || '' })],
+  ['GET', '/portal/me', null, (ctx) => B.myBuildings(ctx)],
 
   ['GET', '/reports', 'reports',(ctx, p, b, q) => S.reports(ctx, { from: q.from || '', to: q.to || '' })],
   ['GET', '/ledger', 'reports', (ctx, p, b, q) => S.ledger(ctx, { from: q.from || '', to: q.to || '' })],

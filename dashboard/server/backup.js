@@ -35,6 +35,32 @@ export function hasBackupToday(dir, today = new Date().toISOString().slice(0, 10
   }
 }
 
+/** ISO week label, e.g. 2026-W44 (weeks start on Monday). */
+export function isoWeek(date = new Date()) {
+  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const week = Math.ceil(((d - Date.UTC(d.getUTCFullYear(), 0, 1)) / 864e5 + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+}
+
+/**
+ * Weekly copy: the first daily backup of each week is also kept in <dir>/weekly for `keep`
+ * weeks (default 12, about three months), longer than the 30 daily ones.
+ * Returns the weekly file when one was written this call, else ''.
+ */
+export function keepWeekly(dir, dailyFile, keep = 12, now = new Date()) {
+  const wdir = join(dir, 'weekly');
+  mkdirSync(wdir, { recursive: true });
+  const name = `cleansense-week-${isoWeek(now)}.json.gz`;
+  const existing = readdirSync(wdir).filter((f) => /^cleansense-week-.*\.json\.gz$/.test(f));
+  if (existing.includes(name)) return '';
+  const target = join(wdir, name);
+  writeFileSync(`${target}.tmp`, readFileSync(dailyFile));
+  renameSync(`${target}.tmp`, target);
+  for (const f of [...existing, name].sort().reverse().slice(keep)) unlinkSync(join(wdir, f));
+  return target;
+}
+
 export function readBackup(file) {
   const raw = readFileSync(file);
   const data = JSON.parse((file.endsWith('.gz') ? gunzipSync(raw) : raw).toString('utf8'));

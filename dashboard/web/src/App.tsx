@@ -1,6 +1,6 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
 import emblem from './assets/brand/logo-mark.svg';
-import { Home as HomeIcon, Inbox, CalendarClock, FolderKanban, FileText, Receipt, Wallet, TrendingDown, BarChart3, Contact, FileSignature, HardHat, ListChecks, Users as UsersIcon, Landmark, Settings as SettingsIcon, LogOut, Menu, Languages, Banknote } from 'lucide-react';
+import { Home as HomeIcon, Inbox, CalendarClock, FolderKanban, FileText, Receipt, Wallet, TrendingDown, BarChart3, Contact, FileSignature, HardHat, ListChecks, Users as UsersIcon, Landmark, Settings as SettingsIcon, LogOut, Menu, Languages, Banknote, Building2, DoorOpen, MapPin } from 'lucide-react';
 import { PERMISSIONS, applyLists } from '@shared/model.js';
 import { MetaContext, type Meta } from './meta';
 import { Treasury } from './pages/Treasury';
@@ -35,6 +35,11 @@ const NAV: { group: Key | null; items: NavItem[] }[] = [
     { route: 't/projects', perm: 'projects', Icon: FolderKanban, label: null },
     { route: 't/tasks', perm: 'tasks', Icon: ListChecks, label: null },
     { route: 't/workers', perm: 'workers', Icon: HardHat, label: null },
+  ] },
+  { group: 'nav_buildings', items: [
+    { route: 't/sites', perm: 'buildings', Icon: Building2, label: 'sites' },
+    { route: 't/units', perm: 'buildings', Icon: DoorOpen, label: 'units' },
+    { route: 't/zones', perm: 'buildings', Icon: MapPin, label: 'zones' },
   ] },
   { group: 'nav_finance', items: [
     { route: 'payments', perm: 'finance', Icon: Wallet, label: 'payments' },

@@ -11,7 +11,12 @@
 //   MIRROR_MINUTES                 how often the copy refreshes (default 15)
 //   IMPORT_FROM                    one-time: sheets | backup:<file> → copied into the EMPTY MySQL database at start
 //   BACKUP_DIR                    optional: daily gzip JSON backup of every table (keeps 30); use a folder
-//                                  outside the app folder so a redeploy never removes it
+//                                  outside the app folder so a redeploy never removes it; the first
+//                                  backup of each week is also kept in BACKUP_DIR/weekly (12 weeks)
+//   DRIVE_BACKUP_FOLDER_ID         optional: off-site copy of each weekly backup, in a folder of a Google
+//                                  Workspace shared drive where the service account is a member
+//   PORTAL_ORIGIN                  optional: address in residents' and contractors' sign-in links
+//                                  (e.g. https://portal.cleansense.co); default: the address in use
 //   OPEN_ACCESS=1                  temporary: no sign-in, every visitor acts as the owner
 //   PORT                           set by the host
 
@@ -20,7 +25,8 @@ import { fileURLToPath } from 'node:url';
 import { Store } from './store.js';
 import { createApp } from './app.js';
 import { SheetsMirror } from './mirror.js';
-import { writeBackup, readBackup, hasBackupToday } from './backup.js';
+import { writeBackup, readBackup, hasBackupToday, keepWeekly } from './backup.js';
+import { uploadToDrive } from './drive.js';
 import { SheetsBackend } from './sheets.js';
 import { importIntoMysql } from './migrate.js';
 import bcrypt from 'bcryptjs';
@@ -166,7 +172,15 @@ if (backupDir) {
   const backup = () => {
     if (hasBackupToday(backupDir)) return;
     store.run(() => writeBackup(store, backupDir))
-      .then((f) => notice('backup written', f))
+      .then(async (f) => {
+        notice('backup written', f);
+        // First backup of the week is also kept weekly (12 weeks) and, when set up, copied off Hostinger.
+        const weekly = keepWeekly(backupDir, f);
+        if (weekly && env.DRIVE_BACKUP_FOLDER_ID) {
+          const up = await uploadToDrive({ credentials: serviceAccount(), folderId: env.DRIVE_BACKUP_FOLDER_ID, file: weekly });
+          notice('weekly backup copied to Google Drive', up.name, up.size);
+        }
+      })
       .catch((e) => console.error('backup failed', e.message));
   };
   setTimeout(backup, 30 * 1000).unref();
@@ -189,6 +203,7 @@ const app = createApp({
   secureCookies: env.NODE_ENV !== 'development',
   webDist: join(here, '..', 'web', 'dist'),
   extraOrigins: (env.EXTRA_ORIGINS || '').split(',').filter(Boolean),
+  portalOrigin: env.PORTAL_ORIGIN || '',
   openAccess,
   onPasswordChanged: () => {
     if (tempPasswordFile && existsSync(tempPasswordFile)) unlinkSync(tempPasswordFile);

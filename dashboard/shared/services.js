@@ -94,6 +94,17 @@ function checkRefs(ctx, table, data) {
   }
 }
 
+// unique: true = no two live rows share the value; unique: '<field>' = unique within that field
+// (e.g. a unit number is unique inside its building). Case and spaces are ignored.
+function checkUnique(ctx, table, row, id = '') {
+  const norm = (v) => String(v ?? '').trim().toUpperCase();
+  for (const f of TABLES[table].fields) {
+    if (!f.unique || !norm(row[f.key])) continue;
+    const dup = ctx.store.list(table).find((r) => r.id !== id && norm(r[f.key]) === norm(row[f.key]) && (f.unique === true || r[f.unique] === row[f.unique]));
+    if (dup) fail(409, 'duplicate', { field: f.key, id: dup.id });
+  }
+}
+
 export function listRecords(ctx, table) {
   return ctx.store.list(table);
 }
@@ -106,6 +117,7 @@ export async function createRecord(ctx, table, body) {
   }
   const data = sanitize(table, body);
   checkRefs(ctx, table, data);
+  checkUnique(ctx, table, data);
   if (table === 'customers') {
     data.phone = normPhone(data.phone);
     const dup = ctx.store.list('customers').find((c) => normPhone(c.phone) === data.phone);
@@ -133,6 +145,7 @@ export async function updateRecord(ctx, table, id, body) {
   }
   const data = sanitize(table, body, { partial: true });
   checkRefs(ctx, table, data);
+  checkUnique(ctx, table, { ...existing, ...data }, id);
   if (table === 'customers' && data.phone !== undefined) {
     data.phone = normPhone(data.phone);
     const dup = ctx.store.list('customers').find((c) => c.id !== id && normPhone(c.phone) === data.phone);
@@ -151,6 +164,8 @@ export async function deleteRecord(ctx, table, id) {
   if (table === 'customers' && ctx.store.list('documents').some((d) => d.customer_id === id)) fail(409, 'in_use');
   if (table === 'workers' && (ctx.store.list('payroll_lines').some((l) => l.worker_id === id) || ctx.store.list('worker_advances').some((a) => a.worker_id === id))) fail(409, 'in_use');
   if (table === 'projects' && (ctx.store.list('documents').some((d) => d.project_id === id) || ctx.store.list('expenses').some((x) => x.project_id === id))) fail(409, 'in_use');
+  if (table === 'sites' && ['units', 'zones', 'site_members'].some((t) => ctx.store.list(t).some((r) => r.site_id === id))) fail(409, 'in_use');
+  if (table === 'units' && ctx.store.list('site_members').some((m) => m.unit_id === id && m.status !== 'rejected')) fail(409, 'in_use');
   await ctx.store.patch(table, id, { deleted_at: nowIso() });
   await ctx.audit('delete', table, id);
 }

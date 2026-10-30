@@ -13,3 +13,6 @@ service-account*.json
 
 private/
 clean-sense-system-*.json
+
+# Owner-facing plans and proposals (business details): kept out of the public repository.
+docs/app-plan/
