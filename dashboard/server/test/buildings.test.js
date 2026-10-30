@@ -8,6 +8,7 @@ import { join } from 'node:path';
 import bcrypt from 'bcryptjs';
 import { Store } from '../store.js';
 import { createApp } from '../app.js';
+import { notificationText } from '../../shared/buildings.js';
 
 let server, base, origin, store, site;
 const jar = {};
@@ -50,6 +51,14 @@ test('type A template creates building 5 with 26 units, common areas and 3 QR po
   assert.deepEqual(r.body.units.slice(0, 3).map((u) => u.code), ['001', '002', '101']);
   assert.equal(r.body.units.at(-1).code, '604');
   assert.equal(r.body.units.find((u) => u.code === '302').floor, 3);
+  // Owner's numbering, same on every floor, back to the lift: 01 right, 02 left, 03 opposite 01, 04 opposite 02.
+  const pos = Object.fromEntries(r.body.units.map((u) => [u.code, u.position]));
+  assert.match(pos['301'], /^يمين المصعد/);
+  assert.match(pos['302'], /^يسار المصعد/);
+  assert.equal(pos['303'], 'مقابل شقة 301');
+  assert.equal(pos['304'], 'مقابل شقة 302');
+  assert.match(pos['001'], /^يمين/);
+  assert.match(pos['002'], /^يسار/);
   assert.ok(r.body.zones.some((z) => z.code === 'PUMPS') && r.body.zones.some((z) => z.code === 'ELEV-ROOM'));
   assert.deepEqual(r.body.qr_points.map((q) => q.kind).sort(), ['elevators', 'fire_pumps', 'lobby']);
   assert.ok(r.body.qr_points.every((q) => q.token.length >= 16), 'QR codes are not guessable');
@@ -175,6 +184,23 @@ test('contractor: approved phone can change, old sessions stop', async () => {
 
   assert.equal((await req('o', 'POST', `/buildings/members/${v.body.id}/status`, { status: 'inactive' })).status, 201);
   assert.equal((await req('o', 'POST', `/buildings/members/${v.body.id}/link`)).status, 409, 'stopped: no new links');
+});
+
+test('notification wording: short, building first, critical stays on screen', () => {
+  const s = { name: 'عمارة 5 - سكن أجيال', code: 'AJ-05' };
+  const crit = notificationText('new_ticket', s, { priority: 'critical', type: 'أحد محبوس في المصعد', place: 'المصاعد', number: 1047 });
+  assert.equal(crit.title, '🚨 بلاغ خطير — عمارة 5 - سكن أجيال');
+  assert.equal(crit.body, 'أحد محبوس في المصعد · المصاعد · رقم 1047. افتح البلاغ الحين.');
+  assert.equal(crit.urgent, true);
+  const norm = notificationText('new_ticket', s, { priority: 'normal', type: 'اللوبي يبي تنظيف', place: 'اللوبي', number: 1048 });
+  assert.equal(norm.urgent, false);
+  assert.ok(norm.title.startsWith('بلاغ جديد'));
+  assert.match(notificationText('escalated', s, { type: 'تسريب موية', number: 7, minutes: 30, reason: 'pickup' }).body, /ما أحد استلمه من 30 دقيقة/);
+  assert.match(notificationText('assigned', s, { type: 'x', place: 'y', lang: 'bn' }).title, /^নতুন কাজ/);
+  const long = notificationText('notice', s, { title: 'تنبيه', text: 'ا'.repeat(400) });
+  assert.ok(long.body.length <= 140 && long.body.endsWith('…'));
+  for (const k of ['resolved', 'pm_reminder', 'member_pending']) assert.ok(notificationText(k, s, { type: 'x', title: 'y', date: '2026-11-07', name: 'n', unit: '302', number: 1 }).title.length <= 50);
+  assert.throws(() => notificationText('nope', s));
 });
 
 test('field staff link to the workers table; staff list stays staff only', async () => {

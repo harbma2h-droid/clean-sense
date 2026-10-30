@@ -233,7 +233,7 @@ export async function createLoginLink(ctx, memberId, { origin = '' } = {}) {
   await ctx.audit('create_link', 'users', user.id, { site_member: memberId });
   const site = ctx.store.get('sites', m.site_id);
   const url = `${origin}/l/${token}`;
-  const message = `هلا ${user.name} 👋\nهذا رابط دخولك لتطبيق كلين سنس (${site?.name || ''}).\nيفتح مرة وحدة وصالح ${LINK_HOURS} ساعة:\n${url}`;
+  const message = `هلا ${user.name} 👋\nهذا رابط دخولك لتطبيق كلين سنس (${site?.name || ''}).\nالرابط يشتغل مرة وحدة، وصالح ${LINK_HOURS} ساعة:\n${url}\n\nلا ترسله لأحد.`;
   const digits = normPhone(user.phone).replace(/^0/, '966');
   return { url, expires_at: expires, message, whatsapp: `https://wa.me/${digits}?text=${encodeURIComponent(message)}` };
 }
@@ -260,16 +260,86 @@ export function myBuildings(ctx) {
   });
 }
 
+/* ================= Notification wording ================= */
+
+// Phone notifications are cut short on lock screens (iPhone shows about 50 characters of the
+// title and 4 lines of text; Samsung about 2 lines until opened). So: the building and what
+// happened in the title, the detail in the body, the most important words first.
+const NOTE_MAX = { title: 50, body: 140 };
+const clip = (s, n) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
+const PRIORITY_TITLE = { critical: '🚨 بلاغ خطير', urgent: '🟠 بلاغ عاجل', normal: 'بلاغ جديد' };
+
+/**
+ * Text of one phone notification. kind:
+ *  new_ticket   to the supervisor and the manager      { priority, type, place, number }
+ *  escalated    to the manager                          { type, number, minutes, reason: 'pickup' | 'fix' }
+ *  assigned     to the technician or cleaner            { type, place, number, lang: 'ar' | 'bn' }
+ *  resolved     summary to the resident                 { type, number }
+ *  notice       announcement to residents               { title, text }
+ *  pm_reminder  to the supervisor, a week before         { title, date }
+ *  member_pending  to the representative                { name, unit }
+ * Returns { title, body, tag, urgent }. urgent = stays on screen until opened (critical only).
+ */
+export function notificationText(kind, site, d = {}) {
+  const where = site?.name || '';
+  const n = d.number ? ` · رقم ${d.number}` : '';
+  let title;
+  let body;
+  switch (kind) {
+    case 'new_ticket':
+      title = `${PRIORITY_TITLE[d.priority] || PRIORITY_TITLE.normal} — ${where}`;
+      body = `${d.type} · ${d.place}${n}${d.priority === 'critical' ? '. افتح البلاغ الحين.' : ''}`;
+      break;
+    case 'escalated':
+      title = `⏰ بلاغ متأخر — ${where}`;
+      body = `${d.type}${n} · ${d.reason === 'fix' ? `ما انحل من ${d.minutes} دقيقة` : `ما أحد استلمه من ${d.minutes} دقيقة`}`;
+      break;
+    case 'assigned':
+      title = d.lang === 'bn' ? `নতুন কাজ — ${where}` : `مهمة جديدة لك — ${where}`;
+      body = `${d.type} · ${d.place}${n}`;
+      break;
+    case 'resolved':
+      title = `✅ انحل بلاغك — ${where}`;
+      body = `${d.type}${n}. خلصناه، وشكراً لأنك بلغتنا.`;
+      break;
+    case 'notice':
+      title = `📢 ${d.title} — ${where}`;
+      body = d.text;
+      break;
+    case 'pm_reminder':
+      title = `🗓️ صيانة دورية بعد أسبوع — ${where}`;
+      body = `${d.title} · ${d.date}`;
+      break;
+    case 'member_pending':
+      title = `طلب تسجيل ساكن — ${where}`;
+      body = `${d.name} · شقة ${d.unit}. وافق أو ارفض من التطبيق.`;
+      break;
+    default:
+      throw new Error(`unknown notification: ${kind}`);
+  }
+  return {
+    title: clip(title, NOTE_MAX.title),
+    body: clip(String(body || ''), NOTE_MAX.body),
+    // Same tag = the newer notification replaces the older one instead of piling up.
+    tag: `${kind}-${site?.code || ''}-${d.number || d.title || ''}`,
+    urgent: kind === 'new_ticket' && d.priority === 'critical',
+  };
+}
+
 /* ================= Type A template (Ajyal buildings 2, 5, 8, 11) ================= */
 
-// From the building's as-built drawings: ground + 6 floors, 2 units on the ground
-// floor and 4 on each upper floor. x01 is on the right coming out of the lift, x03 opposite it,
-// x02 behind x01 and x04 opposite x02. Unit numbering is to be confirmed on site per building.
+// From the building's as-built drawings: ground + 6 floors, 2 units on the ground floor and 4 on
+// each upper floor. Numbering confirmed by the owner (2026-10-30), the same on every floor, standing
+// with your back to the lift: x01 on the right, x02 on the left, x03 opposite x01, x04 opposite x02.
+// Ajyal has 12 buildings: type A = 2, 5, 8, 11; type B = 3, 6, 9, 12; type C = 1, 4, 7, 10.
 export const TYPE_A = {
   floors: 6,
   area_net: 211.64,
   area_gross: 254.22,
-  positions: { 1: 'يمين الطالع من المصعد', 2: 'خلف 01', 3: 'مقابل 01', 4: 'مقابل 02' },
+  position: (floor, pos) => {
+    const no = (p) => (floor === 0 ? `00${p}` : `${floor}0${p}`);
+    return { 1: 'يمين المصعد (والمصعد ورا ظهرك)', 2: 'يسار المصعد (والمصعد ورا ظهرك)', 3: `مقابل شقة ${no(1)}`, 4: `مقابل شقة ${no(2)}` }[pos];
+  },
   zones: [
     ['LOBBY', 'اللوبي والمدخل', 'Lobby & entrance', 'lobby', 0],
     ['ELEV', 'المصعدين', 'Both lifts', 'elevator', ''],
@@ -320,9 +390,9 @@ export async function createSiteFromTemplate(ctx, body = {}) {
     city: body.city || '', floors: TYPE_A.floors, unit_count: 2 + 4 * TYPE_A.floors, contract_start: body.contract_start || '', contract_end: body.contract_end || '',
     response_hours: body.response_hours ?? '', emergency_phone: body.emergency_phone || '', status: 'active', notes: String(body.notes || '').slice(0, 2000), ...stamp,
   });
-  const units = [['001', 0, 1], ['002', 0, 3], ...Array.from({ length: TYPE_A.floors }, (_, i) => [1, 2, 3, 4].map((p) => [`${i + 1}0${p}`, i + 1, p])).flat()];
+  const units = [['001', 0, 1], ['002', 0, 2], ...Array.from({ length: TYPE_A.floors }, (_, i) => [1, 2, 3, 4].map((p) => [`${i + 1}0${p}`, i + 1, p])).flat()];
   for (const [ucode, floor, pos] of units) {
-    await ctx.store.insert('units', { id: newId('un'), site_id: site.id, code: ucode, floor, position: TYPE_A.positions[pos], area_net: TYPE_A.area_net, area_gross: TYPE_A.area_gross, occupancy: 'unknown', ...stamp });
+    await ctx.store.insert('units', { id: newId('un'), site_id: site.id, code: ucode, floor, position: TYPE_A.position(floor, pos), area_net: TYPE_A.area_net, area_gross: TYPE_A.area_gross, occupancy: 'unknown', ...stamp });
   }
   for (const [zcode, zname, zen, kind, floor] of TYPE_A.zones) {
     await ctx.store.insert('zones', { id: newId('zo'), site_id: site.id, code: zcode, name: zname, name_en: zen, kind, floor, ...stamp });
@@ -340,36 +410,37 @@ export async function createSiteFromTemplate(ctx, body = {}) {
 // Minutes: critical goes out at once; urgent escalates after 30 min without pick-up or 4 h unsolved;
 // normal after 24 h without pick-up. Bengali names are for the workers' screens (to be reviewed).
 const SLA = { critical: [0, ''], urgent: [30, 240], normal: [1440, ''] };
+// Arabic names are in clear, polite Saudi dialect (what a resident would say).
 export const DEFAULT_TICKET_TYPES = [
-  ['maint', 'water_leak', 'تسريب ماء', 'Water leak', 'পানি লিক', 'urgent'],
-  ['maint', 'water_cut', 'انقطاع الماء', 'No water', 'পানি নেই', 'urgent'],
-  ['maint', 'water_pressure', 'ضعف ضغط الماء', 'Low water pressure', 'পানির চাপ কম', 'normal'],
-  ['maint', 'drain_block', 'انسداد صرف أو مجاري', 'Blocked drain or sewer', 'ড্রেন বন্ধ', 'normal'],
-  ['maint', 'power_cut', 'انقطاع الكهرباء', 'Power cut', 'বিদ্যুৎ নেই', 'urgent'],
-  ['maint', 'lighting', 'إنارة أو كهرباء', 'Lighting or electrical', 'লাইট বা বিদ্যুৎ', 'normal'],
-  ['maint', 'lift_stopped', 'مصعد واقف', 'Lift out of service', 'লিফট বন্ধ', 'urgent'],
-  ['maint', 'lift_trapped', 'مصعد مقفل على أحد', 'Someone trapped in a lift', 'লিফটে কেউ আটকে আছে', 'critical'],
-  ['maint', 'common_ac', 'تكييف المناطق المشتركة', 'Common-area air conditioning', 'সাধারণ এলাকার এসি', 'normal'],
-  ['maint', 'doors_locks', 'أبواب وأقفال', 'Doors and locks', 'দরজা ও তালা', 'normal'],
-  ['maint', 'intercom_cctv', 'الانتركم والبوابة والكاميرات', 'Intercom, gate and cameras', 'ইন্টারকম, গেট ও ক্যামেরা', 'normal'],
-  ['maint', 'false_alarm', 'إنذار حريق يصفّر بدون سبب', 'Fire alarm sounding with no cause', 'অকারণে ফায়ার অ্যালার্ম', 'normal'],
-  ['maint', 'damage', 'تكسير أو تلف في المرافق', 'Breakage or damage', 'ভাঙা বা ক্ষতি', 'normal'],
+  ['maint', 'water_leak', 'تسريب موية', 'Water leak', 'পানি লিক', 'urgent'],
+  ['maint', 'water_cut', 'الموية مقطوعة', 'No water', 'পানি নেই', 'urgent'],
+  ['maint', 'water_pressure', 'ضغط الموية ضعيف', 'Low water pressure', 'পানির চাপ কম', 'normal'],
+  ['maint', 'drain_block', 'انسداد في الصرف أو المجاري', 'Blocked drain or sewer', 'ড্রেন বন্ধ', 'normal'],
+  ['maint', 'power_cut', 'الكهرباء مقطوعة', 'Power cut', 'বিদ্যুৎ নেই', 'urgent'],
+  ['maint', 'lighting', 'إنارة أو كهرباء خربانة', 'Lighting or electrical fault', 'লাইট বা বিদ্যুৎ নষ্ট', 'normal'],
+  ['maint', 'lift_stopped', 'المصعد واقف', 'Lift out of service', 'লিফট বন্ধ', 'urgent'],
+  ['maint', 'lift_trapped', 'أحد محبوس في المصعد', 'Someone trapped in a lift', 'লিফটে কেউ আটকে আছে', 'critical'],
+  ['maint', 'common_ac', 'التكييف في الممرات أو اللوبي', 'Common-area air conditioning', 'সাধারণ এলাকার এসি', 'normal'],
+  ['maint', 'doors_locks', 'باب أو قفل خربان', 'Door or lock fault', 'দরজা বা তালা নষ্ট', 'normal'],
+  ['maint', 'intercom_cctv', 'الانتركم أو البوابة أو الكاميرات', 'Intercom, gate or cameras', 'ইন্টারকম, গেট বা ক্যামেরা', 'normal'],
+  ['maint', 'false_alarm', 'جرس الحريق يصفّر بدون سبب', 'Fire alarm sounding with no cause', 'অকারণে ফায়ার অ্যালার্ম', 'normal'],
+  ['maint', 'damage', 'شي مكسور أو خربان', 'Something broken or damaged', 'কিছু ভাঙা বা নষ্ট', 'normal'],
   ['maint', 'gas_fire', 'ريحة غاز أو حريق', 'Gas smell or fire', 'গ্যাসের গন্ধ বা আগুন', 'critical'],
-  ['clean', 'stairs_corridors', 'نظافة الدرج والممرات', 'Stairs and corridors', 'সিঁড়ি ও করিডোর', 'normal'],
-  ['clean', 'lobby', 'نظافة اللوبي', 'Lobby', 'লবি', 'normal'],
-  ['clean', 'waste_rooms', 'غرف النفايات وشوت النفايات', 'Waste rooms and chute', 'ময়লার ঘর ও শুট', 'normal'],
+  ['clean', 'stairs_corridors', 'الدرج أو الممرات تبي تنظيف', 'Stairs or corridors need cleaning', 'সিঁড়ি বা করিডোর পরিষ্কার', 'normal'],
+  ['clean', 'lobby', 'اللوبي يبي تنظيف', 'Lobby needs cleaning', 'লবি পরিষ্কার', 'normal'],
+  ['clean', 'waste_rooms', 'غرفة النفايات أو الشوت', 'Waste room or chute', 'ময়লার ঘর বা শুট', 'normal'],
   ['clean', 'pests', 'حشرات', 'Pests', 'পোকামাকড়', 'normal'],
-  ['clean', 'parking', 'نظافة المواقف', 'Parking', 'পার্কিং', 'normal'],
-  ['clean', 'dust_storm', 'غبار بعد العواصف', 'Dust after a storm', 'ঝড়ের পরে ধুলো', 'normal'],
-  ['clean', 'spill', 'انسكاب أو اتساخ طارئ', 'Spill or sudden mess', 'হঠাৎ ময়লা বা ছিটকে পড়া', 'normal'],
-  ['clean', 'odour', 'روائح كريهة', 'Bad smell', 'দুর্গন্ধ', 'normal'],
-  ['clean', 'roof', 'نظافة السطح', 'Roof', 'ছাদ', 'normal'],
+  ['clean', 'parking', 'المواقف تبي تنظيف', 'Parking needs cleaning', 'পার্কিং পরিষ্কার', 'normal'],
+  ['clean', 'dust_storm', 'غبار بعد العاصفة', 'Dust after a storm', 'ঝড়ের পরে ধুলো', 'normal'],
+  ['clean', 'spill', 'شي انكب أو وساخة مفاجئة', 'Spill or sudden mess', 'হঠাৎ ময়লা বা ছিটকে পড়া', 'normal'],
+  ['clean', 'odour', 'ريحة مو حلوة', 'Bad smell', 'দুর্গন্ধ', 'normal'],
+  ['clean', 'roof', 'السطح يبي تنظيف', 'Roof needs cleaning', 'ছাদ পরিষ্কার', 'normal'],
   ['other', 'suggestion', 'ملاحظة أو اقتراح', 'Note or suggestion', 'মন্তব্য বা পরামর্শ', 'normal'],
   ['other', 'noise', 'إزعاج', 'Noise or disturbance', 'শব্দ বা বিরক্তি', 'normal'],
   ['other', 'other', 'شي ثاني', 'Something else', 'অন্য কিছু', 'normal'],
 ];
 // Inside a unit is outside the contract: the app offers a paid cleaning or maintenance booking instead.
-const IN_UNIT = ['other', 'in_unit', 'داخل شقتي (خدمة مدفوعة)', 'Inside my unit (paid service)', 'ফ্ল্যাটের ভিতরে (পেইড সার্ভিস)', 'normal'];
+const IN_UNIT = ['other', 'in_unit', 'داخل شقتي (خدمة بمقابل)', 'Inside my unit (paid service)', 'ফ্ল্যাটের ভিতরে (পেইড সার্ভিস)', 'normal'];
 
 /** Adds the default report types once (types shared by all buildings). Returns how many were added. */
 export async function seedTicketTypes(ctx) {

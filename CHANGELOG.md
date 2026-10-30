@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-30 (2) — app phase 0 follow-up (not deployed)
+- Architectural PDF (site plan, elevations and sections for types A, B and C) uploaded to the project's Drive folder. The folder now holds all the plans: 4 DWG files and 5 PDFs.
+- Unit numbering follows the owner's rule on every floor.
+- Report types and the sign-in page are worded in polite Saudi dialect.
+- Notification wording is ready and tested (short, building first). Sending notifications comes in phase 1.
+- The sign-in page was checked at iPhone (393 px) and Samsung (360 px) widths in the browser, not on real devices.
+- Test environment rebuilt with the new numbering. 51 tests pass on both the file store and MySQL.
+
 ## 2026-10-30 — app phase 0: building management foundations (not deployed; test environment only)
 - The owner approved the plan:
   - Stay on Hostinger.

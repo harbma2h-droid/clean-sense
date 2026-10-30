@@ -18,16 +18,16 @@ const newId = (p) => `${p}-${Date.now().toString(36)}${randomBytes(2).toString('
 
 // Page behind a sign-in link. Self-contained (no outside files), Arabic, Clean Sense colours.
 const ROLE_AR = { manager: 'المدير', maint_supervisor: 'مشرف الصيانة', clean_supervisor: 'مشرف النظافة', technician: 'فني', cleaner: 'عامل نظافة', rep: 'ممثل العمارة', resident: 'ساكن', vendor: 'شركة متعاقدة' };
-const LINK_PAGE = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+const LINK_PAGE = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>كلين سنس | Clean Sense</title><meta property="og:title" content="كلين سنس | Clean Sense"><meta property="og:description" content="رابط دخولك لتطبيق كلين سنس">
 <meta name="robots" content="noindex"><meta name="theme-color" content="#0B1F41">
-<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0B1F41;color:#F7F3E9;font-family:Tajawal,"Segoe UI",Tahoma,sans-serif}
+<style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0B1F41;color:#F7F3E9;font-family:Tajawal,"Segoe UI",Tahoma,sans-serif}
 main{width:min(420px,calc(100% - 32px));background:#fff;color:#0B1F41;border-radius:18px;padding:28px 22px;text-align:center}
 h1{font-size:22px;margin:0 0 6px}p{color:#56607A;margin:6px 0 18px;line-height:1.8}
 button{width:100%;border:0;border-radius:12px;padding:14px;font-family:inherit;font-weight:700;font-size:17px;background:#D1AD45;color:#0B1F41;cursor:pointer}
 button:disabled{opacity:.6}ul{list-style:none;padding:0;margin:12px 0 0;text-align:start}li{border:1px solid #E4DDCB;border-radius:10px;padding:10px 12px;margin-top:8px}
 .err{color:#B42318}</style></head><body><main>
-<h1>أهلاً بك في كلين سنس</h1><p id="msg">اضغط الزر للدخول. الرابط يشتغل مرة وحدة.</p>
+<h1>حياك في كلين سنس</h1><p id="msg">اضغط «دخول». الرابط يشتغل مرة وحدة بس.</p>
 <button id="go">دخول</button><ul id="list"></ul></main>
 <script>
 const R=${JSON.stringify(ROLE_AR)};
@@ -35,9 +35,9 @@ const msg=document.getElementById('msg'),go=document.getElementById('go'),list=d
 go.onclick=async()=>{go.disabled=true;
   const token=location.pathname.split('/').pop();
   const r=await fetch('/api/auth/link',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})});
-  if(!r.ok){msg.textContent=r.status===429?'محاولات كثيرة. جرّب بعد ربع ساعة.':'الرابط منتهي أو مستخدم. اطلب رابط جديد من مدير العمارة.';msg.className='err';go.hidden=true;return;}
+  if(!r.ok){msg.textContent=r.status===429?'محاولات كثيرة. جرّب بعد ربع ساعة.':'الرابط انتهى أو انستخدم قبل. اطلب رابط جديد من مدير العمارة.';msg.className='err';go.hidden=true;return;}
   const me=await r.json();const b=await (await fetch('/api/portal/me')).json();
-  msg.textContent='تم الدخول، '+me.name+'. أدوارك:';go.hidden=true;
+  msg.textContent='تم الدخول، حياك يا '+me.name+'. هذي أدوارك:';go.hidden=true;
   for(const x of b){const li=document.createElement('li');li.textContent=(x.site?x.site.name:'')+' — '+(R[x.role]||x.role)+(x.unit?' — شقة '+x.unit.code:'')+(x.vendor?' — '+x.vendor:'');list.appendChild(li);}
 };
 </script></body></html>`;

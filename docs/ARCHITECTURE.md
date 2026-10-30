@@ -108,6 +108,20 @@ Tests: `cd dashboard && npm test`. With `TEST_MYSQL_URL=mysql://…/cleansense_t
   - contractor
 - **Approving residents:** only the building representative approves residents. While a building has no active representative, staff with the `buildings` permission can approve.
 - **Type A template:** `POST /api/buildings/from-template` creates a building with 26 units, 26 common areas and 3 QR points. Adding buildings 2, 8 and 11 is data entry, not programming.
+- **Ajyal site:** 12 buildings, from the site key plan HA-031692.
+  - Type A: 2, 5, 8, 11.
+  - Type B: 3, 6, 9, 12.
+  - Type C: 1, 4, 7, 10.
+  - The types differ mainly in their façades.
+- **Unit numbering** (owner, 2026-10-30): the same on every floor, standing with your back to the lift.
+  - x01 is on the right and x02 on the left.
+  - x03 is opposite x01, and x04 is opposite x02.
+- **Phone notifications (built in phase 1):**
+  - The wording comes from `notificationText()`: building and event in the title (at most 50 characters), details in the body (at most 140).
+  - A critical report stays on screen until it is opened.
+  - Web push works on Android (Chrome and Samsung Internet).
+  - On iPhone it works only on iOS 16.4 or later, and only after the app is added to the home screen.
+  - Before launch, check on a real iPhone and a real Samsung.
 - **Backups:**
   - The first daily backup of each week is also kept for 12 weeks in `BACKUP_DIR/weekly`.
   - With `DRIVE_BACKUP_FOLDER_ID` set, that weekly file is uploaded to a Google Workspace shared-drive folder where the service account is a member.
