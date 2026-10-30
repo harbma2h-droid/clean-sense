@@ -63,6 +63,9 @@ test('type A template creates building 5 with 26 units, common areas and 3 QR po
   assert.deepEqual(r.body.qr_points.map((q) => q.kind).sort(), ['elevators', 'fire_pumps', 'lobby']);
   assert.ok(r.body.qr_points.every((q) => q.token.length >= 16), 'QR codes are not guessable');
   assert.equal((await req('o', 'POST', '/buildings/from-template', { code: 'AJ-05', name: 'again' })).status, 409);
+  const c = await req('o', 'POST', '/buildings/from-template', { code: 'AJ-04', name: 'عمارة 4', building_type: 'C' });
+  assert.equal(c.body.site.building_type, 'C', 'types B and C share the layout, only the type is recorded');
+  assert.equal(c.body.units.length, 26);
   assert.equal((await req('o', 'POST', '/buildings/from-template', { code: 'bad code!', name: 'x' })).status, 400);
 });
 

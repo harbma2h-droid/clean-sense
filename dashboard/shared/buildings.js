@@ -332,6 +332,9 @@ export function notificationText(kind, site, d = {}) {
 // each upper floor. Numbering confirmed by the owner (2026-10-30), the same on every floor, standing
 // with your back to the lift: x01 on the right, x02 on the left, x03 opposite x01, x04 opposite x02.
 // Ajyal has 12 buildings: type A = 2, 5, 8, 11; type B = 3, 6, 9, 12; type C = 1, 4, 7, 10.
+// The types differ in their façades; units, floors and common areas are the same, so all
+// three use this template and only the recorded type changes.
+export const AJYAL_TYPES = { 1: 'C', 2: 'A', 3: 'B', 4: 'C', 5: 'A', 6: 'B', 7: 'C', 8: 'A', 9: 'B', 10: 'C', 11: 'A', 12: 'B' };
 export const TYPE_A = {
   floors: 6,
   area_net: 211.64,
@@ -386,7 +389,7 @@ export async function createSiteFromTemplate(ctx, body = {}) {
   if (ctx.store.list('sites').some((s) => String(s.code).toUpperCase() === code)) fail(409, 'duplicate_code');
   const stamp = { created_at: nowIso(), updated_at: nowIso(), created_by: ctx.user?.username || '' };
   const site = await ctx.store.insert('sites', {
-    id: newId('si'), code, name, name_en: String(body.name_en || '').slice(0, 120), building_type: 'A', district: String(body.district || '').slice(0, 80),
+    id: newId('si'), code, name, name_en: String(body.name_en || '').slice(0, 120), building_type: ['A', 'B', 'C'].includes(body.building_type) ? body.building_type : 'A', district: String(body.district || '').slice(0, 80),
     city: body.city || '', floors: TYPE_A.floors, unit_count: 2 + 4 * TYPE_A.floors, contract_start: body.contract_start || '', contract_end: body.contract_end || '',
     response_hours: body.response_hours ?? '', emergency_phone: body.emergency_phone || '', status: 'active', notes: String(body.notes || '').slice(0, 2000), ...stamp,
   });
